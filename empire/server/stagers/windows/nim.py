@@ -148,7 +148,7 @@ class Stager(object):
                 file.close()
                 currdir = os.getcwd()
                 os.chdir("/tmp/")
-                os.system("nim c -d=mingw --app=console --cpu=amd64 launcher.nim")
+                os.system("nim c -d=mingw --app=gui --cpu=amd64 -d:danger -d:strip --opt:size launcher.nim")
                 os.chdir(currdir)
                 os.remove("/tmp/launcher.nim")
 

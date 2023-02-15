@@ -10,27 +10,30 @@ import winim/clr
 import sugar
 import strformat
 
-var Automation = load("System.Management.Automation")
-dump Automation
-var RunspaceFactory = Automation.GetType("System.Management.Automation.Runspaces.RunspaceFactory")
-dump RunspaceFactory
+try:
+    var Automation = load("System.Management.Automation")
+    dump Automation
+    var RunspaceFactory = Automation.GetType("System.Management.Automation.Runspaces.RunspaceFactory")
+    dump RunspaceFactory
 
-var runspace = @RunspaceFactory.CreateRunspace()
-dump runspace
+    var runspace = @RunspaceFactory.CreateRunspace()
+    dump runspace
 
-runspace.Open()
+    runspace.Open()
 
-var pipeline = runspace.CreatePipeline()
-dump pipeline
-pipeline.Commands.AddScript("""{{ script }}""")
-pipeline.Commands.Add("Out-String")
+    var pipeline = runspace.CreatePipeline()
+    dump pipeline
+    pipeline.Commands.AddScript("""{{ script }}""")
+    pipeline.Commands.Add("Out-String")
 
-var results = pipeline.Invoke()
-dump results
-echo results.isType()
-var t = results.GetType()
-dump t
-discard readLine(stdin)
-echo t.isType()
-echo t.unwrap.vt
-runspace.Close()
+    var results = pipeline.Invoke()
+    dump results
+    echo results.isType()
+    var t = results.GetType()
+    dump t
+    discard readLine(stdin)
+    echo t.isType()
+    echo t.unwrap.vt
+    runspace.Close()
+except:
+    echo "error"
