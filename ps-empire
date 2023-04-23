@@ -1,2 +1,21 @@
 #! /bin/bash
-sudo -E poetry run python empire.py ${@}
+
+# Hack: handle MySQL install_path properly if OS is Kali
+if grep -i "Kali" /etc/os-release 2>/dev/null; then
+  echo -e "\x1b[1;34m[*] Detected Kali\x1b[0m"
+  echo -e "\x1b[1;34m[*] Updating database config\x1b[0m"
+  cd -- $(dirname "$0")
+  GITROOT=$(git rev-parse --show-toplevel)
+  if [ "$1" == "server" ]; then
+    mysql -u empire_user -pempire_password -D empire -e "UPDATE config SET install_path = '$GITROOT/empire/server' WHERE install_path = '/usr/share/powershell-empire/empire/server';" 2>/dev/null
+  fi
+
+  # Ensure poetry runs inside the current working directory
+  sudo -E poetry -C $GITROOT run python empire.py ${@}
+  cd -
+
+  mysql -u empire_user -pempire_password -D empire -e "UPDATE config SET install_path = '/usr/share/powershell-empire/empire/server' WHERE install_path = '$GITROOT/empire/server';" 2>/dev/null
+  echo -e "\x1b[1;34m[*] Restored database config\x1b[0m"
+else
+  sudo -E poetry run python empire.py ${@}
+fi
