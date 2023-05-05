@@ -278,13 +278,13 @@ if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
   python3.8 -m pip install poetry
 else
   if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -ge 11 ]; then
-  # Select python3-poetry if OS is Kali
-  if [ "$OS_NAME" == "KALI" ]; then
-    echo -e "\x1b[1;34m[*] Detected Kali; Installing python3-poetry from Kali repos\x1b[0m"
-    sudo apt-get -y install python3-poetry
-  else
-    python3 -m pip install poetry --break-system-packages
-  fi
+    # Select python3-poetry if OS is Kali
+    if [ "$OS_NAME" == "KALI" ]; then
+      echo -e "\x1b[1;34m[*] Detected Kali; Installing python3-poetry from Kali repos\x1b[0m"
+      sudo apt-get -y install python3-poetry
+    else
+      python3 -m pip install poetry --break-system-packages
+    fi
   else
     python3 -m pip install poetry
   fi
