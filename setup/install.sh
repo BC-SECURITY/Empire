@@ -272,15 +272,28 @@ if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -lt 8 ]; then
   python3.8 -m pip install poetry
 else
   if [ "${python_version[0]}" -eq 3 ] && [ "${python_version[1]}" -ge 11 ]; then
-    python3 -m pip install poetry --break-system-packages
+    # Select python3-poetry if OS is Kali
+    if [ "$OS_NAME" == "KALI" ]; then
+      echo -e "\x1b[1;34m[*] Detected Kali; Installing python3-poetry from Kali repos\x1b[0m"
+      sudo apt-get -y install python3-poetry
+    else
+      python3 -m pip install poetry --break-system-packages
+    fi
   else
     python3 -m pip install poetry
   fi
 fi
 
 echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
-poetry config virtualenvs.in-project true
-poetry install
+# Perform unprivileged configuration and installation for poetry if OS is Kali
+if [ "$OS_NAME" == "KALI" ]; then
+  GITROOT=$(git rev-parse --show-toplevel)
+  runuser - $USER -c "poetry -C $GITROOT config virtualenvs.in-project true"
+  runuser - $USER -c "poetry -C $GITROOT install"
+else
+  poetry config virtualenvs.in-project true
+  poetry install
+fi
 
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
 echo -e ''
