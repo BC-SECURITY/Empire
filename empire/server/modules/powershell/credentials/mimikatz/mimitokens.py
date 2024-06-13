@@ -1,26 +1,20 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
-
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
 
         list_tokens = params["list"]
         elevate = params["elevate"]
@@ -40,8 +34,8 @@ class Module:
             elif elevate.lower() == "true":
                 script_end += "'\"token::elevate"
             else:
-                return handle_error_message(
-                    "[!] list, elevate, or revert must be specified!"
+                raise ModuleValidationException(
+                    "list, elevate, or revert must be specified!"
                 )
 
             if domainadmin.lower() == "true":
@@ -55,10 +49,4 @@ class Module:
 
         script_end += "\"';"
 
-        script = main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
-        return script
+        return script, script_end

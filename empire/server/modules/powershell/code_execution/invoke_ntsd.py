@@ -1,16 +1,20 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.exceptions import ModuleValidationException
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         listener_name = params["Listener"]
         upload_path = params["UploadPath"].strip()
@@ -38,20 +42,10 @@ class Module:
                 + "/data/module_source/code_execution/ntsdexts_x86.dll"
             )
 
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
-
         script_end = ""
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: %s" % (listener_name))
+            raise ModuleValidationException("Invalid listener: %s" % (listener_name))
         else:
             multi_launcher = main_menu.stagertemplatesv2.new_instance("multi_launcher")
             multi_launcher.options["Listener"] = params["Listener"]
@@ -64,7 +58,7 @@ class Module:
             launcher = multi_launcher.generate()
 
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
             else:
                 launcher = launcher.split(" ")[-1]
 
@@ -94,10 +88,4 @@ class Module:
                 script_end += "\r\n"
                 script_end += code_exec
 
-        script = main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
-        return script
+        return script, script_end
