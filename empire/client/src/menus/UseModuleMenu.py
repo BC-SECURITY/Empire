@@ -116,7 +116,7 @@ class UseModuleMenu(UseMenu):
                 log.error("Agent not set")
                 return
             response = state.execute_module(
-                self.record_options["Agent"]["value"], post_body
+                state.agents[self.record_options["Agent"]["value"]]["session_id"], post_body
             )
             if "status" in response:
                 if "Agent" in post_body["options"]:
