@@ -3,7 +3,7 @@ api:
   port: 1337
   cert_path: empire/server/data/
 database:
-  use: mysql
+  use: sqlite
   mysql:
     url: localhost:3306
     username: empire_user

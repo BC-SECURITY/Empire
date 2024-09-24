@@ -9,6 +9,7 @@
     * [Server](quickstart/configuration/server.md)
     * [Client](quickstart/configuration/client.md)
 * [RESTful API](restful-api/README.md)
+  * [OpenAPI Spec](restful-api/openapi-spec.md) 
 * [Listeners](listeners/README.md)
   * [Dropbox](listeners/dropbox.md)
   * [OneDrive](listeners/onedrive.md)

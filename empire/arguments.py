@@ -10,6 +10,7 @@ parent_parser = argparse.ArgumentParser()
 subparsers = parent_parser.add_subparsers(dest="subparser_name")
 
 server_parser = subparsers.add_parser("server", help="Launch Empire Server")
+api_export_parser = subparsers.add_parser("api_export", help="Export the OpenAPI spec")
 client_parser = subparsers.add_parser("client", help="Launch Empire CLI")
 sync_starkiller_parser = subparsers.add_parser(
     "sync-starkiller", help="Sync Starkiller submodule with the config"

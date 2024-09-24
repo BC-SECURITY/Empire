@@ -157,7 +157,12 @@ def check_recommended_configuration():
         log.warning("Consider using MySQL instead.")
 
 
-def run(args):
+def set_main(args):
+    global main  # noqa: PLW0603
+    main = empire.MainMenu(args=args)
+
+
+def run(args): # noqa: PLR0912
     setup_logging(args)
 
     if empire_config.submodules.auto_update:
@@ -195,13 +200,12 @@ def run(args):
 
     else:
         base.startup_db()
-        global main  # noqa: PLW0603
 
         # Calling run more than once, such as in the test suite
         # Will generate more instances of MainMenu, which then
         # causes shutdown failure.
         if main is None:
-            main = empire.MainMenu(args=args)
+            set_main(args)
 
         if not (Path(empire_config.api.cert_path) / "empire-chain.pem").exists():
             log.info("Certificate not found. Generating...")

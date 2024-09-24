@@ -11,6 +11,10 @@ if __name__ == "__main__":
         from empire.server import server
 
         server.run(args)
+    elif args.subparser_name == "api_export":
+        from empire.scripts.api_export import api_export
+
+        api_export(args)
     elif args.subparser_name == "sync-starkiller":
         import yaml
 
