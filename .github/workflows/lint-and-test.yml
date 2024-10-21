@@ -63,7 +63,7 @@ jobs:
           cache: 'poetry'
       - name: Set up MySQL
         run: |
-          sudo systemctl start mysql
+          sudo systemctl start mysqld
           mysql -u root -proot -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
           mysql -u root -proot -e "GRANT ALL PRIVILEGES ON *.* TO 'empire_user'@'localhost' WITH GRANT OPTION;" || true
           mysql -u root -proot -e "FLUSH PRIVILEGES;" || true

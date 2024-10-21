@@ -38,7 +38,7 @@ def try_create_engine(engine_url: str, *args, **kwargs) -> Engine:
         log.error(e, exc_info=True)
         log.error(f"Failed connecting to database using {engine_url}")
         log.error("Perhaps the MySQL service is not running.")
-        log.error("Try executing: sudo systemctl start mysql")
+        log.error("Try executing: sudo systemctl start mysqld")
         sys.exit(1)
 
     return engine

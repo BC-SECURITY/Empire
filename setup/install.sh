@@ -74,7 +74,7 @@ function install_mysql() {
 
 function start_mysql() {
   echo -e "\x1b[1;34m[*] Configuring MySQL\x1b[0m"
-  sudo systemctl start mysql.service || true # will fail in a docker image
+  sudo systemctl start mysqld.service || true # will fail in a docker image
 
   # Add the default empire user to the mysql database
   sudo mysql -u root -e "CREATE USER IF NOT EXISTS 'empire_user'@'localhost' IDENTIFIED BY 'empire_password';" || true
