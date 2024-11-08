@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from empire.server.utils.file_util import run_as_user
+from empire.server.utils.file_util import run_command
 
 log = logging.getLogger(__name__)
 
@@ -27,18 +27,18 @@ def sync_starkiller(empire_config):
 
 
 def _clone_starkiller(starkiller_config: dict, starkiller_dir: str):
-    run_as_user(["git", "clone", starkiller_config["repo"], starkiller_dir])
+    run_command(["git", "clone", starkiller_config["repo"], starkiller_dir])
 
 
 def _fetch_checkout_pull(remote_repo, ref, cwd):
-    run_as_user(
+    run_command(
         ["git", "remote", "set-url", "origin", remote_repo],
         cwd=cwd,
     )
 
-    run_as_user(["git", "fetch"], cwd=cwd)
-    run_as_user(
+    run_command(["git", "fetch"], cwd=cwd)
+    run_command(
         ["git", "checkout", ref],
         cwd=cwd,
     )
-    run_as_user(["git", "pull", "origin", ref], cwd=cwd)
+    run_command(["git", "pull", "origin", ref], cwd=cwd)

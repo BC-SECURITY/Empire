@@ -16,7 +16,7 @@ from empire.server.common import empire
 from empire.server.core.config import empire_config
 from empire.server.core.db import base
 from empire.server.utils import file_util
-from empire.server.utils.file_util import run_as_user
+from empire.server.utils.file_util import run_command
 from empire.server.utils.log_util import LOG_FORMAT, SIMPLE_LOG_FORMAT, ColorFormatter
 
 log = logging.getLogger(__name__)
@@ -145,7 +145,7 @@ def check_submodules():
 
 def fetch_submodules():
     command = ["git", "submodule", "update", "--init", "--recursive"]
-    run_as_user(command)
+    run_command(command)
 
 
 def check_recommended_configuration():

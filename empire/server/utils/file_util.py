@@ -28,22 +28,15 @@ def remove_file(path: str) -> None:
         os.remove(path)
 
 
-def run_as_user(command, user=None, cwd=None):
+def run_command(command,  cwd=None):
     """
-    Runs a command as a specified user or the user who invoked sudo.
-    If no user is specified and the script is not run with sudo, it runs as the current user.
+    Runs a command as current user.
 
     Args:
         command (list): The command to run, specified as a list of strings.
-        user (str, optional): The username to run the command as. Defaults to None.
     """
     try:
-        if user is None:
-            user = os.getenv("SUDO_USER")
-
-        command_with_user = ["sudo", "-u", user, *command] if user else command
-
-        subprocess.run(command_with_user, check=True, cwd=cwd)
+        subprocess.run(command, check=True, cwd=cwd)
 
         log.debug("Command executed successfully: %s", " ".join(map(str, command)))
 
