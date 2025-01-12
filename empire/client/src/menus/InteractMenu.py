@@ -160,7 +160,7 @@ class InteractMenu(Menu):
         state.get_agents()
         if agent_name in state.agents:
             self.name = agent_name
-            self.selected = state.agents[agent_name]["session_id"]
+            self.selected = agent_name
             self.session_id = state.agents[agent_name]["session_id"]
             self.agent_options = state.agents[agent_name]  # todo rename agent_options
             self.agent_language = self.agent_options["language"]
