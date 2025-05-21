@@ -40,15 +40,15 @@ empire_compiler:
   archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.3/EmpireCompiler-{{platform}}-v0.3.3.tgz
 starkiller:
   enabled: true
-  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: sponsors-main
+  ref: v3.0.0
 submodules:
   auto_update: true
 plugin_marketplace:
   registries:
     - name: BC-SECURITY
-      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      git_url: https://github.com/BC-SECURITY/Empire-Plugin-Registry.git
       ref: main
       file: registry.yaml
 directories:
