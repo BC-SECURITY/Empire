@@ -1,10 +1,9 @@
-# Needs Revisions
 name: CreateProcessWithToken
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Creates a process with the currently impersonated token.
+description: Creates a process through the WIN32 API utilizing the specificified impersonated token. This enables the ability to spawn a process under a user without the need to know the targeted users credentials. Requires SeAssignPrimaryTokenPrivilege, typically only available to adminsitrative useres.
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1134.002]

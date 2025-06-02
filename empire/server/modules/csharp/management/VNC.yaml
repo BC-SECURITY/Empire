@@ -5,7 +5,7 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Installs and runs a C# VNC server on the victim.
+  Installs and runs a C# VNC server on the victim and can be used for interactive access to the victim machine. THe comms are in band and the agent should be set to an interval of 0 seconds when using this module.
 software: ''
 tactics: [TA0008]
 techniques: [T1021.005]

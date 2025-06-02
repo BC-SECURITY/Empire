@@ -1,10 +1,9 @@
-# Needs Revisions
 name: PersistCOMHijack
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Hijacks a CLSID key to execute a payload for persistence.
+description: Hijacks a CLSID key to execute a payload for persistence. Requires that an installed program or service attempts to load a missing CLSID. If scucesful the executable is launched at the privlege level of the targeted program or service.   
 software: ''
 tactics: [TA0003]
 techniques: [T1546.015]

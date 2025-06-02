@@ -1,14 +1,10 @@
-# Needs Revisions
 name: PersistAutorun
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Installs an autorun value in HKCU or HKLM to execute a payload. TargetHive: Target hive to install autorun. Specify \"CurrentUser\" for HKCU and
-  LocalMachine\" for HKLM.\n\tValue: Value to set in the registry. E.g. \"C:\\\
-  Example\\GruntStager.exe\"\n\tName: Name for the registy value.E.g. \"Updater\".
-software: ''
+  Installs an autorun value in HKCU or HKLM to execute a payload. Once the key has been installed the compromised host will execute the designated program upon login.  TargetHive specifies whether to modify the userland registry key or elevated Machine key.
 tactics: [TA0003]
 techniques: [T1547.001]
 background: false
@@ -22,8 +18,10 @@ options:
     description: Target hive to install autorun.
     required: true
     value: CurrentUser
-    strict: false
-    suggested_values: []
+    strict: true
+    suggested_values:
+      - CurrentUser
+      - LocalMachine 
   - name: Name
     description: Name for the registy value.
     required: true
