@@ -1,11 +1,9 @@
-# Needs Revisions
 name: ShellCmdRunAs
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Execute a Shell command using CreateProcess with "cmd.exe /c" as a specified
-  user.
+description: Uses .NET's System.Diagnostics.StartProcess to create a child process of the current process to run the provided commands. Optionally, username and password can be provided to run the command as another user. This module does accept hashes as credentials.  Commands are executed from the current directory of the agent process. Provided commands are automatically appended with "cmd.exe /c" and this module is equivalent to csharp_code_execution_sharpsploit_shell in all other aspects.
 software: ''
 tactics: [TA0002]
 techniques: [T1059.003, T1078.002]

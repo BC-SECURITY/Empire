@@ -1,11 +1,9 @@
-# Needs Revisions
 name: Certify
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Certify is a C# tool to enumerate and abuse misconfigurations in Active
-  Directory Certificate Services (AD CS).
+description: This module leverages the Certify tool to enumerate and exploit misconfigurations in Active Directory Certificate Services (AD CS). It can identify vulnerable certificate templates, request certificates on behalf of users, and escalate privileges by abusing insecure enrollment permissions. Certificates obtained may be used for domain persistence or impersonation via PKINIT and Kerberos.
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1590.001, T1590.003, T1482, T1106]

@@ -1,10 +1,9 @@
-# Needs Revisions
 name: PowerShell
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Execute a PowerShell command.
+description: This module allows for execution of PowerShell commands through a C# assembly. It is a subset of the SharpSploit project. The module executes a C# AMSI and ETW bypass prior to execution of the provided command. Commnds are always returned using PowerShell's Out-String
 software: ''
 tactics: [TA0002]
 techniques: [T1059.001]

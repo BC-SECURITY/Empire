@@ -1,11 +1,10 @@
-# Needs Revisions
 name: RunCoff
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  This is a quick and dirty COFF loader (AKA Beacon Object Files).
+C# implementation of a COFF loader that provides compatability with Cobalt Strike Beacon Object Files. This allowsfor CS BOF files to be usedd in  outside frameworks. COFF loader allows for the execution of C/C++ programs as position independent code. The user must pass in the Format String, Entry Point and Arguments.
 software: ''
 tactics: [TA0002]
 techniques: [T1106, T1620]
