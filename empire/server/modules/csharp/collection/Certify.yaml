@@ -94,8 +94,8 @@ csharp:
         Active Directory Certificate Services (AD CS).
       Location: Certify\
       Language: CSharp
-  CompatibleDotNetVersions:
-    - Net40
+      CompatibleDotNetVersions:
+        - Net40
       ReferenceAssemblies:
         - Name: System.IdentityModel.dll
           Location: net40\System.IdentityModel.dll

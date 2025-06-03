@@ -23,7 +23,9 @@ options:
     type: file
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions: [Net35, Net40]
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -68,7 +70,9 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions: [Net35, Net40]
+      CompatibleDotNetVersions:
+        - Net35
+        - Net40
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

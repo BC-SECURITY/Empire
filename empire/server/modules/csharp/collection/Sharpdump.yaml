@@ -98,9 +98,9 @@ csharp:
       Description: SharpDump is a C# port of PowerSploit's Out-Minidump.ps1 functionality.
       Location: SharpDump\
       Language: CSharp
-    CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions:
+          - Net35
+          - Net40
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll
