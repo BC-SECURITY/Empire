@@ -29,6 +29,7 @@ csharp:
     using System;
     using System.IO;
     using SharpSploit.Execution;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -37,6 +38,7 @@ csharp:
             string result = ExecuteShellCommand(shellCommand);
             Console.WriteLine(result);
         }
+
         public static string ExecuteShellCommand(string shellCommand)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -50,6 +52,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

@@ -24,6 +24,7 @@ csharp:
   Code: |
     using System;
     using SharpSploit.Evasion;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -31,6 +32,7 @@ csharp:
             string result = BypassAmsi();
             Console.WriteLine(result);
         }
+
         public static string BypassAmsi()
         {
             try

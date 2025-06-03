@@ -44,6 +44,7 @@ csharp:
     using System.Linq;
     using SharpSploit.Generic;
     using SharpSploit.Execution;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -52,9 +53,11 @@ csharp:
             string typeName = args.Length > 1 ? args[1] : "";
             string methodName = args.Length > 2 ? args[2] : "";
             string parameters = args.Length > 3 ? args[3] : "";
+
             string result = ExecuteAssemblyMethod(assembly, typeName, methodName, parameters);
             Console.WriteLine(result);
         }
+
         public static string ExecuteAssemblyMethod(string assembly, string typeName, string methodName, string parameters = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -63,11 +66,13 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
+
                 try
                 {
                     object[] args = !string.IsNullOrEmpty(parameters)
                         ? parameters.Split(',').Select(p => (object)p).ToArray()
                         : default;
+
                     GenericObjectResult result = Assembly.AssemblyExecute(assembly, typeName, methodName, args);
                     stringWriter.WriteLine(result.ToString());
                 }
@@ -84,6 +89,7 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
+
                 return stringWriter.ToString();
             }
         }

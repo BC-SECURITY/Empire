@@ -44,6 +44,7 @@ csharp:
     using System.IO;
     using System.Linq;
     using CoffLoader;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -54,15 +55,19 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
+
                 try
                 {
                     string functionName = args[0];
                     string coffData = args[1];
                     string argDataHex = args[2];
+
                     // Console.WriteLine(functionName);
                     // Console.WriteLine(coffData);
                     // Console.WriteLine(argDataHex);
+
                     string result = CoffLoader.Program.RunCoff(functionName, coffData, argDataHex);
+
                     Console.WriteLine(result);
                     string output = CoffLoader.Program.BeaconGetOutputData();
                     Console.WriteLine(output);

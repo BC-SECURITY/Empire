@@ -79,6 +79,7 @@ csharp:
     using System.IO;
     using System.Reflection;
     using ProcessInjection;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -89,6 +90,7 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
+
                 try
                 {
                     ProcessInjection.ProcessInjection.Main(args);

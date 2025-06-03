@@ -37,15 +37,18 @@ csharp:
     using System.IO;
     using System.Security.Principal;
     using SharpSploit.Execution;
+
     public static class Program
     {
         public static void Main(string[] args)
         {
             string shellCommand = args.Length > 0 ? args[0] : "";
             string path = args.Length > 1 ? args[1] : "";
+
             string result = ExecuteShellCommandWithToken(shellCommand, path);
             Console.WriteLine(result);
         }
+
         public static string ExecuteShellCommandWithToken(string shellCommand, string path)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -59,6 +62,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

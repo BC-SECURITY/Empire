@@ -48,6 +48,7 @@ csharp:
     using System;
     using System.IO;
     using SharpSploit.Execution;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -56,9 +57,11 @@ csharp:
             string username = args.Length > 1 ? args[1] : "";
             string password = args.Length > 2 ? args[2] : "";
             string domain = args.Length > 3 ? args[3] : "";
+
             string result = ExecuteProcessWithCredentials(shellCommand, username, password, domain);
             Console.WriteLine(result);
         }
+
         public static string ExecuteProcessWithCredentials(string shellCommand, string username, string password, string domain = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -72,6 +75,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

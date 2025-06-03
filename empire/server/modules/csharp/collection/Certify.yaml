@@ -31,6 +31,7 @@ csharp:
     using System;
     using System.IO;
     using Certify;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -39,6 +40,7 @@ csharp:
             string result = ExecuteCertifyCommand(command);
             Console.WriteLine(result);
         }
+
         public static string ExecuteCertifyCommand(string command)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -47,10 +49,13 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
+
                 try
                 {
                     string[] args = command.Split(' ');
+
                     Info.ShowLogo();
+
                     var parsed = ArgumentParser.Parse(args);
                     if (!parsed.ParsedOk)
                     {
@@ -60,6 +65,7 @@ csharp:
                     {
                         var commandName = args.Length != 0 ? args[0] : "";
                         var commandFound = new CommandCollection().ExecuteCommand(commandName, parsed.Arguments);
+
                         if (!commandFound)
                         {
                             Info.ShowUsage();
@@ -76,6 +82,7 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
+
                 return stringWriter.ToString();
             }
         }

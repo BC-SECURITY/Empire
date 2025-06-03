@@ -34,15 +34,18 @@ csharp:
     using System;
     using System.IO;
     using SharpSploit.Persistence;
+
     public static class Program
     {
         public static void Main(string[] args)
         {
             string payload = args.Length > 0 ? args[0] : "";
             string fileName = args.Length > 1 ? args[1] : "";
+
             string result = InstallStartupPersistence(payload, fileName);
             Console.WriteLine(result);
         }
+
         public static string InstallStartupPersistence(string payload, string fileName = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -62,6 +65,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

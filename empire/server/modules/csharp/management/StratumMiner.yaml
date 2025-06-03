@@ -47,6 +47,7 @@ csharp:
     using System.IO;
     using System.Reflection;
     using DotNetStratumMiner;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -55,9 +56,11 @@ csharp:
             string username = args.Length > 1 ? args[1] : "";
             string password = args.Length > 2 ? args[2] : "";
             string threads = args.Length > 3 ? args[3] : "";
+
             string result = StartStratumMiner(url, username, password, threads);
             Console.WriteLine(result);
         }
+
         public static string StartStratumMiner(string url, string username, string password, string threads)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -79,15 +82,19 @@ csharp:
                         stringWriter.WriteLine("Failed to load: " + resourceName);
                         return null;
                     };
+
                     stringWriter.WriteLine("Starting Stratum Miner");
                     string[] minerArgs = { "-o " + url, "-u " + username, "-p " + password, "-t " + threads };
+
                     DotNetStratumMiner.Program.Main(minerArgs);
+
                     stringWriter.WriteLine("Stratum Miner execution finished.");
                 }
                 catch (Exception e)
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }

