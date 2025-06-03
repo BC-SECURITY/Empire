@@ -24,10 +24,18 @@ options:
     required: false
     value: '0'
     strict: false
-    suggested_values: ['0', '10', '20', '30', '60', '120']
+    suggested_values:
+      - '0'
+      - '10'
+      - '20'
+      - '30'
+      - '60'
+      - '120'
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions: [Net35, Net40]
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;

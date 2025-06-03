@@ -25,7 +25,9 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions: [Net35, Net40]
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
   Code: |
     using System;
     using SharpSploit.Execution;
@@ -42,7 +44,9 @@ csharp:
   ReferenceSourceLibraries:
     - Name: SharpSploit
       Location: SharpSploit\SharpSploit\
-      CompatibleDotNetVersions: [Net35, Net40]
+      CompatibleDotNetVersions:
+        - Net35
+        - Net40
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

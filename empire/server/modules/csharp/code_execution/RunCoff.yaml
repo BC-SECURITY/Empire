@@ -11,12 +11,13 @@ software: ''
 tactics: [TA0002]
 techniques: [T1106, T1620]
 background: true
-output_extension:
+output_extension: ''
 needs_admin: false
 opsec_safe: true
 language: csharp
 min_language_version: ''
-comments: [https://github.com/BC-SECURITY/CS_COFFLoader/tree/main]
+comments:
+  - https://github.com/BC-SECURITY/CS_COFFLoader/tree/main
 options:
   - name: File
     description: Beacon object file to load and execute.
@@ -38,7 +39,8 @@ options:
     value: ''
 csharp:
   UnsafeCompile: true
-  CompatibleDotNetVersions: [net40]
+  CompatibleDotNetVersions:
+    - net40
   Code: |
     using System;
     using System.IO;
@@ -91,7 +93,8 @@ csharp:
         .Net.
       Location: CS_COFFLoader\CoffLoader\
       Language: CSharp
-      CompatibleDotNetVersions: [net40]
+      CompatibleDotNetVersions:
+        - net40
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

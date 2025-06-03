@@ -41,7 +41,8 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions: [Net40]
+  CompatibleDotNetVersions:
+    - Net40
   Code: |
     using System;
     using System.IO;
@@ -104,7 +105,8 @@ csharp:
       Description: A .NET implementation of a stratum miner in C#.
       Location: DotNetStratumMiner\
       Language: CSharp
-      CompatibleDotNetVersions: [Net40]
+      CompatibleDotNetVersions:
+        - Net40
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

@@ -24,7 +24,9 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions: [Net35, Net40]
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
   Code: |
     using System;
     using System.IO;
