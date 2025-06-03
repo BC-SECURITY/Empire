@@ -3,12 +3,15 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This Module executes a provided shellcode file by creating a pinned area of memory within the current process. The provided file is expected to be in a binary format. The module modifies the memory with VirtualProtect to Read, Write, Execute. The module takes no command line inputs.        
+description: This Module executes a provided shellcode file by creating a pinned area
+  of memory within the current process. The provided file is expected to be in a binary
+  format. The module modifies the memory with VirtualProtect to Read, Write, Execute.
+  The module takes no command line inputs.
 software: ''
 tactics: [TA0002]
 techniques: [T1106, T1620]
 background: false
-output_extension: null
+output_extension:
 needs_admin: false
 opsec_safe: true
 language: csharp
@@ -20,14 +23,11 @@ options:
     type: file
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Execution;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -36,7 +36,6 @@ csharp:
             string result = ExecuteShellcode(shellcodeBase64);
             Console.WriteLine(result);
         }
-
         public static string ExecuteShellcode(string shellcodeBase64)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -57,7 +56,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -67,9 +65,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

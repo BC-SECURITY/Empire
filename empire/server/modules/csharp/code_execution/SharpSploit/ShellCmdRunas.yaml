@@ -3,7 +3,12 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Uses .NET's System.Diagnostics.StartProcess to create a child process of the current process to run the provided commands. Optionally, username and password can be provided to run the command as another user. This module does accept hashes as credentials.  Commands are executed from the current directory of the agent process. Provided commands are automatically appended with "cmd.exe /c" and this module is equivalent to csharp_code_execution_sharpsploit_shell in all other aspects.
+description: Uses .NET's System.Diagnostics.StartProcess to create a child process
+  of the current process to run the provided commands. Optionally, username and password
+  can be provided to run the command as another user. This module does accept hashes
+  as credentials. Commands are executed from the current directory of the agent process.
+  Provided commands are automatically appended with "cmd.exe /c" and this module is
+  equivalent to csharp_code_execution_sharpsploit_shell in all other aspects.
 software: ''
 tactics: [TA0002]
 techniques: [T1059.003, T1078.002]
@@ -40,14 +45,11 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Execution;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -56,11 +58,9 @@ csharp:
             string username = args.Length > 1 ? args[1] : "";
             string domain = args.Length > 2 ? args[2] : "";
             string password = args.Length > 3 ? args[3] : "";
-
             string result = ExecuteCmdProcessWithCredentials(shellCommand, username, domain, password);
             Console.WriteLine(result);
         }
-
         public static string ExecuteCmdProcessWithCredentials(string shellCommand, string username, string domain, string password)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -74,7 +74,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -84,7 +83,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions: null
+      CompatibleDotNetVersions:
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

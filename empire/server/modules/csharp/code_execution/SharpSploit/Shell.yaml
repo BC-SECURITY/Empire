@@ -3,7 +3,9 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Uses .NET's System.Diagnostics.StartProcess to create a child process of the current process to run the provided commands. Commands are executed from the current directory of the agent process. 
+description: Uses .NET's System.Diagnostics.StartProcess to create a child process
+  of the current process to run the provided commands. Commands are executed from
+  the current directory of the agent process.
 software: ''
 tactics: [TA0002]
 techniques: [T1059.003]
@@ -22,14 +24,11 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Execution;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -38,7 +37,6 @@ csharp:
             string result = ExecuteShellCommand(shellCommand);
             Console.WriteLine(result);
         }
-
         public static string ExecuteShellCommand(string shellCommand)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -52,7 +50,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }

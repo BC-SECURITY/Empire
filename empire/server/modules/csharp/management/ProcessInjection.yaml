@@ -24,19 +24,14 @@ options:
     required: true
     value: powershell
     strict: true
-    suggested_values:
-      - powershell
-      - csharp
-      - ironpython
+    suggested_values: [powershell, csharp, ironpython]
   - name: Obfuscate
     description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types. For powershell only.
     required: false
-    value: False
+    value: false
     strict: true
-    suggested_values:
-      - True
-      - False
+    suggested_values: [true, false]
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
       is True. For powershell only.
@@ -45,7 +40,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: 'mattifestation etw'
+    value: mattifestation etw
   - name: UserAgent
     description: User-agent string to use for the staging request (default, none,
       or other).
@@ -69,29 +64,21 @@ options:
     required: true
     value: both
     strict: true
-    suggested_values:
-      - x64
-      - x86
-      - both
+    suggested_values: [x64, x86, both]
   - name: Technique
     description: Technique to use for process injection.
     required: true
     value: Vanilla Process Injection
     strict: true
-    suggested_values:
-      - Vanilla Process Injection
-      - Dynamic Invoke
+    suggested_values: [Vanilla Process Injection, Dynamic Invoke]
 csharp:
   UnsafeCompile: true
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using System.Reflection;
     using ProcessInjection;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -102,7 +89,6 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-
                 try
                 {
                     ProcessInjection.ProcessInjection.Main(args);
@@ -129,9 +115,7 @@ csharp:
       Description: The program is designed to perform process injection.
       Location: ProcessInjection\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

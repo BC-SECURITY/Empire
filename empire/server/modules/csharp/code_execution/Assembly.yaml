@@ -3,12 +3,16 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Reflectively Loads the provided .NET assembly into memory and executes the Assembly through it's EntryPoint. The user provides all command line values for the assembly. This module can only execute the EntryPoint of the assembly and no other Assembly methods. Assenbly is executed fully in memory without touching disk.  
+description: Reflectively Loads the provided .NET assembly into memory and executes
+  the Assembly through it's EntryPoint. The user provides all command line values
+  for the assembly. This module can only execute the EntryPoint of the assembly and
+  no other Assembly methods. Assembly is executed fully in memory without touching
+  disk.
 software: ''
 tactics: [TA0002, TA0005]
 techniques: [T1620]
 background: false
-output_extension: null
+output_extension:
 needs_admin: false
 opsec_safe: true
 language: csharp
@@ -24,27 +28,22 @@ options:
     value: ''
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using System.Linq;
     using System.Collections.Generic;
     using SharpSploit.Execution;
-
     public static class Program
     {
         public static void Main(string[] args)
         {
             string assembly = args.Length > 0 ? args[0] : "";
             string parameters = args.Length > 1 ? args[1] : "";
-
             string result = ExecuteAssembly(assembly, parameters);
             Console.WriteLine(result);
         }
-
         public static string ExecuteAssembly(string assembly, string parameters = "")
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -53,7 +52,6 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-
                 try
                 {
                     string[] args = SplitCommandLine(parameters).ToArray();
@@ -72,30 +70,24 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-
                 return stringWriter.ToString();
             }
         }
-
         private static IEnumerable<string> SplitCommandLine(string commandLine)
         {
             bool inQuotes = false;
-
             return commandLine.Split(c =>
             {
                 if (c == '\"' || c == '\'')
                     inQuotes = !inQuotes;
-
                 return !inQuotes && c == ' ';
             })
             .Select(arg => arg.Trim().TrimMatchingQuotes('\"').TrimMatchingQuotes('\''))
             .Where(arg => !string.IsNullOrEmpty(arg));
         }
-
         private static IEnumerable<string> Split(this string str, Func<char, bool> controller)
         {
             int nextPiece = 0;
-
             for (int c = 0; c < str.Length; c++)
             {
                 if (controller(str[c]))
@@ -104,10 +96,8 @@ csharp:
                     nextPiece = c + 1;
                 }
             }
-
             yield return str.Substring(nextPiece);
         }
-
         private static string TrimMatchingQuotes(this string input, char quote)
         {
             if ((input.Length >= 2) &&
@@ -123,7 +113,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions: null
+      CompatibleDotNetVersions:
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

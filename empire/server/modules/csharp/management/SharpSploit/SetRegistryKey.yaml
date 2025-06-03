@@ -3,7 +3,10 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Sets a value into the registry using SharpSploit to manipulate the registry hive. Requires the full registry key path and the value to enter. Values of the key will be entered exactly as provided so ensure they are in the correct format their data type. 
+description: Sets a value into the registry using SharpSploit to manipulate the registry
+  hive. Requires the full registry key path and the value to enter. Values of the
+  key will be entered exactly as provided so ensure they are in the correct format
+  their data type.
 software: ''
 tactics: [TA0005]
 techniques: [T1112]
@@ -28,25 +31,20 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net35
-    - Net40
+  CompatibleDotNetVersions: [Net35, Net40]
   Code: |
     using System;
     using System.IO;
     using SharpSploit.Enumeration;
-
     public static class Program
     {
         public static void Main(string[] args)
         {
             string keyPath = args.Length > 0 ? args[0] : "";
             string valueData = args.Length > 1 ? args[1] : "";
-
             string result = SetRegistryKey(keyPath, valueData);
             Console.WriteLine(result);
         }
-
         public static string SetRegistryKey(string keyPath, string valueData)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -54,7 +52,6 @@ csharp:
                 try
                 {
                     bool success = Registry.SetRegistryKey(keyPath, valueData);
-
                     if (success)
                     {
                         stringWriter.WriteLine($"Successfully set registry key: {keyPath} with value: {valueData}");
@@ -68,7 +65,6 @@ csharp:
                 {
                     stringWriter.WriteLine(e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
                 }
-
                 return stringWriter.ToString();
             }
         }
@@ -78,9 +74,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net35
-        - Net40
+      CompatibleDotNetVersions: [Net35, Net40]
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

@@ -3,7 +3,11 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This module leverages the Certify tool to enumerate and exploit misconfigurations in Active Directory Certificate Services (AD CS). It can identify vulnerable certificate templates, request certificates on behalf of users, and escalate privileges by abusing insecure enrollment permissions. Certificates obtained may be used for domain persistence or impersonation via PKINIT and Kerberos.
+description: This module leverages the Certify tool to enumerate and exploit misconfigurations
+  in Active Directory Certificate Services (AD CS). It can identify vulnerable certificate
+  templates, request certificates on behalf of users, and escalate privileges by abusing
+  insecure enrollment permissions. Certificates obtained may be used for domain persistence
+  or impersonation via PKINIT and Kerberos.
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1590.001, T1590.003, T1482, T1106]
@@ -22,13 +26,11 @@ options:
     suggested_values: []
 csharp:
   UnsafeCompile: false
-  CompatibleDotNetVersions:
-    - Net40
+  CompatibleDotNetVersions: [Net40]
   Code: |
     using System;
     using System.IO;
     using Certify;
-
     public static class Program
     {
         public static void Main(string[] args)
@@ -37,7 +39,6 @@ csharp:
             string result = ExecuteCertifyCommand(command);
             Console.WriteLine(result);
         }
-
         public static string ExecuteCertifyCommand(string command)
         {
             using (StringWriter stringWriter = new StringWriter())
@@ -46,13 +47,10 @@ csharp:
                 TextWriter originalError = Console.Error;
                 Console.SetOut(stringWriter);
                 Console.SetError(stringWriter);
-
                 try
                 {
                     string[] args = command.Split(' ');
-
                     Info.ShowLogo();
-
                     var parsed = ArgumentParser.Parse(args);
                     if (!parsed.ParsedOk)
                     {
@@ -62,7 +60,6 @@ csharp:
                     {
                         var commandName = args.Length != 0 ? args[0] : "";
                         var commandFound = new CommandCollection().ExecuteCommand(commandName, parsed.Arguments);
-
                         if (!commandFound)
                         {
                             Info.ShowUsage();
@@ -79,19 +76,17 @@ csharp:
                     Console.SetOut(originalOutput);
                     Console.SetError(originalError);
                 }
-
                 return stringWriter.ToString();
             }
         }
     }
   ReferenceSourceLibraries:
     - Name: Certify
-      Description: Certify is a C# tool to enumerate and abuse misconfigurations
-        in Active Directory Certificate Services (AD CS).
+      Description: Certify is a C# tool to enumerate and abuse misconfigurations in
+        Active Directory Certificate Services (AD CS).
       Location: Certify\
       Language: CSharp
-      CompatibleDotNetVersions:
-        - Net40
+      CompatibleDotNetVersions: [Net40]
       ReferenceAssemblies:
         - Name: System.IdentityModel.dll
           Location: net40\System.IdentityModel.dll
