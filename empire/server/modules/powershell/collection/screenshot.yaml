@@ -7,8 +7,7 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Takes a screenshot of the current desktop and returns the output as
-  a .PNG.
+description: Captures a screenshot of the target user's desktop. Useful for spying on user activity or capturing sensitive information displayed on the screen.
 software: ''
 tactics: [TA0009]
 techniques: [T1113]

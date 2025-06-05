@@ -7,7 +7,12 @@ authors:
   - name: Laurent Kempe
     handle: ''
     link: ''
-description: 'Upload a file to dropbox '
+description: 'Uploads files to Dropbox via API for controlled exfiltration or staging.  
+  Key features - 
+  - Uses Dropbox's v2 API with OAuth 2.0 (Bearer token) for authentication  
+  - Supports file overwrite/autorename (configurable via API parameters)  
+  - Operates over HTTPS (blends with legitimate traffic)  
+  - Preserves original timestamps and metadata'
 software: ''
 tactics: [TA0010]
 techniques: [T1567.002]

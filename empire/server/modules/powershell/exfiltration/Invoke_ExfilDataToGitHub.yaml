@@ -4,8 +4,12 @@ authors:
   - name: Nga Hoang
     handle: ''
     link: ''
-description: Use this module to exfil files and data to GitHub. Requires the pre-generation
-  of a GitHub Personal Access Token.
+description: Exfiltrates data to GitHub repositories via authenticated API calls.  
+  Key features -  
+  - Uses GitHub's REST API with Personal Access Tokens (PAT) for authentication  
+  - Supports both file uploads (`LocalFilePath`) and direct data insertion (`Data` parameter)  
+  - Allows recursive directory uploads and file filtering (e.g., `*.pdf`)  
+  - Base64-encoded PAT for minimal credential exposure 
 software: ''
 tactics: [TA0010]
 techniques: [T1567.001]
