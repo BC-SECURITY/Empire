@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Creates a process through the WIN32 API utilizing the specified impersonated
+description: |
+  Creates a process through the WIN32 API utilizing the specified impersonated
   token. This enables the ability to spawn a process under a user without the need
   to know the targeted users credentials. Requires SeAssignPrimaryTokenPrivilege,
   typically only available to administrative users.

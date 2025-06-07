@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This module installs a low-level keyboard hook using SetWindowsHookEx
+description: |
+  This module installs a low-level keyboard hook using SetWindowsHookEx
   to capture keystrokes system-wide, including foreground window titles and modifier
   key states. It logs all keys pressed, applies shift/caps-aware formatting, and optionally
   runs for a specified number of seconds before cleanly exiting. Keystrokes are printed

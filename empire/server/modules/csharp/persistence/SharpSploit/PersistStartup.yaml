@@ -4,7 +4,11 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Installs a payload into the current users startup folder. The payload will be entered into the file as text and typically takes the form of a batch file for with a powershell command to execute. THe file is most often placed as a .bat. The filetype must be directly executable.
+  Installs a payload into the current users startup folder. 
+  The payload will be entered into the file as text and typically 
+  takes the form of a batch file for with a powershell command to 
+  execute. THe file is most often placed as a .bat. The filetype 
+  must be directly executable.
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]

@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Reflectively Loads the provided .NET assembly into memory and executes
+description: |
+  Reflectively Loads the provided .NET assembly into memory and executes
   the Assembly through it's EntryPoint. The user provides all command line values
   for the assembly. This module can only execute the EntryPoint of the assembly and
   no other Assembly methods. Assembly is executed fully in memory without touching

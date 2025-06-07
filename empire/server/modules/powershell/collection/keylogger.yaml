@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-KeyStrokes
 authors:
   - name: ''
@@ -10,7 +9,8 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Captures and logs keystrokes, active window titles, and timestamps on the target system. 
+description: |
+  Captures and logs keystrokes, active window titles, and timestamps on the target system. 
   The keystrokes are stored in a file named `keystrokes.txt` within the path `Empire/downloads/<AgentName>/`.
   This module can be used to collect sensitive input such as passwords, messages, or command-line usage over time.
   It supports optional sleep delay between key reads to reduce CPU usage and increase stealth. 

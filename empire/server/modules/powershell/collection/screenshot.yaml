@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-Screenshot
 authors:
   - name: ''
@@ -7,7 +6,9 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Captures a screenshot of the target user's desktop. Useful for spying on user activity or capturing sensitive information displayed on the screen.
+description: |
+  Captures a screenshot of the target user's desktop. Useful for spying on user activity 
+  or capturing sensitive information displayed on the screen.
 software: ''
 tactics: [TA0009]
 techniques: [T1113]

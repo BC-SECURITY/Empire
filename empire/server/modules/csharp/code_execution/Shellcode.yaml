@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This Module executes a provided shellcode file by creating a pinned area
+description: |
+  This Module executes a provided shellcode file by creating a pinned area
   of memory within the current process. The provided file is expected to be in a binary
   format. The module modifies the memory with VirtualProtect to Read, Write, Execute.
   The module takes no command line inputs.

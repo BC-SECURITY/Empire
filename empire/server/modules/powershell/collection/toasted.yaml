@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-CredentialPhisher
 authors:
   - name: Powershell script by @foxit
@@ -7,7 +6,8 @@ authors:
   - name: Empire implementation by @Quickbreach
     handle: ''
     link: ''
-description: Displays a native-looking Windows toast notification that, when clicked by the user,
+description: |
+  Displays a native-looking Windows toast notification that, when clicked by the user,
   opens a credential prompt impersonating a system or application message.
   The goal is to phish user credentials by mimicking legitimate Windows dialogs,
   such as those related to system updates or restart prompts.

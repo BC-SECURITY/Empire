@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Sets a value into the registry on a remote system. Requires the full
+description: |
+  Sets a value into the registry on a remote system. Requires the full
   registry key path and the value to enter. Values of the key will be entered exactly
   as provided so ensure they are in the correct format their data type. Uses the current
   processes user context for accessing the remote computer.

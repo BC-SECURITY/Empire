@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-DropboxUpload
 authors:
   - name: kdick@tevora.com
@@ -7,12 +6,12 @@ authors:
   - name: Laurent Kempe
     handle: ''
     link: ''
-description: 'Uploads files to Dropbox via API for controlled exfiltration or staging.  
-  Key features - 
-  - Uses Dropbox's v2 API with OAuth 2.0 (Bearer token) for authentication  
-  - Supports file overwrite/autorename (configurable via API parameters)  
-  - Operates over HTTPS (blends with legitimate traffic)  
-  - Preserves original timestamps and metadata'
+description: |
+  Uploads files to Dropbox via the v2 API using OAuth 2.0 (Bearer token) 
+  for authentication, supporting controlled exfiltration or staging. 
+  Allows file overwrite or autorename through API parameters, operates 
+  over HTTPS to blend with legitimate traffic, and preserves original 
+  file timestamps and metadata.
 software: ''
 tactics: [TA0010]
 techniques: [T1567.002]

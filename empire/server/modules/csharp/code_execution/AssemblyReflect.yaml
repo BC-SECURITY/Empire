@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Reflectively loads an assembly into memory using the standard Assembly.Load
+description: |
+  Reflectively loads an assembly into memory using the standard Assembly.Load
   method for .NET. This module allows for the user to provide the TypeName which normally
   takes the format of <Namespace>.<Class>. The user also provide the Method name and
   command line arguments. Assemblies will be scanned by AMSI and are executed entirely

@@ -1,14 +1,13 @@
-# Needs Revisions
 name: Invoke-Script
 authors:
   - name: ''
     handle: '@JoelGMSec'
     link: ''
-description:   PowerShell-based ransomware simulator with C2 exfiltration capabilities.  
-  Primary functions - 
-  - File encryption/decryption (AES-256) with recovery key support  
-  - Optional C2 data exfiltration during encryption  
-  - Demonstration mode (wallpaper change + ransom note popup)
+description: |
+  PowerShell-based ransomware simulator that encrypts and decrypts files 
+  using AES-256 with optional recovery key support. Supports C2 exfiltration 
+  of data during encryption and includes a demonstration mode that changes 
+  the desktop wallpaper and displays a ransom note popup.
 software: ''
 tactics: [TA0040]
 techniques: [T1486, T1491.001, T1140, T1083]

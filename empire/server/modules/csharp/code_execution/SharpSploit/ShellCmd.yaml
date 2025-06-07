@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Uses .NET's System.Diagnostics.StartProcess to create a child process
+description: |
+  Uses .NET's System.Diagnostics.StartProcess to create a child process
   of the current process to run the provided commands. Commands are executed from
   the current directory of the agent process. Provided commands are automatically
   appended with "cmd.exe /c" and this module is equivalent to csharp_code_execution_sharpsploit_shell

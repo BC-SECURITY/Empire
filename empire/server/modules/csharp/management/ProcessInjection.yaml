@@ -4,7 +4,10 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  This module integrates 3xpl01tc0d3r's process injection project.including Vanilla Injection, DLL Injection, Process Hollowing, and APC Queue Injection. It supports both P/Invoke and D/Invoke for calling Windows API functions. The module allows a user to inject a multi_launcher stager payload into the targeted process. It does not support user defined payloads at this time.
+  This module integrates 3xpl01tc0d3r's process injection project, including Vanilla Injection, 
+  DLL Injection, Process Hollowing, and APC Queue Injection. It supports both P/Invoke and 
+  D/Invoke for calling Windows API functions. The module allows a user to inject a multi_launcher 
+  stager payload into the targeted process. It does not support user defined payloads at this time.
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1055.001, T1055.004, T1055.012]

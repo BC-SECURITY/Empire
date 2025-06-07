@@ -4,7 +4,8 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: This module uses SharpDump which is a C# of the PowerShell Out-MiniDump.
+description: | 
+  This module uses SharpDump which is a C# of the PowerShell Out-MiniDump.
   This module uses P/Invoke to call MiniDumpWriteDump from dbghelp.dll and create
   a full-memory minidump of a target process such as lsass.exe. The resulting dump
   is compressed and saved to disk as a .bin file in the system's temp directory.
