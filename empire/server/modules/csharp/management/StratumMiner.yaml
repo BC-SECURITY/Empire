@@ -1,11 +1,10 @@
-# Needs Revisions
 name: StratumMiner
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  A .NET implementation of a stratum miner in C#.
+  A .NET implementation of a stratum miner in C# which can be reflectively loaded. Intended for demonstration of cryptojacking attacks during an assessment. Will cause a spike in resource usage and may cause temperature rises in hardware if left running for prolonged periods.
 software: ''
 tactics: [TA0040]
 techniques: [T1496.001]

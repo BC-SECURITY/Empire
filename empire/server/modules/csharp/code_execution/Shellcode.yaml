@@ -1,16 +1,17 @@
-# Needs Revisions
 name: Shellcode
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Executes a specified shellcode byte array by copying it to pinned memory,
-  modifying the memory permissions, and executing.
+description: This Module executes a provided shellcode file by creating a pinned area
+  of memory within the current process. The provided file is expected to be in a binary
+  format. The module modifies the memory with VirtualProtect to Read, Write, Execute.
+  The module takes no command line inputs.
 software: ''
 tactics: [TA0002]
 techniques: [T1106, T1620]
 background: false
-output_extension: null
+output_extension:
 needs_admin: false
 opsec_safe: true
 language: csharp

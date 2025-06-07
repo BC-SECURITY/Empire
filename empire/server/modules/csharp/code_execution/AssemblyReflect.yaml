@@ -1,15 +1,18 @@
-# Needs Revisions
 name: AssemblyReflect
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Execute a dotnet Assembly method using reflection.
+description: Reflectively loads an assembly into memory using the standard Assembly.Load
+  method for .NET. This module allows for the user to provide the TypeName which normally
+  takes the format of <Namespace>.<Class>. The user also provide the Method name and
+  command line arguments. Assemblies will be scanned by AMSI and are executed entirely
+  in memory.
 software: ''
 tactics: [TA0002]
 techniques: [T1620]
 background: false
-output_extension: null
+output_extension: ''
 needs_admin: false
 opsec_safe: true
 language: csharp
@@ -20,7 +23,7 @@ options:
     required: true
     type: file
   - name: Parameters
-    description: The command-line parameters to pass to the assembly's EntryPoint.
+    description: The command-line parameters to pass to the assembly's Method.
     required: false
     value: ''
   - name: TypeName
@@ -98,7 +101,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions: null
+      CompatibleDotNetVersions: ''
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

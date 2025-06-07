@@ -1,10 +1,12 @@
-# Needs Revisions
 name: ShellRunAs
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Execute a Shell command using CreateProcess as a specified user.
+description: Uses .NET's System.Diagnostics.StartProcess to create a child process
+  of the current process to run the provided commands. Optionally, username and password
+  can be provided to run the command as another user. This module does accept hashes
+  as credentials.  Commands are executed from the current directory of the agent process.
 software: ''
 tactics: [TA0002]
 techniques: [T1059.003, T1078.002]
@@ -85,7 +87,7 @@ csharp:
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
       Language: CSharp
-      CompatibleDotNetVersions: null
+      CompatibleDotNetVersions: ''
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll
