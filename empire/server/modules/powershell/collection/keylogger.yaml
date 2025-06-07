@@ -10,8 +10,11 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Logs keys pressed, time and the active window (when changed) to the
-  keystrokes.txt file. This file is located in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.
+description: Captures and logs keystrokes, active window titles, and timestamps on the target system. 
+  The keystrokes are stored in a file named `keystrokes.txt` within the path `Empire/downloads/<AgentName>/`.
+  This module can be used to collect sensitive input such as passwords, messages, or command-line usage over time.
+  It supports optional sleep delay between key reads to reduce CPU usage and increase stealth. 
+  This technique is often used for credential access, user monitoring, or activity logging during post-exploitation.
 software: ''
 tactics: [TA0006, TA0009]
 techniques: [T1056.001]

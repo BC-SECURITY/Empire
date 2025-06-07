@@ -4,8 +4,14 @@ authors:
   - name: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
     handle: ''
     link: ''
-description: This module will generate traffic on a provided range of ports and supports
-  both TCP and UDP. Useful to identify direct egress channels.
+description: Tests network egress filtering by attempting outbound connections across specified ports/protocols (TCP/UDP).
+  Key features -
+  - Identifies allowed/blocked egress paths for C2 communication
+  - Supports port ranges (e.g., 22-25) and custom delays between tests
+  - Useful for -
+    * Bypassing firewall restrictions
+    * Identifying accidental port openings
+    * Planning exfiltration routes.
 software: ''
 tactics: [TA0007]
 techniques: [T1016.001]
