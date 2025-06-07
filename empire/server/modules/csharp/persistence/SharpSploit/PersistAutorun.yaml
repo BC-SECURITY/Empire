@@ -4,7 +4,8 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Installs an autorun value in HKCU or HKLM to execute a payload. Once the key has been installed the compromised host will execute the designated program upon login. TargetHive specifies whether to modify the userland registry key or elevated Machine key.
+  Installs an autorun value in HKCU or HKLM to execute a payload. Once the key has been installed, the compromised host will execute the designated program upon login. TargetHive specifies whether to modify the userland registry key or elevated Machine key.
+software: ''
 tactics: [TA0003]
 techniques: [T1547.001]
 background: false
@@ -21,7 +22,7 @@ options:
     strict: true
     suggested_values: [CurrentUser, LocalMachine]
   - name: Name
-    description: Name for the registy value.
+    description: Name for the registry value.
     required: true
     value: Updater
     strict: false
