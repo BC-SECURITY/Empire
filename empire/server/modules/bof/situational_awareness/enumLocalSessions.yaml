@@ -1,10 +1,11 @@
-# Needs Revisions
 name: enumLocalSessions
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Enumerate currently attached user sessions both local and over RDP.
+description: |
+  Enumerates active user sessions on the local system, including interactive logins and RDP connections. 
+  Useful for identifying which users are currently logged in and from where.
 software: ''
 tactics: [TA0007]
 techniques: [T1087.001]
