@@ -1,11 +1,9 @@
-# Needs Revisions
 name: netshares
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: List shares on local or remote computer and gets more info then standard
-  netshares(requires admin).
+description: Enumerates network shares on the specified or local computer with detailed information beyond standard net share commands. Provides share names, descriptions, permissions, and access details useful for identifying accessible resources and potential data exfiltration paths.
 software: ''
 tactics: [TA0007]
 techniques: [T1135]
