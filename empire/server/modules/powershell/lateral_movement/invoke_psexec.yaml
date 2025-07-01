@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Invoke-PsExec
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Executes a stager on remote hosts using PsExec type functionality.
+description: |
+  Executes commands or Empire stagers on remote systems using a modified implementation 
+  of the PsExec technique. Unlike Sysinternals PsExec, this PowerShell implementation 
+  creates a service on the remote system that executes the specified payload, then 
+  removes the service to eliminate evidence of execution.
+  
+  The module requires administrative credentials on the target system and uses SMB 
+  for connectivity, operating over standard ports (445/TCP). It supports both plaintext 
+  credentials and NTLM hashes (pass-the-hash) for authentication.
+  
+  While effective for lateral movement, this technique has significant OPSEC considerations 
+  as it creates artifacts including Windows service creation events, service binary writes, 
+  and potentially suspicious process execution chains. Modern EDR and monitoring solutions 
+  often specifically watch for PsExec-style execution patterns.
 software: S0029
 tactics: [TA0008]
 techniques: [T1569.002, T1021.002]

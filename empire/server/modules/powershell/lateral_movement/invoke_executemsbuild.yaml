@@ -1,11 +1,22 @@
-# Needs Revisions
 name: Invoke-ExecuteMSBuild
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module utilizes WMI and MSBuild to compile and execute an xml file
-  containing an Empire launcher
+description: |
+  Executes PowerShell commands or Empire stagers on remote targets using MSBuild, 
+  Microsoft's build engine for .NET applications. This technique leverages MSBuild's 
+  ability to compile and execute inline C# code from XML project files, bypassing 
+  application allowlisting solutions that may block PowerShell.exe but trust MSBuild.exe.
+  
+  The module creates a specially crafted XML file that embeds the payload within 
+  an MSBuild project, then remotely triggers MSBuild to process this file, executing 
+  the payload in memory. Since MSBuild is a trusted Microsoft-signed binary 
+  (LOLBins technique), this execution method often evades traditional detection 
+  methods that focus on suspicious process lineage.
+  
+  Best used in environments where PowerShell execution is monitored or restricted
+  but MSBuild.exe is available and not heavily monitored.
 software: ''
 tactics: [TA0002, TA0005, TA0008]
 techniques: [T1127.001, T1047, T1021.006]

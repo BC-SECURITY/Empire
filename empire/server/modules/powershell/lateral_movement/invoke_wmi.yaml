@@ -1,10 +1,24 @@
-# Needs Revisions
 name: Invoke-WMI
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Executes a stager on remote hosts using WMI.
+description: |
+  Executes PowerShell commands or Empire stagers on remote systems using Windows 
+  Management Instrumentation (WMI). WMI offers a stealthier alternative to other 
+  lateral movement techniques like PsExec, as it doesn't require creating a service 
+  on the target machine.
+  
+  This module leverages the WMI Win32_Process class to create processes remotely 
+  and supports both plaintext credentials and pass-the-hash techniques for authentication. 
+  WMI execution typically only requires administrative privileges on the target 
+  and operates over standard DCOM/RPC ports (typically 135/TCP), making it effective 
+  even in environments with limited outbound connectivity.
+  
+  While WMI execution is more subtle than service-based techniques, modern EDR 
+  solutions often monitor WMI activity for process creation events. This technique 
+  leaves artifacts in WMI event logs and process creation logs that can be detected 
+  by security monitoring systems specifically watching for this attack vector.
 software: ''
 tactics: [TA0002, TA0008]
 techniques: [T1047, T1021.006]

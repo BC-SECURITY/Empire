@@ -1,11 +1,25 @@
-# Needs Revisions
 name: Invoke-WMIDebugger
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Uses WMI to set the debugger for a target binary on a remote machine
-  to be cmd.exe or a stager.
+description: |
+  Achieves persistence and code execution by manipulating the Windows Image File 
+  Execution Options (IFEO) debugger registry key via WMI. This technique sets a 
+  debugger for a specified application that will execute the attacker's payload 
+  whenever the targeted application is launched.
+  
+  The module uses WMI to remotely modify the registry on the target system, setting 
+  up the payload as a "debugger" for a legitimate application. When a user runs the 
+  targeted application, Windows will instead execute the payload first.
+  
+  This provides a stealthy persistence mechanism that doesn't require scheduled tasks, 
+  services, or startup items. It's particularly effective for maintaining access when 
+  the targeted application is commonly used or automatically started on the system.
+  
+  The technique can be detected through registry monitoring for changes to IFEO keys 
+  or through process ancestry analysis showing unexpected parent-child relationships 
+  when the targeted application is launched.
 software: ''
 tactics: [TA0002, TA0008, TA0005]
 techniques: [T1047, T1021.006]
