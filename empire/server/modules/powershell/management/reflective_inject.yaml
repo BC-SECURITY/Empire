@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Invoke-PSInject
+name: Invoke-ReflectivePEInjection
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
@@ -13,8 +12,20 @@ authors:
   - name: james fitts
     handle: ''
     link: ''
-description: Utilizes Powershell to to inject a Stephen Fewer formed ReflectivePick
-  which executes PS code from memory in a remote process
+description: |
+  Executes arbitrary DLLs in memory using reflective injection techniques without 
+  touching the disk or using the standard Windows loader. This module allows operators 
+  to load and execute compiled tools directly into process memory, bypassing file-based 
+  detection mechanisms.
+  
+  Reflective injection works by implementing a custom PE loader that handles memory 
+  allocation, imports resolution, and relocation fixing, enabling a DLL to load itself 
+  into memory from a raw byte array rather than from disk. This allows sophisticated 
+  post-exploitation tools to run without creating filesystem artifacts.
+  
+  The module supports injecting into the current process or a remote process, allowing 
+  operators to hide malicious activity under legitimate processes. It can execute both 
+  custom and standard DLLs with export functions.
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1055.001]

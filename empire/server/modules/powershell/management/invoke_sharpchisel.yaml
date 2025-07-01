@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-SharpChiselClient
 authors:
   - name: ''
@@ -7,9 +6,26 @@ authors:
   - name: ''
     handle: '@shantanukhande'
     link: ''
-description: Chisel is a fast TCP tunnel, transported over HTTP, secured via SSH.
-  Written in Go (golang). Chisel is mainly useful for passing through firewalls,
-  though it can also be used to provide a secure endpoint into your network.
+description: |
+  Establishes a reverse tunneling capability using SharpChisel, a C# implementation 
+  of the Chisel tunneling tool. This module creates encrypted tunnels between the 
+  compromised system and attacker infrastructure, enabling access to otherwise 
+  unreachable network segments or services.
+  
+  The tunnel operates over HTTP/HTTPS, allowing traffic to blend with legitimate 
+  web traffic and bypass many firewall restrictions. SharpChisel supports various 
+  tunnel types including SOCKS proxies, remote port forwarding, and local port 
+  forwarding to adapt to different network pivoting requirements.
+  
+  This technique is particularly valuable for accessing internal services from 
+  external positions, bypassing network segmentation, or establishing persistent 
+  access channels that don't rely on the Empire agent itself. The module executes 
+  SharpChisel in memory using .NET reflection, avoiding disk writes that might 
+  trigger file-based detections.
+  
+  The encrypted nature of the tunnel helps evade deep packet inspection, though 
+  sustained connections to external servers may be flagged by network monitoring 
+  tools tracking long-lived sessions.
 software: ''
 tactics: [TA0011]
 techniques: [T1090]
