@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-WireTap
 authors:
   - name: ''
@@ -7,10 +6,15 @@ authors:
   - name: ''
     handle: '@S3cur3Th1sSh1t'
     link: https://twitter.com/ShitSecure
-description: "WireTap is a .NET 4.0 project to consolidate several functions used
-  to interact with a user's hardware, including: Screenshots (Display + WebCam Imaging),
-  Audio (Both line-in and line-out), Keylogging, & Activate voice recording when
-  the user says a keyword phrase. Note: Only one method can be ran at a time."
+description: |
+  Comprehensive hardware surveillance tool that consolidates multiple surveillance functions
+  into a single .NET 4.0 application. The module can capture screenshots (both display and
+  webcam), record audio from microphone and system speakers, perform keylogging, and
+  activate voice recording when specific keywords are detected. Uses Windows API calls
+  and DirectX components to interact with hardware devices directly. Supports configurable
+  recording durations, keyword-triggered audio capture, and real-time keystroke monitoring.
+  The tool operates at the system level to bypass application-level restrictions and can
+  capture sensitive information including passwords, conversations, and visual data.
 software: ''
 tactics: [TA0006, TA0009]
 techniques: [T1123, T1125, T1056.001]

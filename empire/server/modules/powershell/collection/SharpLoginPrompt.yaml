@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-SharpLoginPrompt
 authors:
   - name: ''
@@ -7,10 +6,15 @@ authors:
   - name: ''
     handle: '@S3cur3Th1sSh1t'
     link: https://twitter.com/ShitSecure
-description: This Program creates a login prompt to gather username and password
-  of the current user. This project allows red team to phish username and password
-  of the current user without touching lsass and having administrator credentials
-  on the system.
+description: |
+  Creates a deceptive Windows credential prompt to harvest user credentials through social
+  engineering. The module displays a legitimate-looking Windows authentication dialog
+  that requests username and password input, mimicking the native Windows security
+  interface. Unlike traditional credential dumping techniques that require administrative
+  privileges and access to LSASS, this approach works without elevated permissions by
+  exploiting user trust in familiar system dialogs. The prompt can be customized with
+  custom headers and subheaders to create context-specific scenarios (e.g., system
+  updates, security scans, or application access). 
 software: ''
 tactics: [TA0006, TA0009]
 techniques: [T1056.002]
@@ -28,13 +32,13 @@ options:
     required: true
     value: ''
   - name: Header
-    description: Customized heading for login prompt.
+    description: Custom header text displayed above the credential prompt.
     required: false
-    value: ''
+    value: 'System Security Update Required'
   - name: Subheader
-    description: Customized subheading for prompt.
+    description: Custom subheader text displayed below the main header.
     required: false
-    value: ''
+    value: 'Please enter your credentials to continue'
 script_path: collection/Invoke-SharpLoginPrompt.ps1
 script_end: Invoke-SharpLoginPrompt -Command "{{ PARAMS }}"
 advanced:
