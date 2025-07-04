@@ -1,12 +1,21 @@
-# Needs Revisions
 name: Invoke-RIDHijacking
 authors:
-  - name: Sebastian Castro @r4wd3r
-    handle: ''
+  - name: Sebastian Castro
+    handle: '@r4wd3r'
     link: ''
-description: Runs Invoke-RIDHijacking. Allows setting desired privileges to an existent
-  account by modifying the Relative Identifier value copy used to create the access
-  token. This module needs administrative privileges.
+description: |
+  Modifies the Relative Identifier (RID) of an existing user account to grant it administrative 
+  privileges by changing the RID value used to create access tokens. This technique allows 
+  operators to elevate a regular user account to have the same privileges as the built-in 
+  Administrator account (RID 500) without modifying group memberships.
+  
+  RID hijacking is a sophisticated privilege escalation technique that works by directly 
+  modifying the SAM database to change how Windows interprets user privileges. This approach 
+  bypasses traditional group-based access control and can be used to create hidden administrative 
+  accounts that appear as regular users to most security tools.
+  
+  This technique requires administrative privileges to implement and creates persistent 
+  privilege escalation that survives reboots and password changes.
 software: ''
 tactics: [TA0004]
 techniques: [T1098]
@@ -22,23 +31,23 @@ comments:
   - https://csl.com.co/rid-hijacking/
 options:
   - name: RID
-    description: RID to set to the specified account. Default 500.
+    description: RID value to assign to the target account (default: 500 for Administrator privileges).
     required: false
     value: '500'
   - name: User
-    description: User to set the defined RID.
+    description: Username of the account to modify (leave blank if using UseGuest).
     required: false
     value: ''
   - name: UseGuest
-    description: Switch. Set the defined RID to the Guest account.
+    description: Set the specified RID to the Guest account (set to True to enable).
     required: false
     value: ''
   - name: Password
-    description: Password to set to the defined account.
+    description: New password to set for the target account.
     required: false
     value: ''
   - name: Enable
-    description: Enable the defined account.
+    description: Enable the target account after modification (set to True to enable).
     required: false
     value: 'False'
     strict: true
