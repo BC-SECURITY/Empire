@@ -1,11 +1,15 @@
-# Needs Revisions
 name: Get-GPPPassword
 authors:
   - name: ''
     handle: '@obscuresec'
     link: ''
-description: Retrieves the plaintext password and other information for accounts
-  pushed through Group Policy Preferences.
+description: |
+  Extracts plaintext passwords and account information from Group Policy Preferences
+  (GPP) to obtain credentials for privilege escalation. GPP allows administrators
+  to configure user accounts and passwords across domain systems, but stores these
+  credentials in an encrypted format that can be easily decrypted. The module
+  searches for GPP files and decrypts stored credentials, which often include
+  administrative passwords or service account credentials.
 software: ''
 tactics: [TA0006]
 techniques: [T1552.006]

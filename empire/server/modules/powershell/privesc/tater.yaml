@@ -1,11 +1,16 @@
-# Needs Revisions
 name: Invoke-Tater
 authors:
   - name: Kevin Robertson
     handle: ''
     link: ''
-description: Tater is a PowerShell implementation of the Hot Potato Windows Privilege
-  Escalation exploit from @breenmachine and @foxglovesec.
+description: |
+  Implements the Hot Potato Windows privilege escalation technique using NBNS spoofing
+  and HTTP to SMB relay attacks. Exploits Windows authentication mechanisms by
+  spoofing NBNS responses to redirect authentication traffic and perform SMB relay
+  attacks. Uses various triggers including Windows Defender signature updates and
+  scheduled tasks to initiate the attack chain. The technique leverages Windows
+  authentication fallback mechanisms and can bypass certain security controls to
+  gain elevated privileges.
 software: ''
 tactics: [TA0004]
 techniques: [T1068, T1187]

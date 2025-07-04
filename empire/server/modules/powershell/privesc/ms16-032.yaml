@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-MS16032
 authors:
   - name: ''
@@ -7,8 +6,13 @@ authors:
   - name: ''
     handle: '@leoloobeek'
     link: ''
-description: "Spawns a new Listener as SYSTEM by leveraging the MS16-032 local exploit.
-  Note: ~1/6 times the exploit won't work, may need to retry."
+description: |
+  Exploits MS16-032 vulnerability to spawn a new listener with SYSTEM privileges.
+  The vulnerability exploits a race condition in Windows secondary logon service
+  to elevate privileges from a standard user to SYSTEM. Leverages thread handle
+  manipulation to bypass security controls and execute arbitrary code with the
+  highest privileges. Note that the exploit has a success rate of approximately
+  5/6 attempts and may require retry if unsuccessful.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]

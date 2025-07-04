@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Invoke-MS16135
+name: Invoke-MS16-135
 authors:
   - name: ''
     handle: '@TinySecEx'
@@ -10,10 +9,13 @@ authors:
   - name: ThePirateWhoSmellsOfSunflowers (github)
     handle: ''
     link: ''
-description: "Spawns a new Listener as SYSTEM by leveraging the MS16-135 local exploit.
-  This exploit is for x64 only and only works on unlocked session. Note: the exploit
-  performs fast windows switching, victim's desktop may flash. A named pipe is also
-  created. Thus, opsec is not guaranteed"
+description: |
+  Exploits MS16-135 vulnerability to spawn a new listener with SYSTEM privileges.
+  The vulnerability exploits a kernel-level race condition in Windows to elevate
+  privileges from a standard user to SYSTEM. Limited to x64 systems and requires
+  an unlocked user session. The exploit performs rapid window switching which may
+  cause visible desktop flashing and creates named pipes, making it less stealthy
+  than other privilege escalation methods.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]
@@ -24,8 +26,6 @@ opsec_safe: false
 language: powershell
 min_language_version: '2'
 comments:
-  - Credit to TinySec (@TinySecEx) for the initial PoC and
-  - to Ruben Boonen (@FuzzySec) for PowerShell PoC
   - https://github.com/tinysec/public/tree/master/CVE-2016-7255
   - https://github.com/FuzzySecurity/PSKernel-Primitives/tree/master/Sample-Exploits/MS16-135
   - https://security.googleblog.com/2016/10/disclosing-vulnerabilities-to-protect.html

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-System
 authors:
   - name: Will Schroeder
@@ -7,7 +6,14 @@ authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Gets SYSTEM privileges with one of two methods.
+description: |
+  Performs privilege escalation to obtain SYSTEM privileges using one of two techniques:
+  NamedPipe impersonation or Token manipulation. The NamedPipe method leverages service
+  named pipe impersonation to elevate privileges by connecting to a service's named pipe
+  and impersonating the service account. The Token method uses Windows token manipulation
+  to adjust process privileges and gain elevated access. Both techniques allow execution
+  of code with SYSTEM-level privileges, enabling access to protected system resources,
+  registry keys, and other administrative functions.
 software: S0194
 tactics: [TA0004]
 techniques: [T1134.001]

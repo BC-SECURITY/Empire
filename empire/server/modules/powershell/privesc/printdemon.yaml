@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Get Group Policy Preferences
+name: Invoke-PrintDemon
 authors:
   - name: Jake Krasnov
     handle: '@hubbl3'
@@ -7,12 +6,14 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: This is an Empire launcher PoC using PrintDemon, the CVE-2020-1048 is
-  a privilege escalation vulnerability that allows a persistent threat through Windows
-  Print Spooler. The vulnerability allows an unprivileged user to gain system-level
-  privileges. Based on @ionescu007 PoC. The module prints a dll named ualapi.dll
-  which is loaded to System32. The module then places a launcher in the registry
-  which executes code as system on restart.
+description: |
+  Exploits CVE-2020-1048 (PrintDemon) vulnerability in Windows Print Spooler to
+  achieve privilege escalation and persistence. The vulnerability allows unprivileged
+  users to gain SYSTEM-level privileges by exploiting the print spooler service.
+  Creates a malicious DLL (ualapi.dll) that gets loaded into System32 and establishes
+  persistence through registry modifications that execute code as SYSTEM on system
+  restart. The technique leverages Windows print spooler architecture to achieve
+  both privilege escalation and persistent access to the target system.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-BypassUAC
 authors:
   - name: Leo Davidson
@@ -19,10 +18,13 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Runs a BypassUAC attack to escape from a medium integrity process to
-  a high integrity process. This attack was originally discovered by Leo Davidson.
-  Empire uses components of MSF's bypassuac injection implementation as well as an
-  adapted version of PowerSploit's Invoke--Shellcode.ps1 script for backend lifting.
+description: |
+  Performs User Account Control (UAC) bypass to escape from medium integrity processes
+  to high integrity processes without triggering UAC prompts. Leverages Windows
+  elevation mechanisms and DLL injection techniques to bypass security controls
+  and gain elevated privileges. The technique exploits Windows elevation policies
+  and process creation mechanisms to execute code with administrative privileges
+  while avoiding detection by UAC monitoring systems.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

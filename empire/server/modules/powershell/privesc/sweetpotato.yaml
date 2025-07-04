@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Sweet Potato Local Service to SYSTEM Privilege Escalation
+name: Sweet Potato
 authors:
   - name: ''
     handle: '@_EthicalChaos_ (@CCob)'
@@ -7,9 +6,14 @@ authors:
   - name: ''
     handle: '@kevin'
     link: ''
-description: Abuses default privileges given to Local Service accounts to spawn a
-  process as SYSTEM. Tested on Server 2019 and Windows 10 1909 (Build 18363.1316).
-  Run a Powershell stager or your own command.
+description: |
+  Exploits default privileges granted to Local Service accounts to spawn processes
+  with SYSTEM privileges. Leverages Windows privilege escalation techniques including
+  DCOM, WinRM, and PrintSpoofer to abuse service account permissions and gain elevated
+  access. The technique exploits the fact that Local Service accounts have certain
+  default privileges that can be abused to impersonate SYSTEM and execute arbitrary
+  code with the highest privileges. Supports multiple exploitation methods and can
+  spawn custom processes or PowerShell stagers.
 software: ''
 tactics: [TA0004]
 techniques: [T1068, T1187]
