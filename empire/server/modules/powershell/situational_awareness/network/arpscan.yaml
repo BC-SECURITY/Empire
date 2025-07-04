@@ -1,10 +1,15 @@
-# Needs Revisions
 name: Invoke-ARPScan
 authors:
   - name: DarkOperator
     handle: ''
     link: ''
-description: Performs an ARP scan against a given range of IPv4 IP Addresses.
+description: |
+  Performs Address Resolution Protocol (ARP) scanning to discover active hosts on
+  the local network segment and map network topology. Sends ARP requests to identify
+  live hosts, their MAC addresses, and network interface information. Provides insight
+  into network architecture, potential targets for lateral movement, and network
+  segmentation. Information gathered includes host IP addresses, MAC addresses,
+  and network interface details.
 software: S0099
 tactics: [TA0007]
 techniques: [T1016, T1018]

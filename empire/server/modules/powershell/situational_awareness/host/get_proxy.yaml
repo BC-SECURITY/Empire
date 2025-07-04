@@ -1,11 +1,16 @@
-# Needs Revisions
 name: Get-Proxy
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Enumerates the proxy server and WPAD conents for the current user. Part
-  of PowerView.
+description: |
+  Enumerates proxy server configuration and settings on the target system to understand
+  network communication patterns and potential exfiltration channels. Queries both
+  system-wide and user-specific proxy settings, including proxy server addresses,
+  authentication requirements, and bypass lists. Provides insight into network architecture,
+  potential proxy-based attacks, and communication channels that may be monitored or
+  restricted. Information gathered includes proxy server URLs, authentication methods,
+  and domains that bypass proxy settings.
 software: ''
 tactics: [TA0007]
 techniques: [T1049]

@@ -1,10 +1,15 @@
-# Needs Revisions
 name: Invoke-WinEnum
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Collects revelant information about a host and the current user context.
+description: |
+  Performs comprehensive Windows system enumeration by gathering detailed information
+  about the target system including hardware specifications, operating system details,
+  user accounts, domain information, and security settings. Collects data from multiple
+  sources including WMI, registry, system APIs, and Active Directory to build a complete
+  profile of the target environment. Information gathered includes system architecture,
+  user accounts, group memberships, domain relationships, and security controls.
 software: ''
 tactics: [TA0007]
 techniques: [T1082]
