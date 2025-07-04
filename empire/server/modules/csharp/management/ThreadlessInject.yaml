@@ -1,11 +1,15 @@
-# Needs Revisions
 name: ThreadlessInject
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  The program is designed to perform process injection.
+  C# module that performs threadless process injection by hijacking exported functions in target
+  processes. Instead of creating new threads, this technique patches existing exported functions
+  (default: NtTerminateProcess in ntdll.dll) to execute shellcode when the function is called.
+  This approach evades thread-based detection mechanisms and provides code execution
+  by leveraging legitimate function calls within the target process. Supports both x86 and x64
+  architectures.
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1055]

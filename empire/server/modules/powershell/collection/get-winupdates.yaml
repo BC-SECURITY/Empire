@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Get Microsoft Updates
+name: Get-WinUpdates
 authors:
   - name: Maarten Hartsuijker
     handle: ''
@@ -7,8 +6,13 @@ authors:
   - name: ''
     handle: '@classityinfosec'
     link: ''
-description: This module will list the Microsoft update history, including pending
-  updates, of the machine
+description: |
+  PowerShell module that queries the Windows Update service to enumerate both installed
+  update history and pending updates on target systems. Leverages Microsoft.Update.Session
+  COM object to access the Windows Update service and retrieves comprehensive update
+  information including installation dates, operation types, status codes, KB numbers,
+  and update titles. Requires administrative privileges and can target local or remote
+  systems.
 software: ''
 tactics: [TA0009]
 techniques: [T1082]
@@ -18,8 +22,7 @@ needs_admin: true
 opsec_safe: true
 language: powershell
 min_language_version: '2'
-comments:
-  - Have fun
+comments: []
 options:
   - name: Agent
     description: Agent to run the module on.

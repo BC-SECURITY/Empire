@@ -1,12 +1,15 @@
-# Needs Revisions
 name: FoxDump
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module will dump any saved passwords from Firefox to the console.
-  This should work for any versionof Firefox above version 32. This will only be
-  successful if the master password is blank or has not been set.
+description: |
+  PowerShell module that extracts saved passwords from Firefox browsers by leveraging
+  the NSS (Network Security Services) library functions. Loads Firefox's nss3.dll
+  library and uses native API calls to decrypt stored credentials from the logins.json
+  file. Extracts usernames, passwords, and associated URLs for all saved login
+  credentials. Requires Firefox version 32 or above and will only succeed if no
+  master password has been set.
 software: ''
 tactics: [TA0006]
 techniques: [T1555.03]

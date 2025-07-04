@@ -1,12 +1,15 @@
-# Needs Revisions
 name: GetDomainUser
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a list of specified (or all) user `DomainObject`s in the current
-  Domain.
-software: ''
+description: |
+  C# module that leverages SharpSploit's Domain enumeration capabilities to discover
+  and enumerate user objects within Active Directory. Uses SharpSploit's DomainSearcher
+  class to query the current domain for user accounts, returning detailed DomainObject
+  information including user names, descriptions, and domain attributes. Supports
+  targeted enumeration of specific users by name or comprehensive enumeration of
+  all domain users.
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]
 background: false

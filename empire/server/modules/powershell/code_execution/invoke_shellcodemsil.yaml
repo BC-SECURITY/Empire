@@ -1,13 +1,19 @@
-# Needs Revisions
 name: Invoke-ShellcodeMSIL
 authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: 'Execute shellcode within the context of the running PowerShell process
-  without making any Win32 function calls. Warning: This script has no way to validate
-  that your shellcode is 32 vs. 64-bit!Note: Your shellcode must end in a ret (0xC3)
-  and maintain proper stack alignment or PowerShell will crash!'
+description: |
+  PowerShell module that executes shellcode using advanced MSIL (Microsoft Intermediate
+  Language) techniques to overwrite JITed methods in memory. Creates a dummy method
+  with sufficient space, forces JIT compilation, then overwrites the compiled method
+  with shellcode using MSIL opcodes. This technique avoids traditional Win32 API calls
+  and provides stealthy code execution by leveraging .NET's JIT compilation process.
+  Supports both x86 and x64 architectures with appropriate shellcode stubs.
+  
+  WARNING: This script has no way to validate that your shellcode is 32 vs. 64-bit!
+  NOTE: Your shellcode must end in a ret (0xC3) and maintain proper stack alignment
+  or PowerShell will crash!
 software: ''
 tactics: [TA0002, TA0005]
 techniques: [T1620]

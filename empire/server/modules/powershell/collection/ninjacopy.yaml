@@ -1,11 +1,17 @@
-# Needs Revisions
 name: Invoke-NinjaCopy
 authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: Copies a file from an NTFS partitioned volume by reading the raw volume
-  and parsing the NTFS structures.
+description: |
+  Copies files from NTFS volumes by reading raw volume data and parsing NTFS structures directly,
+  bypassing file system access controls. This technique circumvents DACLs (Discretionary Access
+  Control Lists), SACLs (System Access Control Lists), and file handle locks that would normally
+  prevent access. The module uses reflective DLL injection to load a custom NTFS parser library
+  that reads files at the filesystem level, allowing access to system files that are typically
+  locked or protected. Common use cases include extracting the NTDS.dit Active Directory database,
+  registry hives, or other sensitive files that are actively in use by the system. Requires
+  administrative privileges to access raw volume data.
 software: ''
 tactics: [TA0006, TA0005]
 techniques: [T1003.003, T1005, T1006]

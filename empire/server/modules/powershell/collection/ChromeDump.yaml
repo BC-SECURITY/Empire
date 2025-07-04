@@ -1,11 +1,12 @@
-# Needs Revisions
 name: Get-ChromeDump
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module will decrypt passwords saved in chrome and display them
-  in the console.
+description: |
+  PowerShell module that decrypts passwords saved in Chrome and displays them in the console.
+  Uses the PowerShell engine to decrypt the passwords, providing a flexible and powerful way
+  to search for specific data within the browser.
 software: ''
 tactics: [TA0006]
 techniques: [T1555.03]

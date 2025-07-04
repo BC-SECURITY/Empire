@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Find-InterestingFile
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds sensitive files on the domain.
+description: |
+  PowerShell module that leverages PowerView's Find-InterestingFile function to search
+  for sensitive files on specified UNC or local paths. Recursively searches directories
+  for files matching predefined patterns including passwords, sensitive data, admin files,
+  login scripts, and configuration files. Supports filtering by file types (Office documents,
+  recent EXEs), access times, creation dates, and write permissions. Can exclude hidden
+  files and folders, and provides detailed file information including ownership, timestamps,
+  and file sizes for discovered sensitive data.
 software: ''
 tactics: [TA0007]
 techniques: [T1083, T1135, T1039]

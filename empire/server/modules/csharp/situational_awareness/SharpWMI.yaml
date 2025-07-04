@@ -1,10 +1,14 @@
-# Needs Revisions
 name: SharpWMI
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Use a SharpWMI command.
+description: |
+  C# module that uses SharpWMI to execute Windows Management Instrumentation (WMI) queries and
+  operations on the local system. Provides comprehensive WMI query capabilities including
+  enumeration, creation, and execution of WMI events. Supports both x86 and x64 architectures
+  and can be used for situational awareness to identify running services, processes, and other
+  system components.
 software: ''
 tactics: [TA0002]
 techniques: [T1047, T1546.003]

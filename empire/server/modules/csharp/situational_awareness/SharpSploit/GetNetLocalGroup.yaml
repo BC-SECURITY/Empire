@@ -1,10 +1,15 @@
-# Needs Revisions
 name: GetNetLocalGroup
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a list of `LocalGroup`s from specified remote computer(s).
+description: |
+  C# module that leverages SharpSploit's Net enumeration capabilities to discover
+  and enumerate local groups on the local system. Uses SharpSploit's Net class to
+  query the local system for local group information, returning detailed LocalGroup
+  information including group names, descriptions, and local attributes. Supports
+  targeted enumeration of specific local groups by name or comprehensive enumeration
+  of all local groups.
 software: ''
 tactics: [TA0007]
 techniques: [T1482, T1615, T1069.001]

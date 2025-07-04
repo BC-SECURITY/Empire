@@ -1,11 +1,13 @@
-# Needs Revisions
 name: Invoke-DllInjection
 authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Uses PowerSploit's Invoke-DLLInjection to inject  a Dll into the process
-  ID of your choosing.
+description: |
+  PowerShell module that uses PowerSploit's Invoke-DLLInjection to inject a Dll into the
+  process ID of your choosing. Uses the PowerSploit library to inject a Dll into a
+  specified process, providing a flexible and powerful way to execute custom scripts or
+  payloads within the PowerShell environment.
 software: S0194
 tactics: [TA0004, TA0005]
 techniques: [T1055.001]

@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Invoke-FileFinder
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds sensitive files on the domain.
+description: |
+  PowerShell module that leverages PowerView's Find-InterestingDomainShareFile function
+  to perform comprehensive file discovery across domain shares. Enumerates all computers
+  in the domain, discovers accessible shares, and searches for sensitive files matching
+  predefined patterns including passwords, credentials, admin files, login scripts, and
+  configuration files. Supports filtering by file types (Office documents, recent EXEs),
+  access times, and write permissions. Can target specific computers or perform domain-wide
+  searches with threading capabilities for efficient reconnaissance across large networks.
 software: ''
 tactics: [TA0007]
 techniques: [T1083, T1135, T1039]

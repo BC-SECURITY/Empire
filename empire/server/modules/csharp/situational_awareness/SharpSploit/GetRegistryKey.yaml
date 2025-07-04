@@ -1,10 +1,15 @@
-# Needs Revisions
 name: GetRegistryKey
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a value stored in registry.
+description: |
+  C# module that leverages SharpSploit's Registry enumeration capabilities to discover
+  and enumerate registry keys on the local system. Uses SharpSploit's Registry class
+  to query the local system for registry key information, returning detailed RegistryKey
+  information including key names, descriptions, and local attributes. Supports
+  targeted enumeration of specific registry keys by name or comprehensive enumeration
+  of all registry keys.
 software: ''
 tactics: [TA0007]
 techniques: [T1012]

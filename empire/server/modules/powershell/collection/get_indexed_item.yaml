@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Get-IndexedItem
 authors:
   - name: ''
     handle: "@James O'Neill"
     link: ''
-description: Gets files which have been indexed by Windows desktop search.
+description: |
+  PowerShell module that queries the Windows Search Index using SQL-like syntax to
+  discover files and their metadata across the system. Leverages Windows' built-in
+  search indexing service to perform fast, comprehensive searches for files based
+  on content, properties, and metadata. Supports complex filtering by file types,
+  dates, sizes, and custom properties including photos, music, documents, and media
+  files. Can search local and remote file systems, providing detailed file information
+  including ownership, timestamps, and content summaries.
 software: ''
 tactics: [TA0007]
 techniques: [T1083]

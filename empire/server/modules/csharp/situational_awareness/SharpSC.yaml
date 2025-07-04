@@ -1,10 +1,15 @@
-# Needs Revisions
 name: SharpSC
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Use a SharpSC command.
+description: |
+  C# module that leverages SharpSC to enumerate and manage Windows services on the local system.
+  Provides comprehensive service enumeration capabilities including querying service status,
+  configuration details, and dependencies. Supports service lifecycle management operations
+  such as starting, stopping, creating, and deleting services. Useful for situational
+  awareness to identify running services, service accounts, and potential persistence
+  mechanisms through service analysis and manipulation.
 software: ''
 tactics: [TA0007. TA0040]
 techniques: [T1007, T1489]

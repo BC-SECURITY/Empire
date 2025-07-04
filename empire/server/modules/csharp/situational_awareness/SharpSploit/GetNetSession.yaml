@@ -1,10 +1,15 @@
-# Needs Revisions
 name: GetNetSession
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a list of `SessionInfo`s from specified remote computer(s).
+description: |
+  C# module that leverages SharpSploit's Net enumeration capabilities to discover
+  and enumerate network sessions on the local system. Uses SharpSploit's Net class
+  to query the local system for network session information, returning detailed
+  SessionInfo information including session details, user names, and local attributes.
+  Supports targeted enumeration of specific network sessions by name or comprehensive
+  enumeration of all network sessions.
 software: ''
 tactics: [TA0007]
 techniques: [T1076, T1018, T1933]

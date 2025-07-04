@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-SQLQuery
 authors:
   - name: ''
@@ -7,7 +6,12 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Executes a query on target SQL servers.
+description: |
+  PowerShell module that leverages PowerUpSQL to execute custom SQL queries against
+  target SQL Server instances. Provides flexible authentication options including
+  Windows credentials, SQL logins, and Dedicated Administrator Connection (DAC)
+  support. Establishes database connections using .NET SqlClient and executes
+  user-defined queries with configurable timeouts and error handling.
 software: ''
 tactics: [TA0009]
 techniques: [T1213]

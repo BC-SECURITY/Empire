@@ -1,13 +1,14 @@
-# Needs Revisions
 name: Invoke-Shellcode
 authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Uses PowerSploit's Invoke-Shellcode to inject shellcode into the process
-  ID of your choosing or within the context of the running PowerShell process. If
-  you're injecting custom shellcode, make sure it's in the correct format and matches
-  the architecture of the process you're injecting into.
+description: |
+  PowerShell module that uses PowerSploit's Invoke-Shellcode to inject shellcode into the
+  process ID of your choosing or within the context of the running PowerShell process.
+  Uses the PowerSploit library to inject shellcode into a specified process, providing a
+  flexible and powerful way to execute custom scripts or payloads within the PowerShell
+  environment.
 software: S0194
 tactics: [TA0005]
 techniques: [T1620]

@@ -1,10 +1,15 @@
-# Needs Revisions
 name: GetNetLoggedOnUser
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a list of `LoggedOnUser`s from specified remote computer(s).
+description: |
+  C# module that leverages SharpSploit's Net enumeration capabilities to discover
+  and enumerate logged-on users on the local system. Uses SharpSploit's Net class
+  to query the local system for logged-on user information, returning detailed
+  LoggedOnUser information including user names, descriptions, and local attributes.
+  Supports targeted enumeration of specific logged-on users by name or comprehensive
+  enumeration of all logged-on users.
 software: ''
 tactics: [TA0007]
 techniques: [T1033, T1018]

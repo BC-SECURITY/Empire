@@ -1,13 +1,15 @@
-# Needs Revisions
 name: Invoke-Inveigh
 authors:
   - name: Kevin Robertson
     handle: ''
     link: ''
-description: Inveigh is a Windows PowerShell LLMNR/mDNS/NBNS spoofer/man-in-the-middle
-  tool. Note that this module exposes only a subset of Inveigh's parameters. Inveigh
-  can be used through Empire's scriptimport and scriptcmd if additional parameters
-  are needed.
+description: |
+  PowerShell module that leverages Inveigh to perform LLMNR, mDNS, and NBNS spoofing
+  attacks for credential harvesting and man-in-the-middle operations. Captures NTLM
+  challenge/response hashes through SMB, HTTP, and proxy authentication mechanisms.
+  Supports selective spoofing with host/IP filtering, learning mode to avoid valid
+  hosts, and configurable authentication types. Provides real-time console output
+  and can serve custom HTTP responses or proxy traffic.
 software: ''
 tactics: [TA0006, TA0009]
 techniques: [T1040, T1557.001, T1557.003, T1119]
@@ -25,8 +27,7 @@ options:
     required: true
     value: ''
   - name: ConsoleOutput
-    description: '(Low/Medium/Y) Default = Y: Enable/Disable real time console output.
-      Medium and Low can be used to reduce output.'
+    description: 'Enable/Disable real time console output. Options: Y (Full), Medium, Low (reduced output).'
     required: false
     value: 'Y'
     strict: true
@@ -35,13 +36,11 @@ options:
       - Medium
       - Y
   - name: ConsoleStatus
-    description: Interval in minutes for displaying all unique captured hashes and
-      credentials. This will display a clean list of captures in Empire.
+    description: 'Interval in minutes for displaying unique captured hashes and credentials in Empire console.'
     required: false
     value: '1'
   - name: ConsoleUnique
-    description: '(Y/N) Default = Y: Enable/Disable displaying challenge/response
-      hashes for only unique IP, domain/hostname, and username combinations.'
+    description: 'Display only unique challenge/response hashes (unique IP, domain/hostname, username combinations).'
     required: false
     value: 'Y'
     strict: true
@@ -50,9 +49,7 @@ options:
       - Medium
       - Y
   - name: ElevatedPrivilege
-    description: '(Auto/Y/N) Default = Auto: Set the privilege mode. Auto will determine
-      if Inveigh is running with elevated privilege. If so, options that require
-      elevated privilege can be used.'
+    description: 'Privilege mode. Auto detects elevated privileges, Y forces elevated mode, N uses standard mode.'
     required: false
     value: 'Auto'
     strict: true
@@ -69,8 +66,7 @@ options:
       - Y
       - N
   - name: HTTPAuth
-    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type.
-      This setting does not apply to wpad.dat requests.
+    description: 'HTTP listener authentication type. Options: Anonymous, Basic, NTLM, NTLMNoESS. Does not apply to wpad.dat requests.'
     required: false
     value: ''
     strict: false
@@ -80,20 +76,15 @@ options:
       - NTLM
       - NTLMNoESS
   - name: HTTPContentType
-    description: Content type for HTTP/Proxy responses. Does not apply to EXEs and
-      wpad.dat. Set to "application/hta" for HTA files or when using HTA code with
-      HTTPResponse.
+    description: 'Content type for HTTP/Proxy responses. Use "application/hta" for HTA files. Does not apply to EXEs and wpad.dat.'
     required: false
     value: ''
   - name: HTTPResponse
-    description: Content to serve as the default HTTP/Proxy response. This response
-      will not be used for wpad.dat requests. Use PowerShell escape characters and
-      newlines where necessary. This paramater will be wrapped in double quotes by
-      this module.
+    description: 'Default HTTP/Proxy response content. Use PowerShell escape characters and newlines. Not used for wpad.dat requests.'
     required: false
     value: ''
   - name: Inspect
-    description: Inspect LLMNR, mDNS, and NBNS traffic only.
+    description: 'Inspect LLMNR, mDNS, and NBNS traffic only (no spoofing).'
     required: false
     value: 'False'
     strict: true
@@ -101,9 +92,7 @@ options:
       - True
       - False
   - name: IP
-    description: Local IP address for listening and packet sniffing. This IP address
-      will also be used for LLMNR/mDNS/NBNS spoofing if the SpooferIP parameter is
-      not set.
+    description: 'Local IP address for listening and packet sniffing. Used for spoofing if SpooferIP is not set.'
     required: false
     value: ''
   - name: LLMNR
@@ -123,8 +112,7 @@ options:
       - Y
       - N
   - name: mDNSTypes
-    description: '(QU,QM) Default = QU: Comma separated list of mDNS types to spoof.
-      Note that QM will send the response to 224.0.0.251.'
+    description: 'mDNS types to spoof. Options: QU (unicast), QM (multicast to 224.0.0.251).'
     required: false
     value: 'QU'
     strict: true
@@ -140,7 +128,7 @@ options:
       - Y
       - N
   - name: NBNSTypes
-    description: 'Default = 00,20: Comma separated list of NBNS types to spoof.'
+    description: 'NBNS types to spoof. Default: 00,20 (Workstation/Server services).'
     required: false
     value: '00,20'
   - name: Proxy
@@ -148,7 +136,7 @@ options:
     required: false
     value: ''
   - name: ProxyPort
-    description: "Default = 8492: TCP port for the Inveigh's proxy listener."
+    description: 'TCP port for Inveigh proxy listener. Default: 8492.'
     required: false
     value: '8492'
   - name: RunCount
@@ -168,28 +156,27 @@ options:
       - Y
       - N
   - name: SpooferIP
-    description: Response IP address for spoofing. This parameter is only necessary
-      when redirecting victims to a system other than the Inveigh host.
+    description: 'Response IP address for spoofing. Required when redirecting victims to a system other than the Inveigh host.'
     required: false
     value: ''
   - name: SpooferHostsIgnore
-    description: Comma separated list of requested hostnames to ignore when spoofing.
+    description: 'Comma-separated list of hostnames to ignore when spoofing.'
     required: false
     value: ''
   - name: SpooferHostsReply
-    description: Comma separated list of requested hostnames to respond to when spoofing.
+    description: 'Comma-separated list of hostnames to respond to when spoofing.'
     required: false
     value: ''
   - name: SpooferIPsIgnore
-    description: Comma separated list of source IP addresses to ignore when spoofing.
+    description: 'Comma-separated list of source IP addresses to ignore when spoofing.'
     required: false
     value: ''
   - name: SpooferIPsReply
-    description: Comma separated list of source IP addresses to respond to when spoofing.
+    description: 'Comma-separated list of source IP addresses to respond to when spoofing.'
     required: false
     value: ''
   - name: SpooferLearning
-    description: (Y/N) Enable/Disable LLMNR/NBNS valid host learning.
+    description: 'Enable/Disable LLMNR/NBNS valid host learning to avoid spoofing legitimate hosts.'
     required: false
     value: 'N'
     strict: true
@@ -197,13 +184,11 @@ options:
       - Y
       - N
   - name: SpooferLearningDelay
-    description: Time in minutes that Inveigh will delay spoofing while valid hosts
-      are being blacklisted through SpooferLearning.
+    description: 'Delay in minutes before spoofing while valid hosts are being blacklisted through SpooferLearning.'
     required: false
     value: ''
   - name: SpooferRepeat
-    description: '(Y/N) Default = Y: Enable/Disable repeated LLMNR/NBNS spoofs to
-      a victim system after one user challenge/response has been captured.'
+    description: 'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after capturing one challenge/response.'
     required: false
     value: 'Y'
     strict: true
@@ -211,8 +196,7 @@ options:
       - Y
       - N
   - name: WPADAuth
-    description: (Anonymous/Basic/NTLM/NTLMNoESS) HTTP listener authentication type
-      for wpad.dat requests.
+    description: 'HTTP listener authentication type for wpad.dat requests. Options: Anonymous, Basic, NTLM, NTLMNoESS.'
     required: false
     value: ''
     strict: false
