@@ -1,10 +1,21 @@
-# Needs Revisions
 name: SID-to-User
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Converts a specified domain sid to a user.
+description: |
+  Converts a specified Security Identifier (SID) to its corresponding user account name. 
+  This module performs reverse identity resolution by translating Windows security 
+  identifiers back into human-readable usernames.
+  
+  SIDs are unique identifiers assigned to security principals in Windows systems, 
+  including users, groups, and computers. This reverse lookup capability is essential 
+  for understanding security events, access control entries, and user permissions 
+  when only SIDs are available in logs or system output.
+  
+  The module supports both local and domain SIDs, enabling operators to identify 
+  user accounts from various sources including security logs, registry entries, 
+  file permissions, and Active Directory objects.
 software: ''
 tactics: [TA0007]
 techniques: [T1098, T1087.002]
@@ -21,7 +32,7 @@ options:
     required: true
     value: ''
   - name: SID
-    description: Domain SID to translate.
+    description: Security Identifier (SID) to translate to username.
     required: true
     value: ''
 script: |

@@ -1,10 +1,19 @@
-# Needs Revisions
 name: Invoke-Phant0m
 authors:
   - name: ''
     handle: '@leesoh'
     link: ''
-description: Kills Event Log Service Threads
+description: |
+  Kills Windows Event Log Service threads to disable logging and evade detection 
+  mechanisms. This module targets the Windows Event Log service by terminating 
+  its worker threads, effectively stopping event logging without disabling the 
+  service itself.
+  
+  Event log manipulation is a critical anti-forensics technique that prevents 
+  security events from being recorded, making post-incident analysis more 
+  difficult. By killing the service threads rather than stopping the service, 
+  the module maintains the appearance of normal system operation while 
+  preventing new events from being logged.
 software: ''
 tactics: [TA0005]
 techniques: [T1562.006]

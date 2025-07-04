@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Timestomp
 authors:
   - name: ''
     handle: '@obscuresec'
     link: ''
-description: Executes time-stomp like functionality by invoking Set-MacAttribute.
+description: |
+  Executes time-stomp functionality by modifying file timestamps (MAC attributes) 
+  to manipulate forensic artifacts and evade timeline analysis. This module allows 
+  operators to alter the Modified, Accessed, and Created timestamps of files to 
+  blend malicious activities with legitimate system operations.
+  
+  Time-stomping is a critical anti-forensics technique that helps operators avoid 
+  detection during post-incident analysis. By setting file timestamps to match 
+  legitimate system files or historical dates, malicious files can appear to be 
+  part of normal system operations or pre-date the security incident.
+  
+  The module can clone timestamps from existing files or set custom timestamps, 
+  providing flexibility for different operational scenarios and forensic evasion 
+  requirements.
 software: ''
 tactics: [TA0005]
 techniques: [T1070.006]
@@ -22,27 +34,27 @@ options:
     required: true
     value: ''
   - name: FilePath
-    description: File path to modify.
+    description: Path to the file whose timestamps will be modified.
     required: true
     value: ''
   - name: OldFile
-    description: Old file path to clone MAC from.
+    description: Path to an existing file to clone MAC timestamps from.
     required: false
     value: ''
   - name: Modified
-    description: Set modified time (01/03/2006 12:12 pm).
+    description: Set modified time to specific date/time (format: 01/03/2006 12:12 pm).
     required: false
     value: ''
   - name: Accessed
-    description: Set accessed time (01/03/2006 12:12 pm).
+    description: Set accessed time to specific date/time (format: 01/03/2006 12:12 pm).
     required: false
     value: ''
   - name: Created
-    description: Set created time (01/03/2006 12:12 pm).
+    description: Set created time to specific date/time (format: 01/03/2006 12:12 pm).
     required: false
     value: ''
   - name: All
-    description: Set all MAC attributes to value (01/03/2006 12:12 pm).
+    description: Set all MAC attributes to the same value (format: 01/03/2006 12:12 pm).
     required: false
     value: ''
   - name: OutputFunction

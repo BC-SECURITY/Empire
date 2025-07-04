@@ -1,11 +1,20 @@
-# Needs Revisions
 name: Invoke-Vnc
 authors:
   - name: ''
     handle: '@n00py'
     link: https://twitter.com/n00py1
-description: Invoke-Vnc executes a VNC agent in-memory and initiates a reverse connection,
-  or binds to a specified port. Password authentication is supported.
+description: |
+  Executes a VNC (Virtual Network Computing) agent in-memory to establish remote 
+  desktop access to the target system. This module provides graphical user interface 
+  access without requiring traditional VNC server installation or file system artifacts.
+  
+  The VNC agent can operate in two modes: bind mode (listening on a local port) 
+  or reverse mode (connecting back to a specified IP address). This flexibility 
+  allows operators to work around network restrictions and firewall configurations.
+  
+  Password authentication is supported to secure the VNC connection, and the 
+  in-memory execution helps evade detection by traditional endpoint protection 
+  solutions that monitor for VNC server installations.
 software: ''
 tactics: [TA0008]
 techniques: [T1021.005]
@@ -23,15 +32,15 @@ options:
     required: true
     value: ''
   - name: Port
-    description: Port to Use.
+    description: Port number for the VNC connection (default: 5900).
     required: true
     value: '5900'
   - name: Password
-    description: Password to use.
+    description: Password for VNC authentication.
     required: true
     value: password
   - name: ConType
-    description: Connection type.
+    description: Connection type - bind (listen) or reverse (connect back).
     required: true
     value: 'bind'
     strict: true
@@ -39,7 +48,7 @@ options:
       - bind
       - reverse
   - name: IpAddress
-    description: IP Address to use for reverse connection.
+    description: IP address for reverse connection mode.
     required: false
     value: ''
 script_path: management/Invoke-Vnc.ps1
