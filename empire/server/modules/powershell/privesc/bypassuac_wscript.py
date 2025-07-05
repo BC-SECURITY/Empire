@@ -49,7 +49,7 @@ class Module:
 
         if launcher == "":
             return handle_error_message("[!] Error in launcher generation.")
-        script_end = f'Invoke-WScriptBypassUAC -payload "{launcher}"'
+        script_end = f'Invoke-WScriptBypassUAC -payload "{launcher}"; "Invoke-WScriptBypassUAC completed"'
 
         return main_menu.modulesv2.finalize_module(
             script=script,

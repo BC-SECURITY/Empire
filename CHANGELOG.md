@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Updated module descriptions to include more information
+-   Added return messages to UAC Bypass privesc modules
+
 ## [6.1.2] - 2025-05-21
 
 ### Added

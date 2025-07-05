@@ -51,7 +51,7 @@ class Module:
         if launcher == "":
             return handle_error_message("[!] Error in launcher generation.")
 
-        script_end = f'Invoke-FodHelperBypass -Command "{enc_script}"'
+        script_end = f'Invoke-FodHelperBypass -Command "{enc_script}"; "Invoke-FodHelperBypass completed"'
         return main_menu.modulesv2.finalize_module(
             script=script,
             script_end=script_end,

