@@ -4,8 +4,22 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Disables the machine account for the target system from changing its
-  password automatically.
+description: |
+  A persistence module that disables automatic machine account password changes
+  to maintain consistent access to domain-joined systems. This technique
+  prevents the system from automatically updating its machine account
+  password, ensuring continued domain authentication capabilities.
+
+  The module modifies the Netlogon service parameters to disable automatic
+  machine account password changes, which normally occur every 30 days by
+  default. By preventing these changes, the operator maintains consistent
+  access to the system's domain credentials and can use them for lateral
+  movement or persistence activities.
+
+  This technique is particularly effective for maintaining long-term access
+  to domain-joined systems as it prevents the natural credential rotation
+  that could otherwise break persistence mechanisms. The module includes
+  cleanup functionality to re-enable automatic password changes when needed.
 software: ''
 tactics: [TA0005, TA0004]
 techniques: [T1098]

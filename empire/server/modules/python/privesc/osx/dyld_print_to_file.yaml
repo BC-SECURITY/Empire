@@ -1,14 +1,29 @@
-# Needs Revisions
 name: Mac OSX Yosemite DYLD_PRINT_TO_FILE Privilege Escalation
 authors:
   - name: ''
     handle: '@checky_funtime'
     link: ''
-description: 'This modules takes advantage of the environment variable DYLD_PRINT_TO_FILE
-  in order to escalate privileges on all versions Mac OS X YosemiteWARNING: In order
-  for this exploit to be performed files will be overwritten and deleted. This can
-  set off endpoint protection systems and as of initial development, minimal testing
-  has been performed.'
+description: |
+  Exploits a critical privilege escalation vulnerability in macOS Yosemite (10.10)
+  through the DYLD_PRINT_TO_FILE environment variable. This vulnerability allows
+  unprivileged users to write to arbitrary files with root privileges, including
+  system files that would normally be protected.
+
+  The exploit works by:
+  - Leveraging the DYLD_PRINT_TO_FILE environment variable to redirect dynamic
+    linker output to arbitrary file locations
+  - Exploiting a flaw in the dynamic linker's file handling mechanism
+  - Writing malicious content to system files with elevated privileges
+  - Overwriting critical system files to establish persistence or gain root access
+
+  This vulnerability affects all versions of macOS Yosemite (10.10.x) and was
+  patched in subsequent macOS releases. The exploit is particularly dangerous
+  because it can overwrite system files and potentially trigger endpoint protection
+  systems due to the file modification behavior.
+
+  WARNING: This exploit will overwrite and delete files on the target system,
+  which may trigger security monitoring systems and could potentially cause
+  system instability. Use with caution in production environments.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]

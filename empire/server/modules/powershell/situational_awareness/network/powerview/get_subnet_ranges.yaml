@@ -1,11 +1,22 @@
-# Needs Revisions
 name: Get-SubnetRanges
 authors:
   - name: ''
     handle: '@benichmt1'
     link: ''
-description: Pulls hostnames from AD, performs a Reverse DNS lookup, and parses the
-  output into ranges.
+description: Performs comprehensive network range discovery by extracting hostnames
+  from Active Directory, conducting reverse DNS lookups, and analyzing the results
+  to identify network subnet ranges and IP address distributions. This module leverages
+  PowerView to query AD computer objects and then performs reverse DNS resolution
+  to map hostnames to IP addresses, subsequently parsing the results into logical
+  network ranges. The reconnaissance capability is essential for understanding the
+  network's IP addressing scheme, identifying network segments, and mapping the distribution
+  of systems across different subnet ranges. By analyzing the IP address distribution,
+  operators can identify potential network-based attack vectors, understand the network
+  topology, and plan targeted reconnaissance within specific IP ranges. The module
+  supports both individual IP listing and range-based output to provide flexibility
+  in network analysis. This information is crucial for network reconnaissance, understanding
+  the IP addressing architecture, and identifying potential network-based lateral
+  movement opportunities within specific subnet ranges.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615, T1016]

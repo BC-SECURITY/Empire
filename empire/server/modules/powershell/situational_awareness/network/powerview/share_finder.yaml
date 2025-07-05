@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Find-DomainShare
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds shares on machines in the domain. Part of PowerView.
+description: Enumerates network shares across multiple domain systems to identify
+  file sharing resources, administrative shares, and potential data repositories.
+  This module leverages PowerView's Find-DomainShare function to systematically discover
+  shared folders, drives, and network resources across the domain. The reconnaissance
+  capability is essential for understanding the network's file sharing landscape,
+  identifying potential data exfiltration targets, and mapping administrative access
+  points. By discovering shares across multiple systems, operators can identify common
+  file sharing patterns, locate sensitive data repositories, and understand the domain's
+  data distribution architecture. The module supports filtering by operating system,
+  site membership, and access permissions to focus reconnaissance efforts on relevant
+  systems. Additionally, the module can verify share accessibility to ensure discovered
+  resources are actually accessible to the current user context. This information
+  is crucial for lateral movement planning, data collection operations, and understanding
+  the overall network infrastructure and data flow patterns.
 software: S0194
 tactics: [TA0007]
 techniques: [T1135]

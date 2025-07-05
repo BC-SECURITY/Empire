@@ -1,11 +1,23 @@
-# Needs Revisions
 name: Get-DomainForeignGroupMember
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Enumerates all the members of a given domain's groups and finds users
-  that are not in the queried domain. Part of PowerView.
+description: Analyzes group memberships within a domain to identify users from external
+  domains who have been granted access to resources, revealing cross-domain trust
+  relationships and potential privilege escalation opportunities. This module leverages
+  PowerView's Get-DomainForeignGroupMember function to enumerate all group members
+  and identify users who belong to domains other than the queried domain. The reconnaissance
+  capability is essential for understanding cross-domain access patterns, identifying
+  potential lateral movement opportunities across domain boundaries, and mapping
+  the broader Active Directory trust relationships. By analyzing foreign group members,
+  operators can identify external users with access to domain resources, understand
+  trust relationship implications, and discover potential attack vectors that leverage
+  cross-domain access. The module supports filtering by domain and custom LDAP queries
+  to focus reconnaissance efforts on specific cross-domain relationships. This information
+  is crucial for cross-domain reconnaissance, understanding trust relationship security
+  implications, and identifying potential privilege escalation opportunities through
+  cross-domain group memberships that may provide access to sensitive resources.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069]

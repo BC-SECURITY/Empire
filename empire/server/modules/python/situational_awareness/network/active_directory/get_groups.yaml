@@ -1,10 +1,24 @@
-# Needs Revisions
 name: Get Groups
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will list all groups in active directory
+description: |
+  An Active Directory enumeration module that retrieves a comprehensive list
+  of all groups within the target domain. This module performs essential
+  reconnaissance to understand organizational structure and privilege
+  distribution through group analysis.
+
+  The module queries Active Directory via LDAP to extract all group objects
+  including security groups, distribution groups, and built-in groups. This
+  information is essential for understanding the domain's access control
+  structure and identifying high-value groups for privilege escalation.
+
+  The enumeration results provide critical intelligence for privilege escalation
+  and lateral movement by revealing the complete group structure within the
+  domain. This module is fundamental for domain reconnaissance and helps
+  operators identify potential targets for group-based attacks and understand
+  the organizational hierarchy for targeted social engineering campaigns.
 software: ''
 tactics: []
 techniques:

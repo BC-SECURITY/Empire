@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Add-KeePassConfigTrigger
 authors:
   - name: Lee Christensen
@@ -7,8 +6,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module adds a KeePass exfiltration trigger to all KeePass configs
-  found by Find-KeePassConfig.
+description: |
+  A PowerShell module that installs persistent exfiltration triggers
+  into KeePass configuration files to enable automatic credential
+  harvesting. This module is part of the KeeThief toolkit designed
+  for long-term access to password manager contents.
+
+  The module first terminates any running KeePass processes to ensure
+  configuration files can be modified, then adds custom triggers that
+  automatically export database contents or copy data when specific
+  conditions are met. These triggers can be configured to export
+  entire databases or capture data that users copy from KeePass,
+  providing persistent access to stored credentials.
+
+  This persistence mechanism is particularly effective because it
+  leverages KeePass's legitimate trigger functionality to perform
+  malicious exfiltration. The triggers can be configured to execute
+  when databases are opened, when data is copied, or based on other
+  user actions, ensuring continuous access to sensitive information
+  without requiring ongoing operator interaction.
 software: ''
 tactics: [TA0003, TA0009]
 techniques: [T1119, T1546]

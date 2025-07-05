@@ -1,10 +1,19 @@
-# Needs Revisions
 name: New-HoneyHash
 authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Inject artificial credentials into LSASS.
+description: |
+  A defensive module that injects artificial credentials into the Local Security
+  Authority Subsystem Service (LSASS) memory space to create honeypot credentials
+  that can be used to detect credential harvesting attempts. This module helps
+  identify when attackers are attempting to extract credentials from memory.
+
+  The module creates fake domain credentials and injects them into LSASS memory,
+  where they will be visible to credential harvesting tools like Mimikatz. When
+  attackers attempt to extract credentials, these fake credentials will appear
+  alongside legitimate ones, providing an early warning system for credential
+  harvesting activities.
 software: ''
 tactics: [TA0003]
 techniques: [T1156.001]

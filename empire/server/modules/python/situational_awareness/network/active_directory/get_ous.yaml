@@ -1,10 +1,26 @@
-# Needs Revisions
 name: Get OUs
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will list all OUs from active directory
+description: |
+  An Active Directory enumeration module that retrieves all Organizational
+  Units (OUs) within the target domain. This module performs essential
+  reconnaissance to understand the domain's organizational structure and
+  administrative hierarchy for targeted attacks and social engineering.
+
+  The module queries Active Directory via LDAP to extract all OU objects
+  that define the domain's organizational structure. This information is
+  essential for understanding how the domain is organized and identifying
+  potential targets based on organizational positioning and administrative
+  responsibilities.
+
+  The enumeration results provide critical intelligence for targeted attacks
+  and social engineering by revealing the complete organizational structure
+  within the domain. This module is fundamental for domain reconnaissance
+  and helps operators understand the administrative hierarchy and identify
+  potential targets for privilege escalation and lateral movement based on
+  organizational roles and responsibilities.
 software: ''
 tactics: []
 techniques:

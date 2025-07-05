@@ -1,12 +1,24 @@
-# Needs Revisions
 name: Set-DomainObject
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Takes a SID, name, or SamAccountName to query for a specified domain
-  object, and then sets a specified "PropertyName" to a specified "PropertyValue".
-  Part of PowerView.
+description: Modifies Active Directory object properties by leveraging PowerView's
+  Set-DomainObject function to alter user accounts, computer objects, groups, and
+  other domain entities. This module provides granular control over AD object attributes,
+  supporting property setting, clearing, and XOR operations for advanced manipulation
+  scenarios. The module can modify critical user properties such as account settings,
+  group memberships, security attributes, and descriptive information. This capability
+  is essential for privilege escalation operations, persistence establishment, and
+  domain manipulation activities. By modifying AD object properties, operators can
+  alter user permissions, change account settings, update group memberships, and
+  manipulate security attributes to achieve various operational objectives. The module
+  supports multiple modification modes including direct property setting, property
+  clearing, and XOR operations for complex attribute manipulation. This functionality
+  is crucial for maintaining persistence, escalating privileges, and manipulating
+  the domain environment to support ongoing operations. The module includes comprehensive
+  filtering options to target specific objects and supports various output formats
+  for operational flexibility.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]

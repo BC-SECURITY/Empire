@@ -4,8 +4,24 @@ authors:
   - name: ''
     handle: '@OneLogicalMyth'
     link: ''
-description: Retrieves IP addresses and usernames using event ID 4769 this can allow
-  identification of a users machine. Can only run on a domain controller.
+description: |
+  A network reconnaissance module that retrieves Kerberos service
+  ticket information from domain controller event logs. This module
+  analyzes Windows Security Event ID 4769 to identify service
+  ticket requests and associated user and computer information.
+
+  The module can only run on domain controllers where Kerberos
+  authentication events are logged. It extracts IP addresses,
+  usernames, and service information from service ticket requests,
+  providing valuable intelligence about user activity and service
+  access patterns across the domain.
+
+  This technique is particularly useful for understanding user
+  behavior, identifying which users access specific services,
+  and mapping user-to-computer relationships. The information
+  gathered can be used for user hunting, lateral movement
+  planning, and understanding the overall authentication
+  landscape within the Active Directory environment.
 software: ''
 tactics: [TA0007]
 techniques: [T1018]

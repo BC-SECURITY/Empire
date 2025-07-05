@@ -4,7 +4,26 @@ authors:
   - name: DarkOperator
     handle: ''
     link: ''
-description: Performs a DNS Reverse Lookup of a given IPv4 IP Range.
+description: |
+  A network reconnaissance module that performs reverse DNS lookups
+  across specified IPv4 address ranges. This module queries DNS
+  servers to resolve IP addresses back to hostnames, providing
+  valuable information about network infrastructure and potential
+  target systems.
+
+  The module can process individual IP addresses, IP ranges, or
+  CIDR notation blocks to systematically map network hostnames.
+  This technique is particularly useful for identifying servers,
+  workstations, and network devices that may not be immediately
+  apparent through other discovery methods.
+
+  Reverse DNS lookups can reveal internal naming conventions,
+  identify specific services or applications, and provide insight
+  into network architecture and organization. This information
+  is essential for understanding the target environment and
+  planning subsequent reconnaissance activities. The module
+  includes error handling and output formatting options for
+  integration with other security assessment tools.
 software: ''
 tactics: [TA0007]
 techniques: [T1046, T1590.005]

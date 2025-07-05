@@ -1,10 +1,14 @@
-# Needs Revisions
 name: Open Safari in the background and play Thunderstruck.
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Open Safari in the background and play Thunderstruck.
+description: |
+  Launches Safari browser in the background and automatically navigates to
+  the AC/DC "Thunderstruck" music video on YouTube while setting system
+  volume to maximum. This module performs a humorous prank by playing
+  loud music without user interaction. Uses macOS system commands to
+  control volume settings and launch Safari with specific URL parameters.
 software: ''
 tactics: []
 techniques:

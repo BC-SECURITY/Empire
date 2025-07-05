@@ -1,10 +1,25 @@
-# Needs Revisions
 name: Get FileServers
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will list file servers
+description: |
+  An Active Directory enumeration module that identifies file servers and shared
+  resources within the target domain via LDAP queries. This module performs
+  essential reconnaissance to map file storage infrastructure and potential
+  data exfiltration targets.
+
+  The module queries user accounts for home directory configurations, script path
+  information, and profile path data to identify file server locations and shared
+  resource mappings. This information is crucial for understanding the domain's
+  file storage infrastructure and identifying potential data exfiltration targets.
+
+  The enumeration results provide a foundation for data exfiltration from file
+  servers, lateral movement through shared resources, and understanding data
+  storage and backup infrastructure. This module is essential for comprehensive
+  domain reconnaissance and helps operators identify valuable data storage
+  locations and shared resources within the target environment for data harvesting
+  and lateral movement strategies.
 software: ''
 tactics: []
 techniques:

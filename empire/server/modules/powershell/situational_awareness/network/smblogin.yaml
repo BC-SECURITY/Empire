@@ -4,8 +4,26 @@ authors:
   - name: Mauricio Velazco (@mvelazco)
     handle: ''
     link: ''
-description: Validates username & password combination(s) across a host or group
-  of hosts using the SMB protocol.
+description: |
+  A network reconnaissance module that validates username and password
+  combinations against target systems using the SMB protocol. This
+  module performs authentication testing to identify valid credentials
+  that can be used for network access and lateral movement.
+
+  The module supports testing against individual hosts or multiple
+  target systems simultaneously. It can validate both local and
+  domain account credentials, making it effective for discovering
+  weak authentication across Windows environments. The module
+  includes support for credential lists and can use stored
+  credentials from the Empire credential store.
+
+  This technique is particularly useful for identifying shared
+  credentials, default passwords, and weak authentication that
+  could provide unauthorized access to network resources. Successful
+  credential validation can enable file share access, remote
+  administration, and other SMB-based activities. The module
+  provides detailed output of authentication results for further
+  analysis and planning of subsequent operations.
 software: ''
 tactics: [TA0008]
 techniques: [T1012.002]

@@ -1,11 +1,28 @@
-# Needs Revisions
 name: dscl Get-Groups
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will use the current user context to query active directory
-  for a list of Groups.
+description: |
+  A macOS-specific Active Directory enumeration module that leverages the
+  Directory Service command line utility (dscl) to query all groups within
+  the target domain using the current user's authentication context. This
+  module performs essential reconnaissance to understand organizational
+  structure and privilege distribution through native macOS directory services.
+
+  The module uses dscl to query Active Directory for all group objects
+  without requiring explicit LDAP credentials, relying instead on the current
+  user's domain authentication. This approach is particularly effective in
+  macOS environments where dscl provides seamless Active Directory integration
+  and can access domain information through the system's built-in directory
+  service framework.
+
+  The enumeration results provide critical intelligence for privilege escalation
+  and lateral movement by revealing the complete group structure within the
+  domain. This module is fundamental for macOS-based domain reconnaissance
+  and helps operators identify potential targets for group-based attacks and
+  understand the organizational hierarchy for targeted social engineering
+  campaigns using native macOS capabilities.
 software: ''
 tactics: []
 techniques:

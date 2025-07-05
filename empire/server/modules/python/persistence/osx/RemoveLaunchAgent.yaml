@@ -1,10 +1,20 @@
-# Needs Revisions
 name: RemoveLaunchDaemon
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Remove an Empire Launch Daemon.
+description: |
+  Removes Empire persistence mechanisms by unloading and deleting
+  LaunchAgent/LaunchDaemon plist files and their associated
+  program files. Uses launchctl to unload the service from
+  the system, then removes both the plist configuration file
+  and the executable binary or script. Provides cleanup
+  functionality for removing persistence mechanisms and
+  covering tracks after operations. Supports custom paths
+  for both the plist file and the associated program file.
+  Useful for post-exploitation cleanup, removing evidence,
+  and maintaining operational security by eliminating
+  persistence artifacts.
 software: ''
 tactics: []
 techniques:

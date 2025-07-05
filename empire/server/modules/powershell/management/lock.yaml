@@ -1,10 +1,26 @@
-# Needs Revisions
 name: Invoke-LockWorkStation
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Locks the workstation's display.
+description: |
+  A PowerShell module that programmatically locks the workstation
+  display using Windows API calls. This module leverages the
+  User32.dll LockWorkStation function to immediately secure the
+  desktop and require user authentication to regain access.
+
+  The module uses dynamic assembly creation and P/Invoke techniques
+  to call the native Windows API function, bypassing the need for
+  direct DLL imports. This approach provides a clean method for
+  remotely locking workstations during security operations or
+  incident response scenarios.
+
+  This functionality is particularly useful for security operations
+  where immediate workstation lockdown is required, such as during
+  incident response, security breaches, or when unauthorized access
+  is detected. The module can be executed remotely to secure
+  multiple workstations simultaneously without requiring physical
+  access to each machine.
 software: ''
 tactics: [TA0040]
 techniques: [T1531]

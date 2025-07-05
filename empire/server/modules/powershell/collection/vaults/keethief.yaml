@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-KeeThief
 authors:
   - name: Lee Christensen
@@ -7,8 +6,24 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module retrieves database mastey key information for unlocked KeePass
-  database.
+description: |
+  A sophisticated PowerShell module that extracts master key information
+  from unlocked KeePass password databases in memory. This module leverages
+  the KeeThief toolkit to perform in-memory credential harvesting from
+  active KeePass processes without requiring the master password.
+
+  The module works by analyzing the memory space of running KeePass
+  processes to locate and extract the master key components used to
+  decrypt the password database. This technique bypasses the need for
+  the master password by targeting the decrypted key material that
+  remains in memory while KeePass is running.
+
+  This attack vector is particularly effective because it targets
+  users who have already unlocked their KeePass database, allowing
+  for immediate access to all stored credentials without additional
+  authentication. The extracted master key information can be used
+  to decrypt the entire password database and access sensitive
+  credentials, passwords, and other stored secrets.
 software: ''
 tactics: [TA0006, TA0007]
 techniques: [T1055, T1555.005, T1057]

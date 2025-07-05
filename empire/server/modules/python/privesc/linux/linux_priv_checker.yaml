@@ -1,4 +1,3 @@
-# Needs Revisions
 name: LinuxPrivChecker
 authors:
   - name: ''
@@ -7,9 +6,16 @@ authors:
   - name: ''
     handle: '@Cx01N'
     link: ''
-description: This script is intended to be executed locally ona Linux box to enumerate
-  basic system info, and search for commonprivilege escalation vectors with pure
-  python.
+description: |
+  Executes a comprehensive Linux privilege escalation checker written
+  in pure Python to enumerate system information and identify common
+  privilege escalation vectors. Scans for kernel exploits, misconfigured
+  services, weak file permissions, environment variables, and other
+  security misconfigurations that could lead to privilege escalation.
+  Provides detailed output of potential attack paths and system
+  vulnerabilities. Useful for post-exploitation reconnaissance,
+  security assessments, and identifying privilege escalation
+  opportunities on Linux systems.
 software: ''
 tactics: []
 techniques:

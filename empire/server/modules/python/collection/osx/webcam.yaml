@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Webcam
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Takes a picture of a person through OSX's webcam with an ImageSnap binary.
+description: |
+  Captures a photograph using the macOS system's built-in webcam or external
+  camera using the ImageSnap utility. Downloads and executes a base64-encoded
+  ImageSnap binary to take a webcam snapshot with a configurable warm-up delay.
+  The module temporarily stores the binary and captured image, then returns
+  the image data in PNG format for transmission. Provides visual reconnaissance
+  capabilities by capturing real-time images of the user or environment in
+  front of the camera.
 software: ''
 tactics: []
 techniques:

@@ -1,10 +1,17 @@
-# Needs Revisions
 name: Marathon API Delete App
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Delete a Marathon App using Marathon's REST API
+description: |
+  Removes applications from Apache Marathon using the Marathon REST API.
+  Sends DELETE requests to the Marathon API endpoint to terminate and
+  remove specified applications from the container orchestration platform.
+  Uses a custom HTTP request class to handle DELETE method operations
+  not natively supported by urllib2. Useful for cleaning up evidence
+  after container-based operations, removing persistence mechanisms,
+  and managing the lifecycle of deployed applications in cloud-native
+  environments.
 software: ''
 tactics: []
 techniques:

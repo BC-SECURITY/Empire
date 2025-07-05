@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Get-DomainSite
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Gets a list of all current sites in a domain. Part of PowerView.
+description: Enumerates Active Directory sites within a domain to identify the physical
+  network topology, geographic distribution, and site-based replication boundaries.
+  This module leverages PowerView's Get-DomainSite function to query the domain's
+  site container and retrieve comprehensive information about all AD sites, including
+  their names, descriptions, site links, and associated subnets. The reconnaissance
+  capability is essential for understanding the network's physical layout, identifying
+  geographically distributed resources, and mapping site-based administrative boundaries.
+  By analyzing site structures, operators can identify potential network segmentation,
+  understand replication patterns, and locate systems within specific geographic
+  or network locations. The module supports filtering by identity, Group Policy links,
+  and custom LDAP queries to focus reconnaissance efforts on specific site areas.
+  This information is crucial for understanding the network topology, identifying
+  potential network-based attack vectors, and planning lateral movement strategies
+  that account for physical network boundaries and site-based security policies.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]

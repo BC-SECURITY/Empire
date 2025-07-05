@@ -1,10 +1,25 @@
-# Needs Revisions
 name: Invoke-DownloadFile
 authors:
-  - name: Cx01N
-    handle: ''
-    link: ''
-description: Download files from the internet through PowerShell.
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  A PowerShell module that downloads files from remote sources using
+  native PowerShell capabilities. This module provides a clean and
+  efficient method for transferring files to compromised systems
+  without requiring additional tools or external dependencies.
+
+  The module leverages PowerShell's built-in web request capabilities
+  to download files from HTTP, HTTPS, or FTP sources. This approach
+  is particularly useful for post-exploitation activities where
+  additional tools need to be deployed or when data exfiltration
+  requires file transfer capabilities.
+
+  The download functionality supports various file types and can
+  handle large files efficiently. This module is essential for
+  maintaining operational capabilities by ensuring that necessary
+  tools and payloads can be deployed to target systems as needed
+  during security assessments and penetration testing operations.
 software: ''
 tactics: [TA0010]
 techniques: [T1041]

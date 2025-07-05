@@ -1,10 +1,23 @@
-# Needs Revisions
-name: Keylog
+name: xkeylogger
 authors:
   - name: Nikaiw
     handle: ''
     link: ''
-description: X userland keylogger based on pupy
+description: Captures keystrokes from X11 user sessions on Linux systems by leveraging
+  low-level access to the X Window System, providing real-time keylogging capabilities
+  without requiring administrative privileges. This module is based on techniques
+  from the pupy and pykeylogger projects, using Python's ctypes to interface directly
+  with X11 libraries and monitor keyboard events at the userland level. It supports
+  detection of active windows, window titles, and context switching, allowing for
+  contextual logging of user input across different applications. The keylogger is
+  designed for stealth and persistence in post-exploitation scenarios, enabling operators
+  to collect sensitive information such as passwords, chat messages, and command-line
+  activity. While effective on many desktop Linux environments, the module may miss
+  some keystrokes due to X11 event handling limitations and may occasionally have
+  issues with agent termination. Operators should be aware of potential detection
+  by endpoint security tools and the ethical and legal considerations of deploying
+  keyloggers. This tool is intended for authorized security assessments, red teaming,
+  or research in controlled environments only.
 software: ''
 tactics: []
 techniques:

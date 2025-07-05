@@ -4,7 +4,16 @@ authors:
   - name: ''
     handle: '@benichmt1'
     link: ''
-description: Displays a balloon reminder in the taskbar.
+description: Displays a custom balloon notification in the Windows taskbar, simulating
+  system reminders, warnings, or alerts for psychological manipulation, pranks, or
+  user disruption. This module leverages PowerShell to invoke the wlrmdr.exe utility,
+  allowing operators to specify the message text, icon type, and title for the notification.
+  The technique is intended for humorous demonstrations, red team morale-boosting,
+  or psychological operations, and is non-destructive in nature. Balloon notifications
+  can be used to startle, inform, or amuse users, and the effect is immediate and
+  attention-grabbing. No administrative privileges are required, and the prank is
+  harmless, leaving no persistent changes on the system. Use responsibly and with
+  consideration for the target audience.
 software: ''
 tactics: [TA0040]
 techniques: [T1491]

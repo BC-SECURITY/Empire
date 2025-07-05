@@ -1,12 +1,19 @@
-# Needs Revisions
 name: PillageUser
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Pillages the current user for their keychain, bash_history, ssh known
-  hosts, recent folders, etc. For logon.keychain, use https://github.com/n0fate/chainbreaker
-  .For other .plist files, check https://davidkoepi.wordpress.com/2013/07/06/macforensics5/
+description: |
+  Collects sensitive user data including keychain files, bash history,
+  SSH keys and configuration, and application preference files.
+  Scans user directories for login keychains, command history,
+  SSH known_hosts files, Finder preferences, recent items, and
+  other user-specific configuration data. Supports targeting
+  specific users or all users when run with root privileges.
+  Downloads files in chunks to avoid detection and includes
+  configurable sleep intervals between downloads. Useful for
+  credential harvesting, user behavior analysis, and collecting
+  sensitive configuration data for lateral movement and persistence.
 software: ''
 tactics: []
 techniques:

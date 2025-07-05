@@ -7,7 +7,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Runs @SadProcessor's beeping rickroll.
+description: Executes a PowerShell-based prank that plays the melody of Rick Astley's
+  "Never Gonna Give You Up" using the system speaker, delivering an audible "Rickroll"
+  to the target user. This module leverages a script that generates a sequence of
+  beeps corresponding to the song's notes, surprising and amusing the user with a
+  recognizable tune. The technique is intended for humorous psychological operations,
+  red team morale-boosting, or lighthearted demonstrations, and is non-destructive
+  in nature. The prank is instantly recognizable and can be used to inject levity
+  into engagements or to test user awareness. No administrative privileges are required,
+  and the prank is harmless, leaving no persistent changes on the system. Use responsibly
+  and with consideration for the target audience.
 software: ''
 tactics: [TA0040]
 techniques: [T1491.001]

@@ -1,10 +1,19 @@
-# Needs Revisions
 name: SSHLauncher
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will send an launcher via ssh.
+description: |
+  Establishes lateral movement by deploying an Empire agent launcher
+  to remote systems via SSH. Uses password authentication to connect
+  to target systems and executes the Empire launcher script to
+  establish a new agent connection back to the specified listener.
+  Includes safety checks for security software like LittleSnitch
+  and sandbox detection to avoid detection. Supports configurable
+  User-Agent strings for the staging request. Useful for lateral
+  movement across network segments, establishing persistence on
+  remote systems, and expanding the attack surface through
+  legitimate SSH connections.
 software: ''
 tactics: []
 techniques:

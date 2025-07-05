@@ -1,10 +1,18 @@
-# Needs Revisions
 name: LaunchAgent
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Installs an Empire Launch Agent.
+description: |
+  Creates and installs a macOS LaunchAgent plist file to establish persistence
+  across user sessions and system reboots. The LaunchAgent is configured to
+  automatically start the Empire agent when the user logs in, providing
+  continuous access to the compromised system. The module creates a properly
+  formatted plist file with the specified daemon name and installs it in the
+  user's LaunchAgents directory. Includes safety checks for security software
+  like LittleSnitch and sandbox detection to avoid detection. Provides
+  reliable persistence mechanism that survives user logouts and system
+  restarts.
 software: ''
 tactics: []
 techniques:

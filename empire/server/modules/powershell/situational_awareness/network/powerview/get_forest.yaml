@@ -1,11 +1,22 @@
-# Needs Revisions
 name: Get-Forest
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Return information about a given forest, including the root domain and
-  SID. Part of PowerView.
+description: Enumerates Active Directory forest information to identify the forest
+  root domain, forest SID, and forest-wide configuration details. This module leverages
+  PowerView's Get-Forest function to query forest-level attributes and retrieve comprehensive
+  information about the Active Directory forest, including the forest name, root
+  domain, forest SID, and forest functional level. The reconnaissance capability
+  is essential for understanding the broader Active Directory environment, identifying
+  forest boundaries, and mapping the forest's administrative structure. By analyzing
+  forest information, operators can identify the forest root domain, understand forest-wide
+  security policies, and determine the scope of potential cross-domain operations.
+  This information is crucial for enterprise-wide reconnaissance, understanding the
+  complete Active Directory topology, and planning operations that may span multiple
+  domains within the forest. The module provides foundational information about the
+  forest structure that is essential for comprehensive Active Directory reconnaissance
+  and cross-domain attack planning.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482]

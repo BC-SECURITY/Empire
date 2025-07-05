@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-DomainObjectAcl
 authors:
   - name: Will Schroeder
@@ -7,9 +6,8 @@ authors:
   - name: ''
     handle: '@pyrotek3'
     link: ''
-description: 'Returns the ACLs associated with a specific active directory object.
-  Part of PowerView. WARNING: specify a specific object, otherwise a huge amount
-  of data will be returned.'
+description: |
+  Enumerates Access Control Lists (ACLs) associated with Active Directory objects to identify permissions, security descriptors, and access rights. This module leverages PowerView's Get-DomainObjectAcl function to retrieve detailed security information for users, groups, computers, and other domain entities. The reconnaissance capability is essential for understanding the domain's security model, identifying privilege escalation opportunities, and mapping access control relationships. By analyzing ACLs, operators can identify users with specific permissions such as password reset rights, group membership modification capabilities, and object modification privileges. The module supports both DACL (Discretionary Access Control List) and SACL (System Access Control List) enumeration, enabling comprehensive security analysis. This information is crucial for privilege escalation planning, persistence establishment, and understanding the domain's administrative structure. The module includes filtering options for specific rights and GUID resolution capabilities to provide human-readable permission information. Warning: Specifying a specific object is recommended to avoid overwhelming output from broad queries.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1615]

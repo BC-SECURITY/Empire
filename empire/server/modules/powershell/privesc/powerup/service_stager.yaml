@@ -4,7 +4,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Modifies a target service to execute an Empire stager.
+description: |
+  A privilege escalation module that abuses Windows services to execute
+  an Empire stager with elevated privileges. This technique modifies
+  the configuration of a target service to launch a malicious payload
+  when the service starts or restarts.
+
+  The module identifies vulnerable services and modifies their
+  configuration to include the execution of an Empire stager. This
+  can be achieved by modifying the service's binary path, command
+  line parameters, or other configuration options that control how
+  the service executes.
+
+  This technique is particularly effective because services often
+  run with elevated privileges, providing an immediate path to
+  administrative access. The module can trigger the service to
+  restart immediately or wait for the next system restart, depending
+  on operational requirements. This approach is based on the PowerUp
+  toolkit and represents a sophisticated method of service-based
+  privilege escalation that can provide persistent access.
 software: S0194
 tactics: [TA0004]
 techniques: [T1543.003, T1068]

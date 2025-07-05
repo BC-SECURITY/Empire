@@ -7,9 +7,26 @@ authors:
   - name: ''
     handle: '@classityinfosec'
     link: ''
-description: This module will logon to a member server using the agents account or
-  a provided account, fetch the local accounts and perform a network based brute
-  force attack.
+description: |
+  A reconnaissance module that performs local account enumeration and
+  network-based brute force attacks on Windows member servers. This
+  module leverages the agent's current credentials or provided
+  credentials to query local user accounts and then attempts to
+  authenticate against discovered accounts using a specified password list.
+
+  The module first enumerates local user accounts on target servers
+  using Windows Management Instrumentation (WMI) or Active Directory
+  queries. It then performs online brute force attacks against each
+  discovered account using the provided password list. This technique
+  is particularly effective on older Windows Server versions (2003/2008)
+  where domain accounts may have broader enumeration permissions.
+
+  This approach is inspired by the Xfocus X-Scan methodology and
+  provides a systematic way to identify weak local account credentials
+  across multiple servers. The module includes options for verbose
+  output to track failed login attempts and discovered users, making
+  it useful for security assessments and penetration testing scenarios
+  where credential harvesting is a priority.
 software: ''
 tactics: [TA0006, TA0007]
 techniques: [T1087.001, T1110.001]

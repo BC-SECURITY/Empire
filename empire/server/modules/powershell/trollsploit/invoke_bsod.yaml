@@ -4,8 +4,17 @@ authors:
   - name: 'Barrett Adams'
     handle: '@peewpw'
     link: 'https://x.com/peewpw'
-description: A PowerShell script to induce a Blue Screen of Death (BSOD) without
-  admin privileges. Also enumerates Windows crash dump settings.
+description: Forces the target Windows system to immediately crash and display a
+  Blue Screen of Death (BSOD), simulating a critical system failure as a prank or
+  disruptive action. This module leverages PowerShell techniques to trigger a system
+  crash without requiring administrative privileges, making it effective even in
+  restricted environments. In addition to inducing a BSOD, the module enumerates
+  the system's crash dump settings to provide insight into post-crash forensic capabilities.
+  This tool is intended for psychological operations, red team demonstrations, or
+  humorous scenarios where a dramatic system interruption is desired. Operators should
+  be aware that forcibly crashing a system can result in data loss, user disruption,
+  and potential forensic artifacts. Use with caution and only in controlled environments
+  or with explicit authorization.
 software: ''
 tactics: [TA0040]
 techniques: [T1499]

@@ -4,8 +4,28 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Query information for a given user or users in the specified domain.
-  Part of PowerView.
+description: |
+  A comprehensive Active Directory reconnaissance module that queries
+  and enumerates user accounts across the domain. This module is
+  part of the PowerView toolkit and provides extensive filtering
+  and search capabilities to identify specific user accounts and
+  their properties.
+
+  The module supports multiple search criteria including username,
+  SID, GUID, and distinguished name patterns. It can filter for
+  specific user types such as service accounts with SPNs, privileged
+  accounts with adminCount=1, accounts with delegation settings,
+  and users with specific Kerberos configurations. This makes it
+  particularly effective for identifying high-value targets and
+  understanding the domain's user landscape.
+
+  This technique is essential for Active Directory reconnaissance
+  as it provides detailed user information including group memberships,
+  account settings, last logon times, and security attributes. The
+  gathered intelligence can be used for privilege escalation planning,
+  lateral movement targeting, and understanding the overall domain
+  security posture. The module includes advanced LDAP filtering
+  options for precise targeting and comprehensive output formatting.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]

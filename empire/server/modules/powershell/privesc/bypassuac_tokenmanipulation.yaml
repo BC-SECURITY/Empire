@@ -7,8 +7,24 @@ authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Bypass UAC module based on the script released by Matt Nelson @enigma0x3
-  at Derbycon 2017
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  using Windows token manipulation techniques. This module is based on
+  research presented by Matt Nelson (@enigma0x3) at Derbycon 2017 and
+  implements token duplication to achieve elevated privileges.
+
+  The technique exploits Windows security token handling by duplicating
+  existing elevated tokens from running processes and using them to
+  create new processes with administrative privileges. This approach
+  bypasses UAC by leveraging tokens that already have the necessary
+  privileges, rather than attempting to elevate through traditional
+  means.
+
+  This method is particularly effective because it doesn't require
+  registry modifications or file system changes, making it completely
+  fileless and difficult to detect. The technique works by identifying
+  processes with elevated tokens and duplicating their security context
+  to execute arbitrary code with administrative privileges.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

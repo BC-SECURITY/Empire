@@ -1,12 +1,24 @@
-# Needs Revisions
 name: Invoke-PhishingLnk
 authors:
   - name: 0xFFaraday
     handle: '0xFFaraday'
     link: ''
-description: Adds an additional .LNK file to the targeted user's desktop and backdoors
-  it to launch a stager of your choice. This lets the operator have the availability
-  to spawn a new agent from the end user clicking a new "useful" shortcut.
+description: |
+  A persistence module that creates a new shortcut (.LNK) file on a targeted
+  user's desktop, backdoored to launch both a legitimate application and
+  an Empire stager. This approach enables the operator to maintain access
+  by enticing the user to execute the shortcut, which appears useful or familiar.
+
+  The module allows customization of the shortcut's name, icon, and target
+  application, increasing the likelihood of user interaction and successful
+  agent deployment. By creating a new shortcut rather than modifying existing
+  ones, the module provides a clean persistence mechanism that doesn't
+  interfere with normal user workflows.
+
+  This phishing technique is particularly effective for maintaining access
+  as it leverages social engineering principles and user behavior patterns,
+  providing a reliable method for re-establishing connections through
+  user-initiated actions.
 tactics: [TA0004]
 techniques: [T1204.001]
 background: true

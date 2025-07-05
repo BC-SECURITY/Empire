@@ -1,10 +1,18 @@
-# Needs Revisions
 name: Chronos API Start Job
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Start a Chronos job using the HTTP API service for the Chronos Framework
+description: |
+  Manually triggers the execution of a scheduled job on Apache Chronos
+  using the Chronos REST API. Sends PUT requests to the Chronos API
+  endpoint to immediately start a specified scheduled job without
+  waiting for its configured schedule. Uses a custom HTTP request
+  class to handle PUT method operations not natively supported by
+  urllib2. Useful for on-demand execution of scheduled tasks,
+  testing job configurations, and triggering immediate command
+  execution through the distributed job scheduler in cloud-native
+  environments.
 software: ''
 tactics: []
 techniques:

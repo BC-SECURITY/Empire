@@ -1,11 +1,23 @@
-# Needs Revisions
 name: Get-DomainFileServer
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Returns a list of all file servers extracted from user homedirectory,
-  scriptpath, and profilepath fields. Part of PowerView.
+description: Discovers file servers within an Active Directory domain by analyzing
+  user account attributes including home directories, script paths, and profile paths
+  to identify centralized file storage infrastructure. This module leverages PowerView's
+  Get-DomainFileServer function to query user account attributes and extract file
+  server information from various path fields, providing comprehensive visibility
+  into the domain's file storage architecture. The reconnaissance capability is essential
+  for understanding the domain's file sharing infrastructure, identifying centralized
+  data repositories, and mapping the distribution of user data across file servers.
+  By analyzing file server information, operators can identify potential data exfiltration
+  targets, understand user data storage patterns, and discover opportunities for
+  lateral movement through file access. The module supports filtering by domain and
+  custom LDAP queries to focus reconnaissance efforts on specific organizational
+  areas. This information is crucial for data collection operations, understanding
+  the domain's file storage landscape, and identifying potential data exfiltration
+  vectors through centralized file repositories that may contain sensitive user data.
 software: S0194
 tactics: [TA0007]
 techniques: [T1135]

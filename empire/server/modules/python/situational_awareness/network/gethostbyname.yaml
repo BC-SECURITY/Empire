@@ -1,11 +1,15 @@
-# Needs Revisions
 name: Translate a host name to IPv4 address format using a remote agent.
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Uses Python's socket.gethostbyname("example.com") function to resolve
-  host names on a remote agent.
+description: |
+  Performs DNS resolution to translate hostnames, domain names, or FQDNs
+  to their corresponding IPv4 addresses using Python's socket library.
+  Leverages the remote agent's network configuration and DNS settings
+  to resolve hostnames through the target system's DNS infrastructure.
+  Provides essential network reconnaissance capabilities for mapping
+  hostnames to IP addresses and understanding network topology.
 software: ''
 tactics: []
 techniques:

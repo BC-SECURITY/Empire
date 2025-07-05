@@ -1,10 +1,23 @@
-# Needs Revisions
 name: Get-DomainTrustMapping
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Maps all reachable domain trusts with .CSV output. Part of PowerView.
+description: Performs comprehensive domain trust enumeration and mapping to identify
+  all reachable domains, trust relationships, and cross-domain access opportunities.
+  This module leverages PowerView's Get-DomainTrustMapping function to systematically
+  discover and analyze trust relationships between domains, forests, and external
+  domains. The reconnaissance capability is essential for understanding the broader
+  Active Directory environment, identifying lateral movement paths across domain
+  boundaries, and mapping the complete trust topology. By analyzing trust relationships,
+  operators can identify potential cross-domain attack vectors, understand authentication
+  flows between domains, and discover opportunities for privilege escalation across
+  domain boundaries. The module supports multiple enumeration methods including LDAP
+  queries, .NET APIs, and native Windows API calls to ensure comprehensive trust
+  discovery. This information is crucial for enterprise-wide reconnaissance, cross-domain
+  lateral movement planning, and understanding the complete scope of the target environment.
+  The module outputs results in CSV format for easy analysis and integration with
+  other reconnaissance tools.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]

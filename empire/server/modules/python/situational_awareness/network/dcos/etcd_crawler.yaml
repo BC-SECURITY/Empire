@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Etcd Crawler
 authors:
   - name: ''
@@ -7,7 +6,15 @@ authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Pull keys and values from an etcd configuration store
+description: |
+  Crawls and extracts key-value pairs from an etcd distributed key-value
+  store using the etcd HTTP API. Recursively traverses the etcd hierarchy
+  to discover configuration data, secrets, and application settings stored
+  in the distributed configuration store. Supports configurable depth
+  limits for controlling the scope of the crawl. Useful for reconnaissance
+  of container orchestration platforms, discovering sensitive configuration
+  data, and understanding the architecture of cloud-native applications
+  that use etcd for configuration management.
 software: ''
 tactics: []
 techniques:

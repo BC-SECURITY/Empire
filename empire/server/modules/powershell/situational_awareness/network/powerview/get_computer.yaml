@@ -1,10 +1,32 @@
-# Needs Revisions
 name: Get-DomainComputer
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Queries the domain for current computer objects. Part of PowerView.
+description: |
+  A comprehensive Active Directory reconnaissance module that queries
+  and enumerates computer objects across the domain. This module is
+  part of the PowerView toolkit and provides extensive filtering
+  capabilities to identify specific computer systems and their
+  properties for lateral movement and privilege escalation planning.
+
+  The module supports multiple search criteria including computer
+  name, SID, GUID, and distinguished name patterns. It can filter
+  for specific computer types such as systems with unconstrained
+  delegation, trusted authentication capabilities, specific service
+  principal names, operating system versions, and Active Directory
+  site membership. This makes it particularly effective for
+  identifying high-value targets and understanding the domain's
+  computer landscape.
+
+  This technique is essential for Active Directory reconnaissance
+  as it provides detailed computer information including operating
+  system details, service configurations, network connectivity,
+  and security attributes. The gathered intelligence can be used
+  for lateral movement planning, privilege escalation targeting,
+  and understanding the overall domain infrastructure. The module
+  includes ping-based host discovery and advanced LDAP filtering
+  options for precise targeting.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615]

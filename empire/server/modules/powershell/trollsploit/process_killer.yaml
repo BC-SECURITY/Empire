@@ -1,10 +1,20 @@
-# Needs Revisions
 name: Invoke-ProcessKiller
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Kills any process starting with a particular name.
+description: Continuously monitors the target system for processes matching a specified
+  name and immediately terminates them upon detection, effectively preventing targeted
+  applications from running. This module leverages PowerShell to watch for process
+  creation events and forcefully kills any process whose name matches the provided
+  pattern, supporting wildcards for broad targeting. The technique is useful for
+  pranks, psychological operations, or disruptive demonstrations, as it can frustrate
+  users by making specific programs impossible to launch. Operators can use this
+  module to block games, productivity tools, or any application of interest, with
+  optional silent operation to avoid alerting the user. No administrative privileges
+  are required, making it effective in a wide range of environments. Use responsibly,
+  as repeated process termination can disrupt user productivity and may result in
+  data loss if critical applications are targeted.
 software: ''
 tactics: [TA0040]
 techniques: [T1489]

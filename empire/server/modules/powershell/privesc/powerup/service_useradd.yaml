@@ -4,8 +4,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Modifies a target service to create a local user and add it to the local
-  administrators.
+description: |
+  A privilege escalation module that abuses Windows services to create
+  a local administrator account. This technique modifies the configuration
+  of a target service to execute commands that create a new user and
+  add them to the local Administrators group.
+
+  The module identifies vulnerable services and modifies their
+  configuration to include user creation commands. When the service
+  starts or restarts, it executes these commands with elevated
+  privileges, creating a new local administrator account that can
+  be used for persistent access to the system.
+
+  This technique is particularly effective because services often
+  run with elevated privileges, allowing the creation of administrative
+  accounts that would normally require administrative rights. The
+  module provides options to specify the username, password, and
+  target local group, making it flexible for different operational
+  requirements. This approach is based on the PowerUp toolkit and
+  represents a sophisticated method of service-based privilege escalation.
 software: S0194
 tactics: [TA0004]
 techniques: [T1543.003, T1136.001, T1068]

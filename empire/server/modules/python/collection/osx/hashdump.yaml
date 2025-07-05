@@ -1,10 +1,18 @@
-# Needs Revisions
 name: Hashdump
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Extracts found user hashes out of /var/db/dslocal/nodes/Default/users/*.plist
+description: |
+  Extracts password hashes from macOS user account plist files stored
+  in the Directory Services database. Parses the ShadowHashData
+  property from user plist files to extract PBKDF2 password hashes
+  with salt and iteration information. Uses the defaults command
+  to read plist data and converts the binary hash data to a format
+  compatible with password cracking tools. Requires root privileges
+  to access the protected Directory Services database. Provides
+  comprehensive user account enumeration including usernames and
+  password hashes for all local users on macOS systems.
 software: ''
 tactics: []
 techniques:

@@ -1,11 +1,31 @@
-# Needs Revisions
 name: Get-DomainTrust
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Return all domain trusts for the current domain or a specified domain.
-  Part of PowerView.
+description: |
+  A network reconnaissance module that enumerates domain trust
+  relationships within the current domain or specified domain.
+  This module is part of the PowerView toolkit and provides
+  critical information about inter-domain relationships for
+  lateral movement and privilege escalation planning.
+
+  The module can discover trust relationships using multiple
+  methods including Win32 API calls, .NET methods, and LDAP
+  queries. It provides detailed information about each trust
+  including trust direction, trust type, trust attributes,
+  and the trusted domain information. This includes both
+  incoming and outgoing trusts, forest trusts, and external
+  domain relationships.
+
+  This technique is essential for understanding the broader
+  Active Directory environment as trust relationships define
+  how domains can authenticate and authorize users from other
+  domains. Understanding the trust landscape is crucial for
+  planning cross-domain attacks, identifying potential lateral
+  movement paths, and understanding the overall enterprise
+  security architecture. The gathered intelligence can be used
+  for mapping attack paths across multiple domains and forests.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482]

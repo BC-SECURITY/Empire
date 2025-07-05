@@ -1,10 +1,17 @@
-# Needs Revisions
 name: Port Scanner.
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Simple Port Scanner.
+description: |
+  Performs network port scanning to identify open ports and services on target
+  systems. Supports multiple target formats including single IP addresses,
+  IP ranges (0-255), and CIDR notation for efficient network reconnaissance.
+  Uses raw socket connections with configurable timeouts to determine port
+  status. Provides essential network mapping capabilities for identifying
+  potential attack vectors, service enumeration, and network topology
+  discovery. Results include host IP addresses and their corresponding
+  open/closed port status for comprehensive network analysis.
 software: ''
 tactics: [TA0007]
 techniques: [T1046]

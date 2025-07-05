@@ -1,11 +1,17 @@
-# Needs Revisions
 name: Linux MimiPenguin
 authors:
   - name: ''
     handle: '@rvrsh3ll'
     link: ''
-description: Port of huntergregal mimipenguin. Harvest's current user's cleartext
-  credentials.
+description: |
+  Extracts cleartext passwords from memory on Linux systems by
+  scanning process memory for authentication data. Leverages
+  techniques similar to the original MimiPenguin tool to locate
+  and extract plaintext credentials stored in memory by various
+  applications and services. Requires root privileges to access
+  process memory and scan for sensitive authentication data.
+  Useful for credential harvesting, password recovery, and
+  post-exploitation reconnaissance on Linux systems.
 software: S0179
 tactics: []
 techniques:

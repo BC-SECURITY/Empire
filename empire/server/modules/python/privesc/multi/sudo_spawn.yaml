@@ -1,10 +1,28 @@
-# Needs Revisions
 name: SudoSpawn
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Spawns a new Empire agent using sudo.
+description: |
+  A privilege escalation module that leverages sudo access to spawn a new Empire agent
+  with elevated privileges. This module requires the current user to have sudo privileges
+  and knowledge of the user's password to execute commands with root-level permissions.
+
+  The module works by:
+  - Using the provided password to authenticate with sudo
+  - Downloading and executing the Empire stager with root privileges
+  - Establishing a new agent process running as the root user
+  - Maintaining the original agent while creating a high-integrity session
+
+  This technique is useful when:
+  - The current user has sudo access but the agent is running with limited privileges
+  - You need to perform operations that require root-level access
+  - You want to establish a persistent high-privilege foothold on the system
+  - The target system has sudo configured to require password authentication
+
+  The spawned agent inherits root privileges, allowing access to sensitive system
+  files, configuration changes, and administrative operations that would otherwise
+  be restricted to the original user context.
 software: T1169
 tactics: []
 techniques:

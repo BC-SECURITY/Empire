@@ -1,11 +1,19 @@
-# Needs Revisions
 name: PcapSniffer
 authors:
   - name: ''
     handle: '@Killswitch_GUI'
     link: ''
-description: This module will sniff all interfaces on the target, and write in pcap
-  format.
+description: |
+  Captures network traffic from all interfaces and saves it in PCAP
+  format for analysis. Uses raw sockets to capture packets at the
+  link layer and parses Ethernet, IP, TCP, UDP, and ICMP headers.
+  Supports filtering by IP address and port number to focus on
+  specific traffic patterns. Configurable options include maximum
+  file size, packet count limits, and in-memory storage to avoid
+  disk writes. Generates standard PCAP files compatible with
+  Wireshark and other network analysis tools. Useful for network
+  reconnaissance, traffic analysis, and capturing sensitive data
+  in transit.
 software: ''
 tactics: []
 techniques:

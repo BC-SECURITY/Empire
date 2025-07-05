@@ -1,10 +1,15 @@
-# Needs Revisions
-name: Search for world writeable files
+name: Search for SUID/GUID files
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module can be used to identify suid or guid bit set on files.
+description: |
+  Searches for files with SUID (Set User ID) or GUID (Set Group ID)
+  permissions set, which can be exploited for privilege escalation.
+  Uses the find command to recursively search the filesystem for
+  files with elevated permissions that execute with the privileges
+  of the file owner or group. Displays detailed file information
+  including permissions, owner, group, and file path.
 software: ''
 tactics: []
 techniques:

@@ -1,11 +1,16 @@
-# Needs Revisions
 name: LinPEAS
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: LinPEAS is a script that search for possible paths to escalate privileges
-  on Linux/Unix*/MacOS hosts.
+description: |
+  Executes LinPEAS (Linux Privilege Escalation Awesome Script) to perform
+  comprehensive privilege escalation reconnaissance on Linux, Unix, and
+  macOS systems. Scans for common privilege escalation vectors including
+  SUID binaries, writable files, cron jobs, environment variables,
+  kernel exploits, and misconfigured services. Provides detailed output
+  of potential attack paths and security misconfigurations that could
+  lead to privilege escalation.
 software: ''
 tactics: []
 techniques:

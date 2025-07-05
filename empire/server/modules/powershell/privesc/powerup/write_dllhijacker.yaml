@@ -7,9 +7,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Writes out a hijackable .dll to the specified path along with a stager.bat
-  that's called by the .dll. wlbsctrl.dll works well for Windows 7. The machine will
-  need to be restarted for the privesc to work.
+description: |
+  A privilege escalation module that creates a malicious DLL for
+  DLL hijacking attacks. This technique writes a custom DLL to a
+  specified path along with a stager batch file that is called by
+  the DLL when it is loaded by a target process.
+
+  The module creates a DLL that, when loaded by a vulnerable process,
+  executes the stager batch file to establish a connection with
+  elevated privileges. This technique is particularly effective
+  against processes that load DLLs from writable directories or
+  have weak file permissions that allow DLL replacement.
+
+  The module is designed to work with specific DLLs like wlbsctrl.dll
+  on Windows 7 systems, where the target process expects to find
+  the DLL in a specific location. When the system is restarted or
+  the target process is launched, it loads the malicious DLL instead
+  of the legitimate one, executing the stager with the process's
+  elevated privileges. This approach is based on the PowerUp toolkit
+  and represents a sophisticated method of DLL-based privilege escalation.
 software: S0194
 tactics: [TA0004]
 techniques: [T1574.001, T1574.007, T1574.008, T1574.009, T1068]

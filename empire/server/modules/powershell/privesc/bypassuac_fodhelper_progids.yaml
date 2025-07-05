@@ -11,7 +11,24 @@ authors:
     handle: '@m1m1k4tz'
     link: ''
 description: |
-  Bypasses UAC by performing a registry modification for FodHelper but uses ProgIDs to bypass antivirus signatures on the registry key
+  A privilege escalation module that bypasses User Account Control (UAC)
+  by exploiting the Windows Features on Demand Helper (FodHelper.exe)
+  using Programmatic Identifiers (ProgIDs). This technique leverages
+  registry manipulation to redirect FodHelper's execution flow while
+  evading antivirus detection through the use of ProgID entries.
+
+  The module creates a custom file extension (.pwn) and associates it
+  with a command handler in the registry. It then manipulates the
+  ms-settings ProgID to redirect to this custom extension, causing
+  FodHelper.exe to execute the specified command with elevated
+  privileges when it attempts to process the settings request.
+
+  This approach is particularly effective because it uses ProgIDs
+  instead of direct registry key modifications, which helps avoid
+  detection by security tools that monitor for specific registry
+  changes. The technique is based on research by @V3ded and provides
+  a stealthy method of UAC bypass that can evade many antivirus
+  signatures.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

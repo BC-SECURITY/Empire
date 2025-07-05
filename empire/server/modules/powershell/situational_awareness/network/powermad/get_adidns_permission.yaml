@@ -7,8 +7,29 @@ authors:
   - name: ''
     handle: '@snovvcrash'
     link: ''
-description: Query a DACL of an ADIDNS node or zone in the specified domain. Part
-  of Powermad.
+description: |
+  A network reconnaissance module that queries the discretionary
+  access control list (DACL) of Active Directory Integrated DNS
+  (ADIDNS) nodes or zones within the specified domain. This module
+  is part of the PowerMad toolkit and provides critical information
+  about DNS security permissions and potential privilege escalation
+  opportunities.
+
+  The module can enumerate permissions across different Active
+  Directory partitions including DomainDNSZones, ForestDNSZones,
+  and System partitions. It provides detailed information about
+  access control entries, user and group permissions, and security
+  descriptors that could reveal potential DNS-based privilege
+  escalation or lateral movement opportunities.
+
+  This technique is particularly effective for identifying weak
+  DNS permissions that could allow unauthorized DNS record
+  modification, zone manipulation, or DNS-based attacks. The
+  gathered intelligence can be used for planning DNS-based
+  privilege escalation, understanding DNS security posture, and
+  identifying potential attack vectors within the DNS infrastructure.
+  Understanding DNS permissions is essential for comprehensive
+  Active Directory security assessments.
 software: ''
 tactics: [TA0007]
 techniques: [T1069]

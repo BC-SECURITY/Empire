@@ -10,7 +10,27 @@ authors:
   - name: ''
     handle: '@kevin'
     link: ''
-description: Tests usernames/password combination across a number of machines.
+description: |
+  A network reconnaissance module that performs SMB credential testing
+  across multiple target systems. This module tests username and
+  password combinations against Windows systems to identify valid
+  credentials that can be used for lateral movement and privilege
+  escalation.
+
+  The module can target specific computers or automatically enumerate
+  domain machines for credential testing. It supports both local and
+  domain authentication, making it effective for identifying weak
+  credentials across the network environment. The module includes
+  options for ping-based host discovery and can use stored credentials
+  from the Empire credential store.
+
+  This technique is particularly effective for discovering shared
+  credentials, default passwords, and weak authentication across
+  network systems. Successful credential identification can provide
+  immediate access to additional systems and facilitate lateral
+  movement within the target environment. The module is based on
+  research from @obscuresec and provides a systematic approach to
+  network credential harvesting.
 software: ''
 tactics: [TA0008]
 techniques: [T1135, T1187, T1021.002]

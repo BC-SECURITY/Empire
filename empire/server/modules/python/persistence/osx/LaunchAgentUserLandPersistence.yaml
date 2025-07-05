@@ -1,4 +1,3 @@
-# Needs Revisions
 name: LaunchAgent - UserLand Persistence
 authors:
   - name: Chris Ross
@@ -7,7 +6,17 @@ authors:
   - name: ''
     handle: '@n0pe_sled'
     link: ''
-description: Installs an Empire launchAgent.
+description: |
+  Creates and installs a macOS LaunchAgent plist file in the user's home
+  directory to establish persistence across user sessions and system reboots.
+  The LaunchAgent is configured to automatically start the Empire agent when
+  the user logs in, providing continuous access to the compromised system
+  without requiring administrative privileges. The module creates a properly
+  formatted plist file with the specified name and installs it in the user's
+  LaunchAgents directory. Includes safety checks for security software like
+  LittleSnitch and sandbox detection to avoid detection. Provides reliable
+  user-level persistence mechanism that survives user logouts and system
+  restarts.
 software: ''
 tactics: []
 techniques:

@@ -4,8 +4,22 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Takes a computer (or GPO) object and determines what users/groups have
-  administrative access over it. Part of PowerView.
+description: Analyzes Group Policy Objects (GPOs) to identify users and groups that
+  have been granted administrative access to computers through policy-based local
+  group modifications. This module leverages PowerView's Get-DomainGPOComputerLocalGroupMapping
+  function to examine GPO configurations and determine which users or groups have
+  been added to local administrative groups on target computers through policy enforcement.
+  The reconnaissance capability is essential for understanding policy-based administrative
+  access patterns, identifying potential privilege escalation opportunities through
+  GPO misconfigurations, and mapping administrative access relationships across the
+  domain. By analyzing GPO computer local group mappings, operators can identify
+  users with policy-granted administrative access, understand the scope of policy-based
+  privilege assignments, and discover potential attack vectors that leverage GPO-based
+  administrative access. The module supports targeting specific computers or GPOs
+  to focus reconnaissance efforts on particular administrative relationships. This
+  information is crucial for privilege escalation planning, understanding policy-based
+  access control, and identifying potential lateral movement opportunities through
+  policy-granted administrative access.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069, T1615]

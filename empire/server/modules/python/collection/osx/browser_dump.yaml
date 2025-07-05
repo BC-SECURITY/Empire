@@ -1,10 +1,19 @@
-# Needs Revisions
 name: Browser Dump
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will dump browser history from Safari and Chrome.
+description: |
+  Extracts browser history from Safari and Chrome by querying
+  their respective SQLite database files. Accesses the History.db
+  file for Safari and the History file for Chrome to retrieve
+  visited URLs, page titles, visit timestamps, and visit counts.
+  Supports configurable limits on the number of recent URLs to
+  return from each browser. Provides web browsing reconnaissance
+  capabilities for understanding user behavior, visited websites,
+  and online activities. Useful for intelligence gathering,
+  user profiling, and identifying potential targets or sensitive
+  information accessed through web browsers.
 software: ''
 tactics: []
 techniques:

@@ -1,11 +1,18 @@
-# Needs Revisions
 name: osx_mic_record
 authors:
   - name: ''
     handle: '@s0lst1c3'
     link: ''
-description: Records audio through the MacOS webcam mic by leveraging the Apple AVFoundation
-  API.
+description: |
+  Records audio through the macOS microphone using the Apple AVFoundation
+  API. Leverages AVAudioRecorder to capture audio with configurable
+  duration and quality settings. Creates temporary audio files in
+  Core Audio Format (CAF) that are automatically deleted after
+  recording. Uses high-quality audio settings including 44.1kHz
+  sample rate and stereo channels. Provides audio reconnaissance
+  capabilities for capturing conversations, ambient sounds, and
+  user interactions. Useful for surveillance, intelligence gathering,
+  and monitoring user activities through audio capture.
 software: ''
 tactics: []
 techniques:

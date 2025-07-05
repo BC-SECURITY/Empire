@@ -4,7 +4,16 @@ authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Reads text aloud via synthesized voice on target.
+description: Uses the Windows speech synthesis engine to read aloud custom text on
+  the target system, surprising or amusing the user with unexpected spoken messages.
+  This module leverages PowerShell to invoke the built-in text-to-speech functionality,
+  allowing operators to deliver any message in a synthesized voice. The technique
+  is intended for psychological operations, red team morale-boosting, or lighthearted
+  pranks, and is non-destructive in nature. Spoken messages can be used to startle,
+  inform, or entertain users, and the effect is immediate and attention-grabbing.
+  No administrative privileges are required, and the prank is harmless, leaving no
+  persistent changes on the system. Use responsibly and with consideration for the
+  target audience.
 software: ''
 tactics: [TA0040]
 techniques: [T1491.001]

@@ -4,7 +4,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds generic .DLL hijacking opportunities.
+description: |
+  A privilege escalation enumeration module that identifies potential
+  DLL hijacking opportunities on Windows systems. This module scans
+  running processes and their DLL dependencies to find situations
+  where malicious DLLs could be placed to achieve privilege escalation.
+
+  The module examines the DLL search order and file permissions to
+  identify processes that load DLLs from writable directories or
+  locations where an attacker could place malicious DLLs. It looks
+  for common DLL hijacking scenarios such as missing DLLs in expected
+  locations, writable directories in the DLL search path, and weak
+  file permissions that allow DLL replacement.
+
+  This technique is particularly effective for privilege escalation
+  because it can allow an attacker to execute code in the context
+  of higher-privileged processes. The module provides detailed
+  information about each potential hijacking opportunity, including
+  the target process, missing DLL, and the location where a malicious
+  DLL could be placed.
 software: S0194
 tactics: [TA0007]
 techniques: [T1087.001, T1574.001, T1574.007, T1574.008, T1574.009, T1057, T1012,

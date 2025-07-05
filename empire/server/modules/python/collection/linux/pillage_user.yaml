@@ -1,11 +1,18 @@
-# Needs Revisions
 name: Linux PillageUser
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: 'Pillages the current user for their bash_history, ssh known hosts,
-  recent folders, etc. '
+description: |
+  Collects sensitive user data including bash history, SSH keys and
+  configuration files, and other user-specific information. Scans
+  user home directories for command history, SSH known_hosts files,
+  private keys, and configuration data. Supports targeting specific
+  users or all users on the system when run with root privileges.
+  Downloads files in chunks to avoid detection and includes configurable
+  sleep intervals between downloads. Useful for credential harvesting,
+  user behavior analysis, and collecting sensitive configuration
+  data for lateral movement and persistence.
 software: ''
 tactics: []
 techniques:

@@ -1,11 +1,19 @@
-# Needs Revisions
-name: Webcam
+name: Keychaindump
 authors:
   - name: Juuso Salonen
     handle: ''
     link: ''
-description: Searches for keychain candidates and attempts to decrypt the user's
-  keychain.
+description: |
+  Extracts and decrypts passwords from the macOS Keychain using a
+  custom binary that searches for master key candidates in process
+  memory. Leverages the keychaindump tool to locate and decrypt
+  stored credentials including passwords, certificates, and keys.
+  Searches for master key candidates in the securityd process
+  memory and uses them to decrypt the user's login keychain.
+  Requires root privileges to access process memory and keychain
+  data. Provides comprehensive credential extraction including
+  website passwords, application passwords, and system credentials
+  stored in the macOS Keychain.
 software: ''
 tactics: []
 techniques:

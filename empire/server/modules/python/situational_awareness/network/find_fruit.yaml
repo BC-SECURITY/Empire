@@ -1,10 +1,17 @@
-# Needs Revisions
 name: Find Fruit
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Searches for low-hanging web applications.
+description: |
+  Scans for common web application endpoints and administrative interfaces
+  that are often left exposed and vulnerable. Tests for known default
+  paths and common web application management consoles including JBoss
+  JMX console, Tomcat manager, WordPress admin, IBM WebSphere console,
+  and other frequently misconfigured web interfaces. Supports both HTTP
+  and HTTPS scanning with configurable ports and CIDR notation for
+  network-wide scanning. Identifies potential low-hanging fruit targets
+  that may be misconfigured or running with default credentials.
 software: ''
 tactics: []
 techniques:

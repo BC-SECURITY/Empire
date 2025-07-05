@@ -4,8 +4,23 @@ authors:
   - name: Petr Medonos
     handle: ''
     link: ''
-description: Bypasses UAC by performing an registry modification for FodHelper (based
-  onhttps://winscripting.blog/2017/05/12/first-entry-welcome-and-uac-bypass/)
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  by exploiting the Windows Features on Demand Helper (FodHelper.exe).
+  This technique manipulates registry keys to redirect FodHelper's
+  execution flow and execute arbitrary code with elevated privileges.
+
+  The module modifies registry entries that control how FodHelper.exe
+  processes feature installation requests. By hijacking the registry
+  path that FodHelper uses to launch its helper processes, the module
+  can execute custom code with administrative privileges while bypassing
+  UAC prompts.
+
+  This technique is effective because FodHelper.exe is a legitimate
+  Windows component that runs with elevated privileges by design,
+  making it an attractive target for UAC bypass techniques. The
+  registry modifications required are minimal and can be easily
+  cleaned up after successful execution.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

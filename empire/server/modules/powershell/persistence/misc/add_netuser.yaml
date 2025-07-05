@@ -1,11 +1,27 @@
 # Needs Revisions
-name: Add-NetUser
+name: Invoke-AddNetUser
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Adds a domain user or a local user to the current (or remote) machine,
-  if permissions allow,
+description: |
+  A persistence module that establishes system-level persistence by creating
+  a new user account with administrative privileges and configuring it to
+  execute an Empire stager upon logon. This approach leverages Windows
+  user account management to create a reliable persistence mechanism that
+  provides continued access through a dedicated backdoor account.
+
+  The module creates a new user account with specified credentials and
+  administrative privileges, then configures the account's registry hive
+  to execute the stager upon logon. This technique is particularly effective
+  as it uses legitimate Windows user account infrastructure and provides
+  a dedicated access method that can survive system changes.
+
+  User account creation persistence provides reliable access as it creates
+  a dedicated backdoor account with administrative privileges. However,
+  it requires administrative privileges to implement and creates visible
+  user account artifacts that can be detected by security monitoring
+  tools and user management processes.
 software: ''
 tactics: [TA0003]
 techniques: [T1136.001, T1136.002]
@@ -18,9 +34,9 @@ min_language_version: '2'
 comments:
   - https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
+  - name: Listener
+    description: Listener to use for the stager.
+    required: false
     value: ''
   - name: UserName
     description: The username to add.

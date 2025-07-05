@@ -1,12 +1,26 @@
-# Needs Revisions
-name: Invoke-AccessBinary
+name: Invoke-Debugger
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Sets the debugger for a specified target binary to be cmd.exe, another
-  binary of your choice, or a listern stager. This can be launched from the ease-of-access
-  center (ctrl+U).
+description: |
+  A persistence module that establishes system-level persistence by hijacking
+  the Windows debugger registry key to execute an Empire stager whenever
+  a specified application is launched. This approach leverages Windows
+  debugging infrastructure to create a stealthy persistence mechanism
+  that triggers on application execution.
+
+  The module modifies the AeDebug registry key to specify a custom debugger
+  that will be invoked whenever the target application crashes or is
+  launched with debugging enabled. This technique is particularly effective
+  as it uses legitimate Windows debugging functionality and can be
+  configured to target commonly used applications.
+
+  Debugger hijacking persistence provides excellent stealth as it leverages
+  native Windows functionality and operates under the guise of legitimate
+  debugging activities. However, it requires administrative privileges
+  and creates registry artifacts that can be detected by advanced
+  security monitoring tools.
 software: ''
 tactics: [TA0004]
 techniques: [T1112, T1546.008]
@@ -16,19 +30,18 @@ needs_admin: true
 opsec_safe: false
 language: powershell
 min_language_version: '2'
-comments: []
+comments:
+  - http://www.labofapenetrationtester.com/2014/11/powershell-for-client-side-attacks.html
+  - https://github.com/samratashok/nishang
+  - http://blog.trendmicro.com/trendlabs-security-intelligence/black-magic-windows-powershell-used-again-in-new-attack/
 options:
-  - name: Agent
-    description: Agent to run module on.
-    required: true
-    value: ''
   - name: Listener
-    description: Listener to use.
+    description: Listener to use for the stager.
     required: false
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Obfuscate the launcher PowerShell code to evade signature-based
+      detection.
     required: false
     value: 'False'
     strict: true
@@ -37,7 +50,7 @@ options:
       - False
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+      is True.
     required: false
     value: Token\All\1
     depends_on:
@@ -52,6 +65,7 @@ options:
       Narrator.exe, or Magnify.exe)
     required: true
     strict: true
+    value: sethc.exe
     suggested_values:
       - sethc.exe
       - Utilman.exe

@@ -4,8 +4,28 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds machines on the local domain where the current user has local
-  administrator access. Part of PowerView.
+description: |
+  A sophisticated Active Directory reconnaissance module that identifies
+  machines across the domain where the current user has local
+  administrator privileges. This module is part of the PowerView
+  toolkit and provides critical intelligence for lateral movement
+  and privilege escalation planning.
+
+  The module can target specific computers or use LDAP filters to
+  identify target systems based on various criteria such as operating
+  system, service pack, site membership, or organizational unit
+  location. It then tests the current user's administrative access
+  to each target system, providing a comprehensive map of systems
+  where lateral movement is possible.
+
+  This technique is particularly effective for understanding the
+  scope of administrative access and identifying potential lateral
+  movement paths. The module includes options for share access
+  checking and can filter results based on specific criteria to
+  focus on high-value targets. This gathered intelligence is
+  essential for planning lateral movement strategies, privilege
+  escalation paths, and understanding the overall administrative
+  landscape within the Active Directory environment.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615]

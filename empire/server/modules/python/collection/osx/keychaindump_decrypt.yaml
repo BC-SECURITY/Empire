@@ -1,12 +1,19 @@
-# Needs Revisions
 name: Sandbox-Keychain-Dump
 authors:
   - name: ''
     handle: '@import-au'
     link: ''
-description: 'Uses Apple Security utility to dump the contents of the keychain. WARNING:
-  Will prompt user for access to each key.On Newer versions of Sierra and High Sierra,
-  this will also ask the user for their password for each key.'
+description: |
+  Extracts passwords from the macOS Keychain using the native
+  security command-line utility. Leverages the 'security dump-keychain'
+  command to retrieve keychain contents and parses the output to
+  extract account information, descriptions, usernames, and secrets.
+  Triggers user prompts for keychain access on each key, requiring
+  user interaction for successful extraction. Compatible with
+  sandboxed environments but may trigger security prompts on
+  newer macOS versions (Sierra and later). Provides credential
+  extraction capabilities for website passwords, application
+  passwords, and other stored credentials in the user's keychain.
 software: ''
 tactics: []
 techniques:

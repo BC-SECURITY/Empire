@@ -1,11 +1,18 @@
-# Needs Revisions
 name: SMB Mount
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will attempt mount an smb share and execute a command on
-  it.
+description: |
+  Mounts SMB shares on macOS systems and executes commands within the mounted
+  filesystem. Supports domain authentication and handles special characters
+  in passwords through URL encoding. Creates a temporary mount point in
+  /Volumes/ directory, mounts the specified SMB share with provided credentials,
+  executes the specified command within the mounted filesystem, and then
+  unmounts the share. Useful for accessing remote file systems, executing
+  payloads from network shares, and performing lateral movement through
+  file system access. Provides a method for executing commands in the context
+  of remote SMB shares without requiring persistent access.
 software: ''
 tactics: []
 techniques:

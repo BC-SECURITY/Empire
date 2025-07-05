@@ -1,10 +1,28 @@
-# Needs Revisions
-name: Change Login Message for the user.
+name: Change Background
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Change the login message for the user.
+description: |
+  A macOS prank module that modifies system backgrounds to create
+  visual disruption or humorous effects. This module can change
+  both the desktop background and the login screen background
+  using custom images to alter the user's visual experience.
+
+  The module uses macOS system commands to modify background
+  settings, targeting both the desktop picture through Finder
+  automation and the login screen background through system
+  cache manipulation. This allows for comprehensive visual
+  modification that affects both the current user session and
+  future login attempts.
+
+  The background modification can be particularly effective
+  for creating psychological impact through unexpected visual
+  changes, especially when using humorous, shocking, or
+  confusing images. This module is commonly used for pranks
+  and social engineering scenarios where visual disruption
+  can create confusion or amusement while maintaining
+  system functionality.
 software: ''
 tactics: []
 techniques:

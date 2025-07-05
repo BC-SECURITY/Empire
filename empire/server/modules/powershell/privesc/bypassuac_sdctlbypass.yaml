@@ -4,8 +4,22 @@ authors:
   - name: Petr Medonos
     handle: ''
     link: ''
-description: Bypasses UAC by performing an registry modification for sdclt (based
-  onhttps://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  by exploiting the Windows System Data Collection Tool (sdclt.exe).
+  This technique manipulates registry entries to redirect sdclt's
+  execution flow and execute arbitrary code with elevated privileges.
+
+  The module modifies registry keys that control how sdclt.exe processes
+  system data collection requests. By hijacking the registry path that
+  sdclt uses to launch its helper processes, the module can execute
+  custom code with administrative privileges while bypassing UAC prompts.
+
+  This technique is based on research by @enigma0x3 and leverages the
+  fact that sdclt.exe is a legitimate Windows component that runs with
+  elevated privileges by design. The registry modifications required
+  are minimal and can be easily cleaned up after successful execution,
+  making this a relatively stealthy UAC bypass method.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

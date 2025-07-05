@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Webcam
+name: Keylogger
 authors:
   - name: joev
     handle: ''
@@ -7,9 +6,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Logs keystrokes to the specified file. Ruby based and heavily adapted
-  from MSF's osx/capture/keylog_recorder. Kill the resulting PID when keylogging
-  is finished and download the specified LogFile.
+description: |
+  Captures and logs keystrokes from the Linux system using a Ruby-based
+  keylogger that leverages the Carbon framework. Monitors keyboard input
+  across all active applications and records keystrokes with application
+  context and timestamps. The module spawns a background Ruby process that
+  continuously captures keyboard events, including special keys and modifiers.
+  Keylogged data is written to a specified log file for later retrieval.
+  Provides comprehensive user input monitoring for credential harvesting,
+  password capture, and user behavior analysis. Requires manual termination
+  of the Ruby process when keylogging is complete.
 software: ''
 tactics: []
 techniques:

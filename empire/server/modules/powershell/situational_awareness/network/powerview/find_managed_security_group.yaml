@@ -4,9 +4,23 @@ authors:
   - name: ''
     handle: '@ukstufus'
     link: ''
-description: This function retrieves all security groups in the domain and identifies
-  ones that have a manager set. It also determines whether the manager has the ability
-  to add or remove members from the group. Part of PowerView.
+description: Identifies security groups that have designated managers with the ability
+  to add or remove members, revealing delegation relationships and potential privilege
+  escalation opportunities through group management capabilities. This module leverages
+  PowerView's Get-DomainManagedSecurityGroup function to analyze security group configurations
+  and identify groups that have been configured with manager attributes, along with
+  determining whether those managers have the necessary permissions to modify group
+  membership. The reconnaissance capability is essential for understanding delegation
+  patterns, identifying potential privilege escalation opportunities through group
+  management, and mapping administrative control relationships within the domain.
+  By analyzing managed security groups, operators can identify users with group management
+  capabilities, understand delegation relationships, and discover potential attack
+  vectors that leverage group management privileges. The module supports filtering
+  by domain and custom search bases to focus reconnaissance efforts on specific organizational
+  areas. This information is crucial for privilege escalation planning, understanding
+  delegation security implications, and identifying potential lateral movement opportunities
+  through group management capabilities that may provide access to sensitive resources
+  or administrative functions.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615]

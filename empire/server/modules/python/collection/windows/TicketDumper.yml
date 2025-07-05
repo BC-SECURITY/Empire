@@ -1,10 +1,19 @@
-# Needs Revisions
 name: TicketDumper
 authors:
   - name: 'Jake Krasnov'
     handle: '@hubbl3'
     link: ''
-description: uses IronPython to dump tickets in the same way that klist.exe does
+description: |
+  Extracts Kerberos tickets from the Windows LSA (Local Security Authority)
+  using IronPython to interface with the Windows API. Leverages the
+  LsaEnumerateLogonSessions and LsaGetLogonSessionData functions to
+  enumerate active logon sessions and retrieve associated Kerberos
+  ticket information. Provides detailed output including ticket
+  lifetimes, service names, and authentication data similar to
+  the native klist.exe utility. Requires administrative privileges
+  to access LSA memory and ticket data. Useful for credential
+  harvesting, Kerberos reconnaissance, and understanding active
+  authentication sessions on Windows systems.
 tactics: []
 techniques:
   - T1558
