@@ -10,7 +10,7 @@ description: |
   with shellcode using MSIL opcodes. This technique avoids traditional Win32 API calls
   and provides stealthy code execution by leveraging .NET's JIT compilation process.
   Supports both x86 and x64 architectures with appropriate shellcode stubs.
-  
+
   WARNING: This script has no way to validate that your shellcode is 32 vs. 64-bit!
   NOTE: Your shellcode must end in a ret (0xC3) and maintain proper stack alignment
   or PowerShell will crash!

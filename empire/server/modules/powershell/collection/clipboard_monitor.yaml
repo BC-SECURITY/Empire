@@ -3,9 +3,9 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: |
-  Continuously monitors and logs clipboard content changes on the target system. 
-  Helpful in tracking copied passwords or sensitive data used during a session.
+description: "Continuously monitors and logs clipboard content changes on the target
+  system. \nHelpful in tracking copied passwords or sensitive data used during a
+  session.\n"
 software: ''
 tactics: [TA0009]
 techniques: [T1115, T1082]

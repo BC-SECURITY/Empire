@@ -3,7 +3,9 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Enumerates reachable computers and resources in the current domain or workgroup. Provides detailed information about network hosts including computer names, operating systems, and share availability.
+description: Enumerates reachable computers and resources in the current domain or
+  workgroup. Provides detailed information about network hosts including computer
+  names, operating systems, and share availability.
 software: ''
 tactics: [TA0007, TA0043]
 techniques: [T1135, T1018]

@@ -3,19 +3,17 @@ authors:
   - name: Sebastian Castro
     handle: '@r4wd3r'
     link: ''
-description: |
-  Modifies the Relative Identifier (RID) of an existing user account to grant it administrative 
-  privileges by changing the RID value used to create access tokens. This technique allows 
-  operators to elevate a regular user account to have the same privileges as the built-in 
-  Administrator account (RID 500) without modifying group memberships.
-  
-  RID hijacking is a sophisticated privilege escalation technique that works by directly 
-  modifying the SAM database to change how Windows interprets user privileges. This approach 
-  bypasses traditional group-based access control and can be used to create hidden administrative 
-  accounts that appear as regular users to most security tools.
-  
-  This technique requires administrative privileges to implement and creates persistent 
-  privilege escalation that survives reboots and password changes.
+description: "Modifies the Relative Identifier (RID) of an existing user account
+  to grant it administrative \nprivileges by changing the RID value used to create
+  access tokens. This technique allows \noperators to elevate a regular user account
+  to have the same privileges as the built-in \nAdministrator account (RID 500) without
+  modifying group memberships.\n\nRID hijacking is a sophisticated privilege escalation
+  technique that works by directly \nmodifying the SAM database to change how Windows
+  interprets user privileges. This approach \nbypasses traditional group-based access
+  control and can be used to create hidden administrative \naccounts that appear
+  as regular users to most security tools.\n\nThis technique requires administrative
+  privileges to implement and creates persistent \nprivilege escalation that survives
+  reboots and password changes.\n"
 software: ''
 tactics: [TA0004]
 techniques: [T1098]
@@ -31,7 +29,8 @@ comments:
   - https://csl.com.co/rid-hijacking/
 options:
   - name: RID
-    description: RID value to assign to the target account (default: 500 for Administrator privileges).
+    description: 'RID value to assign to the target account (default: 500 for Administrator
+      privileges).'
     required: false
     value: '500'
   - name: User

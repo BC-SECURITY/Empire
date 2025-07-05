@@ -9,8 +9,9 @@ commandTests:
     command: "pyenv"
     args: ["--version"]
     expectedOutput: ["pyenv 2.*"]
-  # poetry
   - name: "poetry python"
+    # poetry
+
     command: "poetry"
     args: ["run", "which", "python3"]
     expectedOutput: ["/empire/.venv/bin/python3"]
@@ -26,8 +27,9 @@ commandTests:
     command: "poetry"
     args: ["run", "python3", "--version"]
     expectedOutput: ["Python 3.13.*"]
-  # powershell
   - name: "powershell which"
+    # powershell
+
     command: "which"
     args: ["pwsh"]
     expectedOutput: ["/usr/bin/pwsh"]
@@ -35,13 +37,15 @@ commandTests:
     command: "pwsh"
     args: ["--version"]
     expectedOutput: ["PowerShell 7.*"]
-  # mysql
   - name: "mysql which"
+    # mysql
+
     command: "which"
     args: ["mysql"]
     expectedOutput: ["/usr/bin/mysql"]
-  # go
   - name: "go which"
+    # go
+
     command: "which"
     args: ["go"]
     expectedOutput: ["/usr/bin/go"]
@@ -49,8 +53,9 @@ commandTests:
     command: "go"
     args: ["version"]
     expectedOutput: ["go version go1.23.* linux/*"]
-  # run
   - name: "ps-empire help"
+    # run
+
     command: "./ps-empire"
     args: ["server", "--help"]
     expectedOutput: ["usage: empire.py server [-h]*"]

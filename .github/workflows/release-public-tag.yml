@@ -33,6 +33,7 @@ jobs:
       - name: Extract release notes
         id: extract_release_notes
         # This is modified to pull multiple versions of the release notes
+
         uses: vinnybod/extract-release-notes@v2
         with:
           last_version: ${{ env.LATEST_TAG }}

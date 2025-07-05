@@ -3,7 +3,8 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Beacon Object File (BOF) that creates a sacrificial process in a suspended state for
+description: |
+  Beacon Object File (BOF) that creates a sacrificial process in a suspended state for
   process injection techniques. Spawns a Microsoft-signed binary (default: calc.exe) as a child of
   a specified parent process (default: explorer.exe) to establish a legitimate process tree.
 tactics: [TA0002]

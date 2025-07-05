@@ -6,22 +6,17 @@ authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: |
-  Patches the Windows Terminal Services service to allow multiple simultaneous 
-  RDP sessions on systems where this is normally restricted (like Windows desktop 
-  editions). This module modifies termsrv.dll in memory and adjusts registry settings 
-  to bypass Microsoft's single-session limitation.
-  
-  This technique is particularly useful for maintaining persistent access while 
-  legitimate users continue to work on the system, allowing operators to connect 
-  via RDP without disconnecting existing user sessions or alerting them to the 
-  intrusion. It effectively transforms desktop Windows editions to behave like 
-  Terminal Server/RDS.
-  
-  The module requires administrative privileges and involves modifying system files 
-  and registry values. These changes may be detected by file integrity monitoring 
-  or advanced EDR solutions. System updates or patches may revert these modifications, 
-  requiring reapplication.
+description: "Patches the Windows Terminal Services service to allow multiple simultaneous
+  \nRDP sessions on systems where this is normally restricted (like Windows desktop
+  \neditions). This module modifies termsrv.dll in memory and adjusts registry settings
+  \nto bypass Microsoft's single-session limitation.\n\nThis technique is particularly
+  useful for maintaining persistent access while \nlegitimate users continue to work
+  on the system, allowing operators to connect \nvia RDP without disconnecting existing
+  user sessions or alerting them to the \nintrusion. It effectively transforms desktop
+  Windows editions to behave like \nTerminal Server/RDS.\n\nThe module requires administrative
+  privileges and involves modifying system files \nand registry values. These changes
+  may be detected by file integrity monitoring \nor advanced EDR solutions. System
+  updates or patches may revert these modifications, \nrequiring reapplication.\n"
 software: ''
 tactics: [TA0005, TA0008]
 techniques: [T1021.001, T1562]

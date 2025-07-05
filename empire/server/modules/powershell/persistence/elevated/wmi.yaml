@@ -12,19 +12,17 @@ authors:
   - name: ''
     handle: '@janit0rjoe'
     link: ''
-description: |
-  Establishes persistence using a permanent WMI event subscription that executes a stager or script 
-  when specific system events occur. This module creates a sophisticated persistence mechanism that 
-  leverages Windows Management Instrumentation to trigger execution based on various system events 
-  such as process creation, logon events, or scheduled times.
-  
-  WMI-based persistence uses legitimate Windows management infrastructure 
-  and can be configured to trigger on common system events, making detection more difficult. The 
-  module supports multiple trigger types including daily execution, specific days of the week/month, 
-  and failed logon attempts, providing operational flexibility while maintaining stealth.
-  
-  This technique requires administrative privileges and creates WMI artifacts that can be detected 
-  by advanced security monitoring tools.
+description: "Establishes persistence using a permanent WMI event subscription that
+  executes a stager or script \nwhen specific system events occur. This module creates
+  a sophisticated persistence mechanism that \nleverages Windows Management Instrumentation
+  to trigger execution based on various system events \nsuch as process creation,
+  logon events, or scheduled times.\n\nWMI-based persistence uses legitimate Windows
+  management infrastructure \nand can be configured to trigger on common system events,
+  making detection more difficult. The \nmodule supports multiple trigger types including
+  daily execution, specific days of the week/month, \nand failed logon attempts,
+  providing operational flexibility while maintaining stealth.\n\nThis technique
+  requires administrative privileges and creates WMI artifacts that can be detected
+  \nby advanced security monitoring tools.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
@@ -42,7 +40,8 @@ options:
     required: true
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher PowerShell code to evade signature-based detection.
+    description: Obfuscate the launcher PowerShell code to evade signature-based
+      detection.
     required: false
     value: 'False'
     strict: true
@@ -50,7 +49,8 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True.
     required: false
     value: Token\All\1
     depends_on:
@@ -61,7 +61,7 @@ options:
     required: false
     value: mattifestation etw
   - name: DailyTime
-    description: Daily time to trigger the script (format: HH:mm).
+    description: 'Daily time to trigger the script (format: HH:mm).'
     required: false
     value: ''
   - name: Day
@@ -69,11 +69,13 @@ options:
     required: false
     value: ''
   - name: DayOfWeek
-    description: Day of week to trigger the script (0-6, Sunday = 0, optional with DailyTime).
+    description: Day of week to trigger the script (0-6, Sunday = 0, optional with
+      DailyTime).
     required: false
     value: ''
   - name: FailedLogon
-    description: Trigger script on failed logon attempts from a specified user (set to True to enable).
+    description: Trigger script on failed logon attempts from a specified user (set
+      to True to enable).
     required: false
     value: 'False'
     strict: true
@@ -85,7 +87,8 @@ options:
     required: true
     value: Updater
   - name: ExtFile
-    description: Path to external file containing the payload (leave blank to use stager).
+    description: Path to external file containing the payload (leave blank to use
+      stager).
     required: false
     value: ''
   - name: Cleanup
@@ -97,7 +100,8 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -105,7 +109,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 advanced:

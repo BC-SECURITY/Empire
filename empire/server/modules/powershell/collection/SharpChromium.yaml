@@ -38,11 +38,13 @@ options:
       - history
       - cookies
   - name: Domains
-    description: Comma-separated list of domains to filter cookie extraction (only applies when Type is set to cookies).
+    description: Comma-separated list of domains to filter cookie extraction (only
+      applies when Type is set to cookies).
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell output format for the extracted data (Out-String, ConvertTo-Json, ConvertTo-Csv, ConvertTo-Html, ConvertTo-Xml).
+    description: PowerShell output format for the extracted data (Out-String, ConvertTo-Json,
+      ConvertTo-Csv, ConvertTo-Html, ConvertTo-Xml).
     required: false
     value: Out-String
     strict: true

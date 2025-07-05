@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: |
-  Enumerates Active Directory Certificate Services (AD CS) information using native Win32 API calls to identify enterprise Certificate Authorities (CAs) and their certificate templates. 
-  Serves as an alternative to COM-based enumeration by invoking low-level Windows API functions directly.
+description: "Enumerates Active Directory Certificate Services (AD CS) information
+  using native Win32 API calls to identify enterprise Certificate Authorities (CAs)
+  and their certificate templates. \nServes as an alternative to COM-based enumeration
+  by invoking low-level Windows API functions directly.\n"
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1590.001, T1590.003, T1482, T1106]

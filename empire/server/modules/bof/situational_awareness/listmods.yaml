@@ -3,10 +3,9 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: |
-  Lists loaded modules (DLLs) for a specified process. 
-  Defaults to the current process if no PID is provided. 
-  Useful for detecting AV/EDR hooks or injected libraries, especially when used alongside driversigs.
+description: "Lists loaded modules (DLLs) for a specified process. \nDefaults to
+  the current process if no PID is provided. \nUseful for detecting AV/EDR hooks
+  or injected libraries, especially when used alongside driversigs.\n"
 software: ''
 tactics: [TA0007]
 techniques: [T1057, T1518.001]

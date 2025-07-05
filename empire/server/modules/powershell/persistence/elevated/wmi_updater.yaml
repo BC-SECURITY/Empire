@@ -12,19 +12,17 @@ authors:
   - name: ''
     handle: '@janit0rjoe'
     link: ''
-description: |
-  Establishes persistence using a permanent WMI event subscription that executes a launcher script 
-  when specific system events occur. This module creates a sophisticated persistence mechanism that 
-  leverages Windows Management Instrumentation to trigger execution based on various system events 
-  such as process creation, logon events, or scheduled times.
-  
-  WMI-based persistence uses legitimate Windows management infrastructure 
-  and can be configured to trigger on common system events, making detection more difficult. The 
-  module supports multiple trigger types including daily execution, specific days of the week/month, 
-  and can fetch payloads from remote locations for additional stealth.
-  
-  This technique requires administrative privileges and creates WMI artifacts that can be detected 
-  by advanced security monitoring tools.
+description: "Establishes persistence using a permanent WMI event subscription that
+  executes a launcher script \nwhen specific system events occur. This module creates
+  a sophisticated persistence mechanism that \nleverages Windows Management Instrumentation
+  to trigger execution based on various system events \nsuch as process creation,
+  logon events, or scheduled times.\n\nWMI-based persistence uses legitimate Windows
+  management infrastructure \nand can be configured to trigger on common system events,
+  making detection more difficult. The \nmodule supports multiple trigger types including
+  daily execution, specific days of the week/month, \nand can fetch payloads from
+  remote locations for additional stealth.\n\nThis technique requires administrative
+  privileges and creates WMI artifacts that can be detected \nby advanced security
+  monitoring tools.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
@@ -46,7 +44,7 @@ options:
     required: true
     value: 'powershell -noP -sta -w 1 -enc '
   - name: DailyTime
-    description: Daily time to trigger the script (format: HH:mm).
+    description: 'Daily time to trigger the script (format: HH:mm).'
     required: false
     value: ''
   - name: Day
@@ -54,7 +52,8 @@ options:
     required: false
     value: ''
   - name: DayOfWeek
-    description: Day of week to trigger the script (0-6, Sunday = 0, optional with DailyTime).
+    description: Day of week to trigger the script (0-6, Sunday = 0, optional with
+      DailyTime).
     required: false
     value: ''
   - name: SubName
@@ -62,7 +61,8 @@ options:
     required: true
     value: AutoUpdater
   - name: ExtFile
-    description: Path to external file containing the payload (leave blank to use WebFile).
+    description: Path to external file containing the payload (leave blank to use
+      WebFile).
     required: false
     value: ''
   - name: Cleanup

@@ -5,9 +5,9 @@ authors:
     link: https://twitter.com/xorrior
 description: |
   Retrieves all items (emails, contacts, calendar events, etc.) from a specified Outlook folder on the target system. This module enables operators to extract large volumes of mailbox data for analysis, exfiltration, or reconnaissance.
-  
+
   The module supports specifying the target folder (such as Inbox, Sent Items, or custom folders) and limits the number of items retrieved to avoid excessive data transfer or detection. It is useful for gathering intelligence, identifying sensitive communications, or mapping user activity within an organization.
-  
+
   Typical use cases include bulk email collection, mailbox reconnaissance, and preparation for targeted phishing or social engineering campaigns.
 software: ''
 tactics: [TA0009]
@@ -27,7 +27,8 @@ options:
     required: true
     value: ''
   - name: FolderName
-    description: Name of the Outlook folder to retrieve items from (e.g., Inbox, Sent Items).
+    description: Name of the Outlook folder to retrieve items from (e.g., Inbox,
+      Sent Items).
     required: true
     value: Inbox
   - name: MaxEmails
@@ -35,7 +36,8 @@ options:
     required: true
     value: '100'
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

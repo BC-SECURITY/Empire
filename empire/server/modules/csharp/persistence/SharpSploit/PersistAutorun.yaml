@@ -3,11 +3,10 @@ authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: |
-  Installs an autorun value in HKCU or HKLM to execute a payload. 
-  Once the key has been installed, the compromised host will execute 
-  the designated program upon login. TargetHive specifies whether to 
-  modify the userland registry key or elevated Machine key.
+description: "Installs an autorun value in HKCU or HKLM to execute a payload. \nOnce
+  the key has been installed, the compromised host will execute \nthe designated
+  program upon login. TargetHive specifies whether to \nmodify the userland registry
+  key or elevated Machine key.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]

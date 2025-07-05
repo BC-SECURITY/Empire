@@ -6,18 +6,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: |
-  Establishes persistence by creating a scheduled task that runs with user privileges to execute 
-  a stager or script. This module leverages the Windows Task Scheduler to create a reliable 
-  persistence mechanism that can trigger on various events including daily execution or user idle time.
-  
-  User-level scheduled task persistence provides moderate stealth as it uses legitimate Windows 
-  functionality and can be configured with various triggers to blend with normal system activity. 
-  The module can store the payload in the registry or reference an external file, and supports 
-  multiple scheduling options for operational flexibility.
-  
-  This technique does not require administrative privileges and creates visible scheduled task 
-  artifacts that can be detected by security monitoring tools.
+description: "Establishes persistence by creating a scheduled task that runs with
+  user privileges to execute \na stager or script. This module leverages the Windows
+  Task Scheduler to create a reliable \npersistence mechanism that can trigger on
+  various events including daily execution or user idle time.\n\nUser-level scheduled
+  task persistence provides moderate stealth as it uses legitimate Windows \nfunctionality
+  and can be configured with various triggers to blend with normal system activity.
+  \nThe module can store the payload in the registry or reference an external file,
+  and supports \nmultiple scheduling options for operational flexibility.\n\nThis
+  technique does not require administrative privileges and creates visible scheduled
+  task \nartifacts that can be detected by security monitoring tools.\n"
 software: S0111
 tactics: [TA0003, TA0004]
 techniques: [T1053.005]
@@ -35,7 +33,8 @@ options:
     required: false
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher PowerShell code to evade signature-based detection.
+    description: Obfuscate the launcher PowerShell code to evade signature-based
+      detection.
     required: false
     value: 'False'
     strict: true
@@ -43,7 +42,8 @@ options:
       - True
       - False
   - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True.
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True.
     required: false
     value: Token\All\1
     depends_on:
@@ -54,7 +54,7 @@ options:
     required: false
     value: mattifestation etw
   - name: DailyTime
-    description: Daily time to trigger the script (format: HH:mm).
+    description: 'Daily time to trigger the script (format: HH:mm).'
     required: false
     value: 09:00
   - name: IdleTime
@@ -66,15 +66,18 @@ options:
     required: true
     value: Updater
   - name: RegPath
-    description: Registry location to store the script code (last element is the key name).
+    description: Registry location to store the script code (last element is the
+      key name).
     required: false
     value: HKCU:\Software\Microsoft\Windows\CurrentVersion\debug
   - name: ADSPath
-    description: Alternate-data-stream location to store the script code (leave blank to use registry).
+    description: Alternate-data-stream location to store the script code (leave blank
+      to use registry).
     required: false
     value: ''
   - name: ExtFile
-    description: Path to external file containing the payload (leave blank to use stager).
+    description: Path to external file containing the payload (leave blank to use
+      stager).
     required: false
     value: ''
   - name: Cleanup
@@ -86,7 +89,8 @@ options:
       - True
       - False
   - name: UserAgent
-    description: User-agent string to use for the staging request (default, none, or other).
+    description: User-agent string to use for the staging request (default, none,
+      or other).
     required: false
     value: default
   - name: Proxy
@@ -94,7 +98,8 @@ options:
     required: false
     value: default
   - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request (default, none, or other).
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
     required: false
     value: default
 advanced:

@@ -5,9 +5,9 @@ authors:
     link: https://twitter.com/xorrior
 description: |
   Sends emails from the target system using a custom or default template to specified recipients. This module enables operators to automate email delivery for phishing, exfiltration, or internal communication purposes, leveraging the target's Outlook profile and mail infrastructure.
-  
+
   The module supports specifying individual targets, loading recipient lists from files, customizing email content and subject, attaching files, and using HTML templates. It can also include URLs or payloads for phishing or command and control operations. Emails are sent through the user's legitimate Outlook session, increasing the likelihood of bypassing security controls and user suspicion.
-  
+
   Typical use cases include spear-phishing, internal phishing campaigns, data exfiltration via email, and establishing covert communication channels.
 software: ''
 tactics: [TA0042]
@@ -27,11 +27,13 @@ options:
     required: true
     value: ''
   - name: Targets
-    description: Array of target email addresses (leave blank to use TargetList or random selection from GAL).
+    description: Array of target email addresses (leave blank to use TargetList or
+      random selection from GAL).
     required: false
     value: ''
   - name: TargetList
-    description: Path to file containing list of target email addresses (one per line).
+    description: Path to file containing list of target email addresses (one per
+      line).
     required: false
     value: ''
   - name: URL
@@ -43,7 +45,8 @@ options:
     required: false
     value: ''
   - name: Template
-    description: Full path to HTML template file for email body (leave blank for default template).
+    description: Full path to HTML template file for email body (leave blank for
+      default template).
     required: false
     value: ''
   - name: Subject
@@ -55,7 +58,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -66,4 +70,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-SendMail completed!"
+script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-SendMail
+  completed!"

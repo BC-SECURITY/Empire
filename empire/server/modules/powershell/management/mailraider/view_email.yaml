@@ -5,9 +5,9 @@ authors:
     link: https://twitter.com/xorrior
 description: |
   Displays the content of a specific email item from a selected Outlook folder on the target system. This module enables operators to view the subject, sender, body, and other metadata of an email at a given index within a folder, supporting targeted reconnaissance and data collection.
-  
+
   The module is useful for reviewing specific communications, verifying the presence of sensitive information, or confirming the success of phishing or exfiltration operations. It supports specifying the folder and the index of the email to display, allowing precise access to individual messages.
-  
+
   Typical use cases include targeted email review, validation of mailbox content, and manual analysis of user communications.
 software: ''
 tactics: [TA0009]
@@ -35,7 +35,8 @@ options:
     required: true
     value: '0'
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -46,4 +47,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: View-Email {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n View-Email completed!"
+script_end: View-Email {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n View-Email
+  completed!"

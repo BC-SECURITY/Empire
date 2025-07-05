@@ -5,9 +5,9 @@ authors:
     link: https://twitter.com/xorrior
 description: |
   Modifies Microsoft Outlook security settings by adjusting registry keys related to the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode. This module allows operators to disable or reset security prompts and protections that restrict programmatic access to Outlook, such as those that block automated email sending or access to address books.
-  
+
   Disabling these security features is useful for post-exploitation scenarios where automated email access, phishing, or data extraction is required without user interaction. The module can also reset settings to their defaults for stealth or cleanup purposes. Administrative privileges may be required for some registry changes.
-  
+
   Typical use cases include enabling automated email operations, bypassing security prompts for malicious macros, or preparing a target environment for further email-based attacks.
 software: ''
 tactics: [TA0005]
@@ -27,7 +27,8 @@ options:
     required: true
     value: ''
   - name: AdminUser
-    description: Optional administrative username for registry changes (leave blank to use current context).
+    description: Optional administrative username for registry changes (leave blank
+      to use current context).
     required: false
     value: ''
   - name: AdminPassword
@@ -39,7 +40,8 @@ options:
     required: true
     value: ''
   - name: Reset
-    description: Reset security settings to default values (set to True to restore defaults).
+    description: Reset security settings to default values (set to True to restore
+      defaults).
     required: false
     value: 'False'
     strict: true
@@ -47,7 +49,8 @@ options:
       - True
       - False
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false

@@ -6,26 +6,21 @@ authors:
   - name: ''
     handle: '@shantanukhande'
     link: ''
-description: |
-  Establishes a reverse tunneling capability using SharpChisel, a C# implementation 
-  of the Chisel tunneling tool. This module creates encrypted tunnels between the 
-  compromised system and attacker infrastructure, enabling access to otherwise 
-  unreachable network segments or services.
-  
-  The tunnel operates over HTTP/HTTPS, allowing traffic to blend with legitimate 
-  web traffic and bypass many firewall restrictions. SharpChisel supports various 
-  tunnel types including SOCKS proxies, remote port forwarding, and local port 
-  forwarding to adapt to different network pivoting requirements.
-  
-  This technique is particularly valuable for accessing internal services from 
-  external positions, bypassing network segmentation, or establishing persistent 
-  access channels that don't rely on the Empire agent itself. The module executes 
-  SharpChisel in memory using .NET reflection, avoiding disk writes that might 
-  trigger file-based detections.
-  
-  The encrypted nature of the tunnel helps evade deep packet inspection, though 
-  sustained connections to external servers may be flagged by network monitoring 
-  tools tracking long-lived sessions.
+description: "Establishes a reverse tunneling capability using SharpChisel, a C#
+  implementation \nof the Chisel tunneling tool. This module creates encrypted tunnels
+  between the \ncompromised system and attacker infrastructure, enabling access to
+  otherwise \nunreachable network segments or services.\n\nThe tunnel operates over
+  HTTP/HTTPS, allowing traffic to blend with legitimate \nweb traffic and bypass
+  many firewall restrictions. SharpChisel supports various \ntunnel types including
+  SOCKS proxies, remote port forwarding, and local port \nforwarding to adapt to
+  different network pivoting requirements.\n\nThis technique is particularly valuable
+  for accessing internal services from \nexternal positions, bypassing network segmentation,
+  or establishing persistent \naccess channels that don't rely on the Empire agent
+  itself. The module executes \nSharpChisel in memory using .NET reflection, avoiding
+  disk writes that might \ntrigger file-based detections.\n\nThe encrypted nature
+  of the tunnel helps evade deep packet inspection, though \nsustained connections
+  to external servers may be flagged by network monitoring \ntools tracking long-lived
+  sessions.\n"
 software: ''
 tactics: [TA0011]
 techniques: [T1090]

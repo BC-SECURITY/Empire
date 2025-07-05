@@ -51,7 +51,8 @@ options:
     required: false
     value: ''
   - name: maxfilesize
-    description: Maximum file size in KB for content searching (prevents processing large files)
+    description: Maximum file size in KB for content searching (prevents processing
+      large files)
     required: false
     value: ''
   - name: beforedate

@@ -5,9 +5,9 @@ authors:
     link: https://twitter.com/xorrior
 description: |
   Searches a specified Outlook folder for items (emails, contacts, tasks, notes, etc.) matching given keywords. This module enables targeted discovery of sensitive or relevant information within a user's mailbox, supporting both broad and highly specific search operations.
-  
+
   The module supports keyword-based searching, result limits, and multi-threaded operation for efficiency. Results can be output to a file or returned directly for further analysis. This is useful for identifying confidential communications, credentials, or other data of interest during post-exploitation or reconnaissance.
-  
+
   Typical use cases include searching for passwords, financial data, project information, or other targeted content in user mailboxes.
 software: ''
 tactics: [TA0007, TA0009]
@@ -43,7 +43,8 @@ options:
     required: false
     value: ''
   - name: MaxThreads
-    description: Maximum number of threads to use for searching (higher values increase speed but may be more detectable).
+    description: Maximum number of threads to use for searching (higher values increase
+      speed but may be more detectable).
     required: true
     value: '15'
   - name: File
@@ -51,7 +52,8 @@ options:
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
     required: false
     value: Out-String
     strict: false
@@ -62,4 +64,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-MailSearch {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-MailSearch completed!"
+script_end: Invoke-MailSearch {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-MailSearch
+  completed!"

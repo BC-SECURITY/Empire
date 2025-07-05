@@ -3,20 +3,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: |
-  Disables Remote Desktop Protocol (RDP) services on a target Windows system by 
-  modifying registry values and stopping related services. This module changes 
-  the "fDenyTSConnections" registry key to prevent new RDP connections and 
-  terminates the "TermService" service.
-  
-  This technique is useful for limiting remote access capabilities after 
-  exploitation to prevent other attackers from accessing the compromised 
-  system or to hinder incident response efforts. It can also be used 
-  defensively to close potential access vectors.
-  
-  The module requires administrative privileges on the target system and 
-  creates artifacts in Windows registry and service control logs. Changes 
-  can be reversed by re-enabling RDP through another management module.
+description: "Disables Remote Desktop Protocol (RDP) services on a target Windows
+  system by \nmodifying registry values and stopping related services. This module
+  changes \nthe \"fDenyTSConnections\" registry key to prevent new RDP connections
+  and \nterminates the \"TermService\" service.\n\nThis technique is useful for limiting
+  remote access capabilities after \nexploitation to prevent other attackers from
+  accessing the compromised \nsystem or to hinder incident response efforts. It can
+  also be used \ndefensively to close potential access vectors.\n\nThe module requires
+  administrative privileges on the target system and \ncreates artifacts in Windows
+  registry and service control logs. Changes \ncan be reversed by re-enabling RDP
+  through another management module.\n"
 software: ''
 tactics: [TA0005, TA0040]
 techniques: [T1021.001, T1490]

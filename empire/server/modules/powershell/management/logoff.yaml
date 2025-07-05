@@ -3,19 +3,14 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: |
-  Logs off the current user or all users from the target machine. This module 
-  provides the ability to terminate user sessions, forcing users to log off 
-  interactively or remotely.
-  
-  Logging off users can be useful for operational security, clearing active 
-  sessions, or preparing a system for further exploitation or cleanup. The 
-  module supports logging off a single user (the session running the agent) 
-  or all users currently logged into the system.
-  
-  This capability is often used to disrupt user activity, clear evidence, or 
-  ensure that only authorized sessions remain active during post-exploitation 
-  operations.
+description: "Logs off the current user or all users from the target machine. This
+  module \nprovides the ability to terminate user sessions, forcing users to log
+  off \ninteractively or remotely.\n\nLogging off users can be useful for operational
+  security, clearing active \nsessions, or preparing a system for further exploitation
+  or cleanup. The \nmodule supports logging off a single user (the session running
+  the agent) \nor all users currently logged into the system.\n\nThis capability
+  is often used to disrupt user activity, clear evidence, or \nensure that only authorized
+  sessions remain active during post-exploitation \noperations.\n"
 software: ''
 tactics: [TA0040]
 techniques: [T1098, T1529]

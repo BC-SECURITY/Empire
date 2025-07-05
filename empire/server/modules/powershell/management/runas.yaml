@@ -3,21 +3,18 @@ authors:
   - name: rvrsh3ll (@424f424f)
     handle: ''
     link: ''
-description: |
-  Executes commands or programs with alternate user credentials on the target system 
-  using the Windows RunAs functionality. This module allows operators to run processes 
-  under different user contexts without requiring a full login session, useful for 
-  accessing resources restricted to specific users.
-  
-  Unlike traditional privilege escalation, RunAs requires knowledge of valid credentials 
-  but can provide access to network resources, applications, or data that may be 
-  inaccessible to the current user context. The module supports executing both simple 
-  commands and full applications with command-line arguments.
-
-  The module creates visible process creation events that include the alternate user 
-  context, potentially alerting security monitoring systems to credential usage patterns. 
-  The spawned process also operates with standard Windows authentication tokens rather 
-  than trying to hide its identity.
+description: "Executes commands or programs with alternate user credentials on the
+  target system \nusing the Windows RunAs functionality. This module allows operators
+  to run processes \nunder different user contexts without requiring a full login
+  session, useful for \naccessing resources restricted to specific users.\n\nUnlike
+  traditional privilege escalation, RunAs requires knowledge of valid credentials
+  \nbut can provide access to network resources, applications, or data that may be
+  \ninaccessible to the current user context. The module supports executing both
+  simple \ncommands and full applications with command-line arguments.\n\nThe module
+  creates visible process creation events that include the alternate user \ncontext,
+  potentially alerting security monitoring systems to credential usage patterns.
+  \nThe spawned process also operates with standard Windows authentication tokens
+  rather \nthan trying to hide its identity.\n"
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1134.002]

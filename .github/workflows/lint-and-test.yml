@@ -39,9 +39,11 @@ jobs:
         if: ${{ endsWith(github.repository, 'Empire') }}
         with:
           submodules: 'recursive'
-      # token is only needed in sponsors repo because of private submodules
-      # don't use token in public repo because prs from forks cannot access secrets
       - uses: actions/checkout@v4
+        # token is only needed in sponsors repo because of private submodules
+
+        # don't use token in public repo because prs from forks cannot access secrets
+
         if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
         with:
           submodules: 'recursive'
@@ -53,9 +55,11 @@ jobs:
       - name: Install Poetry
         run: |
           curl -sL https://install.python-poetry.org | python - -y
-      # Poetry cache depends on OS, Python version and Poetry version.
-      # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
       - name: Setup Python
+        # Poetry cache depends on OS, Python version and Poetry version.
+
+        # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
+
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -101,9 +105,11 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      # For the sponsors repo, this is a sort of hack to get around the fact that
-      # the docker image fails on ./ps-empire setup because the repo is private.
       - name: Rewrite Starkiller
+        # For the sponsors repo, this is a sort of hack to get around the fact that
+
+        # the docker image fails on ./ps-empire setup because the repo is private.
+
         run: |
           if [ ${{ endswith(github.repository, 'Empire-Sponsors') }} ]; then
               sed -i 's|git@github.com:BC-SECURITY/Starkiller-Sponsors.git|https://github.com/BC-SECURITY/Starkiller.git|g' empire/server/config.yaml
@@ -131,14 +137,15 @@ jobs:
           - ['ubuntu2004', 'ubuntu2204', 'ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
-          # Install is running up way too many minutes.
+    # Install is running up way too many minutes.
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           depth: 0
-      # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
+        # To save CI time, only run these tests when the install script or deps changed
+
         id: changed-files
         uses: tj-actions/changed-files@v46.0.5
       - name: Build images
@@ -154,6 +161,7 @@ jobs:
           || contains(steps.changed-files.outputs.modified_files, '.github/install_tests')
           || startsWith(github.head_ref, 'release/') }}
         # Using a script instead of prepackaged action because composite actions can't uses
+
         # a matrix and this is way simpler to read.
         run: |
           curl -LO https://storage.googleapis.com/container-structure-test/latest/container-structure-test-linux-amd64 && \

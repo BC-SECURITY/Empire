@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: |
-  Enumerates enterprise Certificate Authorities (CAs) and their certificate templates in Active Directory using the IX509PolicyServerListManager COM interface. 
-  Unlike the ICertConfig-based variant, this method uses a more modern COM interface associated with AD CS policy management.
+description: "Enumerates enterprise Certificate Authorities (CAs) and their certificate
+  templates in Active Directory using the IX509PolicyServerListManager COM interface.
+  \nUnlike the ICertConfig-based variant, this method uses a more modern COM interface
+  associated with AD CS policy management.\n"
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1590.001, T1590.003, T1482, T1559.001]

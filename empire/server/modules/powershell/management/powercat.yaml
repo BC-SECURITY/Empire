@@ -3,16 +3,14 @@ authors:
   - name: besimorhino
     handle: ''
     link: ''
-description: |
-  PowerCat is a PowerShell implementation of netcat functionality that provides 
-  network connectivity, file transfer, and command execution capabilities. This 
-  module loads the PowerCat function and enables various network operations 
-  including listening, connecting, relaying, and data exfiltration.
-  
-  PowerCat supports multiple protocols including TCP, UDP, and DNS tunneling, 
-  making it versatile for different network environments and restrictions. The 
-  tool can function as a listener, client, relay, or data transfer utility, 
-  providing operators with flexible network communication options.
+description: "PowerCat is a PowerShell implementation of netcat functionality that
+  provides \nnetwork connectivity, file transfer, and command execution capabilities.
+  This \nmodule loads the PowerCat function and enables various network operations
+  \nincluding listening, connecting, relaying, and data exfiltration.\n\nPowerCat
+  supports multiple protocols including TCP, UDP, and DNS tunneling, \nmaking it
+  versatile for different network environments and restrictions. The \ntool can function
+  as a listener, client, relay, or data transfer utility, \nproviding operators with
+  flexible network communication options.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1546.013]
@@ -58,7 +56,7 @@ options:
       - True
       - False
   - name: r
-    description: Relay connection format: -r tcp:10.1.1.1:443.
+    description: 'Relay connection format: -r tcp:10.1.1.1:443.'
     required: false
     value: 'False'
     strict: true
@@ -82,11 +80,11 @@ options:
     required: false
     value: ''
   - name: t
-    description: Timeout option in seconds (default: 60).
+    description: 'Timeout option in seconds (default: 60).'
     required: false
     value: ''
   - name: i
-    description: Input: Filepath (string), byte array, or string.
+    description: 'Filepath (string), byte array, or string.'
     required: false
     value: ''
   - name: o
