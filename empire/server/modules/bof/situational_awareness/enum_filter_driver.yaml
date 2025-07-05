@@ -1,10 +1,11 @@
-# Needs Revisions
-name: cacls
+name: enum_filter_driver
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: List ARP table.
+description: "Enumerates filter drivers registered on the local or remote system.
+  \nUseful for identifying security, storage, or file system monitoring components
+  that may impact operations or indicate defensive tooling.\n"
 software: ''
 tactics: [TA0007]
 techniques: [T1083, T1106]
@@ -30,8 +31,8 @@ options:
     required: true
     value: '.'
 bof:
-  x86: bof/situational_awareness/cacls/cacls.x86.o
-  x64: bof/situational_awareness/cacls/cacls.x64.o
+  x86: bof/situational_awareness/enum_filter_driver/enum_filter_driver.x86.o
+  x64: bof/situational_awareness/enum_filter_driver/enum_filter_driver.x64.o
   entry_point: ''
   format_string: z
 script_path: ''

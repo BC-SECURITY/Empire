@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-SQLColumnSampleData
 authors:
   - name: ''
@@ -7,8 +6,14 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Returns column information from target SQL Servers. Supports search
-  by keywords, sampling data, and validating credit card numbers.
+description: |
+  PowerShell module that leverages PowerUpSQL to search SQL Server databases for
+  columns matching specific keywords and extracts sample data from discovered columns.
+  Queries database schemas to identify columns containing sensitive information such
+  as passwords, credentials, or personal data, then samples actual data from those
+  columns. Supports filtering by database names, excluding default system databases,
+  and can validate credit card numbers using Luhn algorithm. Provides detailed output
+  including database, schema, table, column names, sample data, and row counts.
 software: ''
 tactics: [TA0009]
 techniques: [T1213]

@@ -1,10 +1,9 @@
-# Needs Revisions
 name: SharpDump
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: | 
+description: |
   This module uses SharpDump which is a C# of the PowerShell Out-MiniDump.
   This module uses P/Invoke to call MiniDumpWriteDump from dbghelp.dll and create
   a full-memory minidump of a target process such as lsass.exe. The resulting dump
@@ -100,8 +99,8 @@ csharp:
       Location: SharpDump\
       Language: CSharp
       CompatibleDotNetVersions:
-          - Net35
-          - Net40
+        - Net35
+        - Net40
       ReferenceAssemblies:
         - Name: System.dll
           Location: net40\System.dll

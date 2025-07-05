@@ -1,11 +1,15 @@
-# Needs Revisions
 name: Get-ComputerDetails
 authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: Enumerates useful information on the system. By default, all checks
-  are run.
+description: |
+  Performs comprehensive system reconnaissance by gathering detailed information about
+  the target computer including hardware specifications, operating system details,
+  network configuration, installed software, and security settings. Collects data from
+  multiple sources including WMI, registry, and system APIs to build a complete profile
+  of the target environment. Information gathered includes CPU, memory, disk space,
+  OS version, domain membership, network interfaces, running services, and user accounts.
 software: ''
 tactics: [TA0007]
 techniques: [T1082]

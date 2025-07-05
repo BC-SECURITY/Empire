@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-SQLOSCMD
 authors:
   - name: ''
@@ -7,7 +6,19 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Executes a command or stager on remote hosts using xp_cmdshell.
+description: "Executes commands or Empire stagers on remote systems by leveraging
+  SQL Server's \nxp_cmdshell stored procedure. This technique enables lateral movement
+  through \nSQL Server instances that have the xp_cmdshell feature enabled or where
+  the \nattacker has sufficient privileges to enable it.\n\nThe module connects to
+  a remote SQL Server using provided credentials, enables \nthe xp_cmdshell procedure
+  if necessary (requiring sysadmin privileges), executes \nthe specified command,
+  and optionally disables xp_cmdshell afterward to cover tracks.\n\nThis technique
+  is particularly effective in environments where SQL Servers are \ntrusted and less
+  monitored than traditional endpoints. It operates over standard \nSQL Server ports
+  (typically 1433/TCP) and can bypass network segmentation that \nmight otherwise
+  prevent direct access to target systems.\n\nBe aware that xp_cmdshell usage is
+  often logged and may trigger alerts in security-\nconscious environments where
+  SQL Server activity is monitored.\n"
 software: ''
 tactics: [TA0002, TA0008]
 techniques: [T1505.001]

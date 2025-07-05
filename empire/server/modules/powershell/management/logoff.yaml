@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Logoff User
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Logs the current user (or all users) off the machine.
+description: "Logs off the current user or all users from the target machine. This
+  module \nprovides the ability to terminate user sessions, forcing users to log
+  off \ninteractively or remotely.\n\nLogging off users can be useful for operational
+  security, clearing active \nsessions, or preparing a system for further exploitation
+  or cleanup. The \nmodule supports logging off a single user (the session running
+  the agent) \nor all users currently logged into the system.\n\nThis capability
+  is often used to disrupt user activity, clear evidence, or \nensure that only authorized
+  sessions remain active during post-exploitation \noperations.\n"
 software: ''
 tactics: [TA0040]
 techniques: [T1098, T1529]
@@ -21,7 +27,7 @@ options:
     required: true
     value: ''
   - name: AllUsers
-    description: Log off all current users.
+    description: Log off all current users (set to True to log off all sessions).
     required: false
     value: 'False'
     strict: true

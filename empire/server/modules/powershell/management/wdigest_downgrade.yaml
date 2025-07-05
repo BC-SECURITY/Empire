@@ -1,11 +1,19 @@
-# Needs Revisions
 name: Invoke-WdigestDowngrade
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Sets wdigest on the machine to explicitly use logon credentials. Counters
-  kb2871997.
+description: "Modifies the Windows registry to force the WDigest authentication protocol
+  to store \ncredentials in memory in cleartext. This technique targets a security
+  improvement \nintroduced in Windows 8.1/2012 R2 that prevented WDigest from storing
+  plaintext \npasswords in memory by default.\n\nBy setting the \"UseLogonCredential\"
+  registry value to 1, the module forces Windows \nto cache plaintext credentials
+  in LSASS memory during future logons, making them \naccessible to credential harvesting
+  tools like Mimikatz. This effectively downgrades \nthe system's authentication
+  security to pre-Windows 8.1 behavior.\n\nThis modification does not immediately
+  capture credentials but prepares the system \nfor future credential theft when
+  users log in. It's particularly useful as a \npersistence technique when combined
+  with other modules that can later extract these \ncredentials from memory.\n"
 software: ''
 tactics: [TA0005]
 techniques: [T1112, T1562.010]

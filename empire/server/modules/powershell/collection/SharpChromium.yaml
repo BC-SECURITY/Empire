@@ -1,11 +1,16 @@
-# Needs Revisions
 name: Get-SharpChromium
 authors:
   - name: ''
     handle: '@tyraniter'
     link: ''
-description: This module will retrieve cookies, history, saved logins from Google
-  Chrome, Microsoft Edge, and Microsoft Edge Beta.
+description: |
+  Extracts sensitive browser data including cookies, browsing history, and saved login
+  credentials from Google Chrome, Microsoft Edge, and Microsoft Edge Beta browsers.
+  The module leverages the SharpChromium library to decrypt and parse browser databases
+  that store user authentication data, session information, and browsing patterns.
+  Supports selective data extraction by type (all, logins, history, cookies) and domain
+  filtering for targeted credential harvesting. The extracted data includes encrypted
+  passwords, session cookies, autofill data, and browsing history with timestamps.
 software: ''
 tactics: [TA0006, TA0007]
 techniques: [T1503.003, T1217]
@@ -23,7 +28,7 @@ options:
     required: true
     value: ''
   - name: Type
-    description: Kind of data to be retrieved.
+    description: Type of browser data to extract (all, logins, history, or cookies).
     required: true
     value: 'all'
     strict: true
@@ -33,13 +38,13 @@ options:
       - history
       - cookies
   - name: Domains
-    description: Set with Type cookies, return only cookies matching those domains.
-      Separate with ","
+    description: Comma-separated list of domains to filter cookie extraction (only
+      applies when Type is set to cookies).
     required: false
     value: ''
   - name: OutputFunction
-    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
-      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    description: PowerShell output format for the extracted data (Out-String, ConvertTo-Json,
+      ConvertTo-Csv, ConvertTo-Html, ConvertTo-Xml).
     required: false
     value: Out-String
     strict: true

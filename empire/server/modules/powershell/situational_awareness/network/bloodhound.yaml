@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-BloodHound (Legacy)
 authors:
   - name: Will Schroeder
@@ -13,7 +12,14 @@ authors:
   - name: rafff
     handle: ''
     link: ''
-description: Execute BloodHound data collection (ingestor for version 3).
+description: |
+  Runs BloodHound to map Active Directory relationships and identify potential attack
+  paths for privilege escalation and lateral movement. Collects data about users,
+  groups, computers, and their relationships to build a comprehensive graph of the
+  Active Directory environment. Provides insight into domain trust relationships,
+  group memberships, and potential privilege escalation opportunities. Information
+  gathered includes user accounts, group memberships, computer objects, and trust
+  relationships.
 software: ''
 tactics: [TA0007]
 techniques: [T1087.001, T1087.002, T1560, T1059.001, T1482, T1615, T1106, T1201,

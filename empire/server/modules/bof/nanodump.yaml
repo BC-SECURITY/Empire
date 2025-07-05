@@ -1,10 +1,14 @@
-# Needs Revisions
 name: nanodump
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: A flexible tool that creates a minidump of the LSASS process.
+description: Beacon Object File (BOF) that creates a minidump of the LSASS process
+  using various evasion techniques to bypass security monitoring. Supports multiple
+  dumping methods including handle duplication, process forking, snapshot creation,
+  and seclogon handle leaking. Can generate both valid and invalid signature dumps,
+  with options for chunked writing and various privilege escalation techniques to
+  access LSASS memory while avoiding detection.
 software: ''
 tactics: [TA0006]
 techniques: [T1003.001]

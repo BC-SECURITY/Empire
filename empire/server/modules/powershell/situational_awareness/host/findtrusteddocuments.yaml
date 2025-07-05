@@ -1,12 +1,15 @@
-# Needs Revisions
 name: Find-TrustedDocuments
 authors:
   - name: ''
     handle: '@jamcut'
     link: ''
-description: This module will enumerate the appropriate registry keys to determine
-  what, if any, trusted documents exist on the host.  It will also enumerate trusted
-  locations.
+description: |
+  Searches for trusted documents on the target system that can be leveraged for code
+  execution or persistence. Identifies files marked as trusted by Windows, including
+  documents from trusted publishers, files in trusted locations, and previously opened
+  documents that bypass security warnings. These trusted documents can be used to
+  execute malicious code without triggering security alerts or requiring user interaction
+  for approval.
 software: ''
 tactics: [TA0007]
 techniques: [T1012, T1083]

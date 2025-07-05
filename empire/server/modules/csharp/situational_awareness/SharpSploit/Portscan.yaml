@@ -1,10 +1,14 @@
-# Needs Revisions
 name: PortScan
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Perform a TCP port scan.
+description: |
+  C# module that leverages SharpSploit's PortScan functionality to perform TCP port scans
+  on specified computer names or IP addresses. Uses SharpSploit's Network class to
+  execute port scans, returning detailed PortScanResult information including open ports,
+  hostnames, and port status. Supports both single-host and multi-host scanning, making it
+  useful for network reconnaissance and vulnerability assessment.
 software: ''
 tactics: [TA0007]
 techniques: [T1046]

@@ -1,10 +1,14 @@
-# Needs Revisions
 name: GetSystem
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Impersonate the SYSTEM user. Equates to ImpersonateUser("NT AUTHORITY\SYSTEM").
+description: |
+  C# module that performs privilege escalation by impersonating the Windows SYSTEM account
+  through token manipulation techniques. Leverages SharpSploit's token functionality to
+  duplicate and impersonate SYSTEM tokens, providing elevated privileges for subsequent
+  operations. This technique enables access to protected system resources and processes
+  that require SYSTEM-level permissions.
 software: ''
 tactics: [TA0004]
 techniques: [T1134.001]

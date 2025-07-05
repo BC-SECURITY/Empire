@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-AppLockerConfig
 authors:
   - name: ''
@@ -7,8 +6,12 @@ authors:
   - name: Matt Hand
     handle: ''
     link: ''
-description: This script is used to query the current AppLocker policy on the target
-  and check the status of a user-defined executable or all executables in a path.
+description: |
+  Queries Windows AppLocker policy status and enforcement configuration to assess application
+  execution restrictions on the target system. Checks whether AppLocker is enabled, which
+  enforcement modes are active (Audit, Enforce), and which rule collections are configured
+  (Executable, Windows Installer, Script, DLL, Packaged App). Provides insight into
+  application whitelisting controls and potential bypass opportunities.
 software: ''
 tactics: [TA0007]
 techniques: [T1012, T1082]

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-SiteListPassword
 authors:
   - name: Will Schroeder
@@ -7,7 +6,12 @@ authors:
   - name: ''
     handle: '@funoverip'
     link: ''
-description: Retrieves the plaintext passwords for found McAfee's SiteList.xml files.
+description: |
+  Extracts plaintext passwords from McAfee SiteList.xml configuration files to
+  obtain credentials for further privilege escalation. McAfee SiteList.xml files
+  contain encrypted passwords that can be decrypted using known algorithms and
+  keys. The module searches for these files and decrypts stored credentials,
+  which often include administrative passwords or service account credentials.
 software: ''
 tactics: [TA0006]
 techniques: [T1552.001]

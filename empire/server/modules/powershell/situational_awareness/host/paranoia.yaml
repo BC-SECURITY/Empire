@@ -1,12 +1,16 @@
-# Needs Revisions
 name: Invoke-Paranoia
 authors:
   - name: pasv
     handle: ''
     link: ''
-description: Continuously check running processes for the presence of suspicious
-  users, members of groups, process names, and for any processes running off of USB
-  drives.
+description: |
+  Checks for common security monitoring and detection tools on the target system to
+  assess the security posture and potential detection capabilities. Scans for antivirus
+  software, endpoint detection and response (EDR) tools, monitoring agents, and other
+  security controls. Provides insight into the defensive capabilities of the target
+  environment, potential detection mechanisms, and areas where security controls may
+  be lacking. Information gathered includes installed security software, monitoring
+  agents, and security configuration settings.
 software: ''
 tactics: [TA0005]
 techniques: [T1057, T1546]

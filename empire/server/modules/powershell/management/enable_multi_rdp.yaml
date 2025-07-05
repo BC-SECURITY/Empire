@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-Mimikatz Multirdp
 authors:
   - name: Benjamin Delpy
@@ -7,9 +6,17 @@ authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: "[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz function
-  to patch the Windows terminal service to allow multiple users to establish simultaneous
-  RDP connections."
+description: "Patches the Windows Terminal Services service to allow multiple simultaneous
+  \nRDP sessions on systems where this is normally restricted (like Windows desktop
+  \neditions). This module modifies termsrv.dll in memory and adjusts registry settings
+  \nto bypass Microsoft's single-session limitation.\n\nThis technique is particularly
+  useful for maintaining persistent access while \nlegitimate users continue to work
+  on the system, allowing operators to connect \nvia RDP without disconnecting existing
+  user sessions or alerting them to the \nintrusion. It effectively transforms desktop
+  Windows editions to behave like \nTerminal Server/RDS.\n\nThe module requires administrative
+  privileges and involves modifying system files \nand registry values. These changes
+  may be detected by file integrity monitoring \nor advanced EDR solutions. System
+  updates or patches may revert these modifications, \nrequiring reapplication.\n"
 software: ''
 tactics: [TA0005, TA0008]
 techniques: [T1021.001, T1562]

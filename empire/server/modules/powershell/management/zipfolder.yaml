@@ -1,10 +1,18 @@
-# Needs Revisions
 name: Invoke-ZipFolder
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Zips up a target folder for later exfiltration.
+description: "Compresses a target folder into a ZIP archive for efficient data exfiltration
+  \nand storage. This module creates compressed archives of directories to reduce
+  \ntransfer size and organize collected data for later analysis.\n\nThe compression
+  process uses native Windows COM objects to create ZIP files \nwithout requiring
+  external compression utilities. This approach ensures \ncompatibility across different
+  Windows environments and reduces the footprint \nof data collection activities.\n\nZIP
+  archives are commonly used in data exfiltration scenarios to package \nmultiple
+  files and directories into a single transferable file, making it \neasier to move
+  large amounts of data while maintaining directory structure \nand reducing network
+  bandwidth requirements.\n"
 software: ''
 tactics: [TA0009]
 techniques: [T1560.002]
@@ -21,11 +29,11 @@ options:
     required: true
     value: ''
   - name: Folder
-    description: Folder path to zip.
+    description: Path to the folder that will be compressed.
     required: true
     value: ''
   - name: ZipFileName
-    description: Zip name/path to create.
+    description: Name and path for the output ZIP file.
     required: true
     value: ''
 script: |

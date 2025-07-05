@@ -1,10 +1,15 @@
-# Needs Revisions
 name: PrivExchange
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Performs the PrivExchange attack by sending a push notification to EWS.
+description: |
+  C# module that implements the PrivExchange attack by sending a push notification subscription
+  request to Exchange Web Services (EWS) with a malicious callback URL. The module calls
+  SharpSploit's PrivExchangePushNotification function to create a push notification subscription
+  that points to an attacker-controlled relay server. When Exchange attempts to send push
+  notifications to the specified relay URI, it will authenticate using the Exchange server's
+  credentials, allowing the attacker to capture NTLM authentication tokens.
 software: ''
 tactics: [TA0004, TA0006, TA0009]
 techniques: [T1557.0001, T1187]

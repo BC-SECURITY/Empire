@@ -1,10 +1,19 @@
-# Needs Revisions
 name: Invoke-PortFwd
 authors:
   - name: ''
     handle: '@decoder-it'
     link: ''
-description: Forward a port with no admin rights required.
+description: "Creates a dynamic port forwarding tunnel using the SSH protocol, allowing
+  traffic \nto be redirected through an intermediary host to reach otherwise inaccessible
+  \nnetwork segments. This module establishes a SOCKS proxy on the local system that
+  \nroutes traffic through the SSH connection to the target.\n\nThis technique is
+  particularly useful for pivoting through compromised hosts to \naccess isolated
+  network segments, perform internal network reconnaissance, or \ninteract with services
+  that are not directly accessible from the operator's position.\n\nThe module requires
+  SSH credentials or key-based authentication to the intermediary \nhost. Once established,
+  other tools can be configured to use the SOCKS proxy, \neffectively extending their
+  reach into previously inaccessible network areas \nwithout requiring direct network
+  connectivity.\n"
 software: ''
 tactics: [TA0011]
 techniques: [T1090.001]

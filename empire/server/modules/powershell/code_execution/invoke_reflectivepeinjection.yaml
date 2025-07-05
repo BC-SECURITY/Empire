@@ -1,12 +1,12 @@
-# Needs Revisions
 name: Invoke-ReflectivePEInjection
 authors:
   - name: Joseph Bialek
     handle: '@JosephBialek'
     link: https://twitter.com/JosephBialek
-description: Uses PowerSploit's Invoke-ReflectivePEInjection to reflectively load
-  a DLL/EXE in to the PowerShell process or reflectively load a DLL in to a remote
-  process.
+description: |
+  PowerShell module that uses PowerSploit's Invoke-ReflectivePEInjection to reflectively load
+  a DLL/EXE in to the PowerShell process or reflectively load a DLL in to a remote process.
+  Uses the PowerSploit library to inject a DLL into a specified process to execute custom scripts or payloads within the PowerShell environment.
 software: S0194
 tactics: [TA0004, TA0005]
 techniques: [T1055.002]

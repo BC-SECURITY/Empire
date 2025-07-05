@@ -1,10 +1,12 @@
-# Needs Revisions
 name: secinject
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Section Mapping Process Injection (secinject)
+description: Beacon Object File (BOF) that performs section mapping process injection
+  by allocating memory in a target process and mapping PE sections directly into
+  the remote process memory space. This technique avoids traditional process injection
+  APIs by manually copying section data and applying proper memory protection flags.
 software: ''
 tactics: [TA0004]
 techniques: [T1055]

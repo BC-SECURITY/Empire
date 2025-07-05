@@ -1,10 +1,13 @@
-# Needs Revisions
 name: Seatbelt
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Use a Seatbelt command.
+description: C# module that uses Seatbelt to perform situational awareness checks
+  on the local system. Seatbelt is a PowerShell script that can be used to enumerate
+  various system information, including user accounts, groups, privileges, and security
+  settings. It can also be used to check for various vulnerabilities and suggest
+  potential exploits for Privilege Escalation in Windows environments.
 software: ''
 tactics: [TA0007]
 techniques: [T1087.001, T1087.002, T1217, T1526, T1615, T1654, T1083, T1057, T1518.001,

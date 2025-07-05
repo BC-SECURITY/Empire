@@ -1,10 +1,15 @@
-# Needs Revisions
 name: ListDirectory
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Get a listing of the current directory.
+description: |
+  C# module that leverages SharpSploit's Directory enumeration capabilities to discover
+  and enumerate directories on the local system. Uses SharpSploit's Directory class
+  to query the local system for directory information, returning detailed DirectoryInfo
+  information including directory names, descriptions, and local attributes. Supports
+  targeted enumeration of specific directories by name or comprehensive enumeration
+  of all directories.
 software: ''
 tactics: [TA0007]
 techniques: [T1083]

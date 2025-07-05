@@ -4,7 +4,13 @@ authors:
   - name: DarkOperator
     handle: ''
     link: ''
-description: Enumerates the DNS Servers used by a system.
+description: |
+  Enumerates DNS server configuration and settings on the target system to understand
+  network infrastructure and potential attack vectors. Queries both primary and secondary
+  DNS servers, DNS suffixes, and DNS resolution settings. Provides insight into network
+  architecture, potential DNS-based attacks (like DNS tunneling or exfiltration), and
+  network segmentation. Information gathered includes DNS server IPs, search suffixes,
+  and DNS resolution behavior.
 software: ''
 tactics: [TA0007, TA0043]
 techniques: [T1590.002]

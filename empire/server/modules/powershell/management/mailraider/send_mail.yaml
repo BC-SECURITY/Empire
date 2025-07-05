@@ -1,11 +1,14 @@
-# Needs Revisions
 name: Invoke-SendMail
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Sends emails using a custom or default template to specified target
-  email addresses.
+description: |
+  Sends emails from the target system using a custom or default template to specified recipients. This module enables operators to automate email delivery for phishing, exfiltration, or internal communication purposes, leveraging the target's Outlook profile and mail infrastructure.
+
+  The module supports specifying individual targets, loading recipient lists from files, customizing email content and subject, attaching files, and using HTML templates. It can also include URLs or payloads for phishing or command and control operations. Emails are sent through the user's legitimate Outlook session, increasing the likelihood of bypassing security controls and user suspicion.
+
+  Typical use cases include spear-phishing, internal phishing campaigns, data exfiltration via email, and establishing covert communication channels.
 software: ''
 tactics: [TA0042]
 techniques: [T1586.002, T1566]
@@ -24,33 +27,34 @@ options:
     required: true
     value: ''
   - name: Targets
-    description: Array of target email addresses. If Targets or TargetList parameter
-      are not specified, a list of 100 email addresses will be randomly selected
-      from the Global Address List.
+    description: Array of target email addresses (leave blank to use TargetList or
+      random selection from GAL).
     required: false
     value: ''
   - name: TargetList
-    description: List of email addresses read from a file.
+    description: Path to file containing list of target email addresses (one per
+      line).
     required: false
     value: ''
   - name: URL
-    description: URL to include in the email.
+    description: URL to include in the email body (for phishing or C2 purposes).
     required: false
     value: ''
   - name: Attachment
-    description: Full path to the file to use as a payload.
+    description: Full path to file to attach to the email (payload, document, etc.).
     required: false
     value: ''
   - name: Template
-    description: Full path to the template html file.
+    description: Full path to HTML template file for email body (leave blank for
+      default template).
     required: false
     value: ''
   - name: Subject
-    description: Subject of the email.
+    description: Subject line of the email.
     required: false
     value: ''
   - name: Body
-    description: Body of the email.
+    description: Body content of the email (overrides template if specified).
     required: false
     value: ''
   - name: OutputFunction
@@ -66,5 +70,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
-  Invoke-SendMail completed!"
+script_end: Invoke-SendMail {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-SendMail
+  completed!"

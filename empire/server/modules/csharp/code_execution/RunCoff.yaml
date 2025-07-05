@@ -29,8 +29,8 @@ options:
     required: false
     value: go
   - name: Format String
-    description: The format string must only include the following characters b, i,
-      s, z, Z
+    description: The format string must only include the following characters b,
+      i, s, z, Z
     required: false
     value: ''
   - name: Arguments
@@ -90,8 +90,8 @@ csharp:
     }
   ReferenceSourceLibraries:
     - Name: CoffLoader
-      Description: A tool to run object files, mainly beacon object files (BOF), in
-        .Net.
+      Description: A tool to run object files, mainly beacon object files (BOF),
+        in .Net.
       Location: CS_COFFLoader\CoffLoader\
       Language: CSharp
       CompatibleDotNetVersions:

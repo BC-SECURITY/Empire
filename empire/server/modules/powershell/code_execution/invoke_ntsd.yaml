@@ -1,10 +1,12 @@
-# Needs Revisions
 name: Invoke-Ntsd
 authors:
   - name: james fitts
     handle: ''
     link: ''
-description: Use NT Symbolic Debugger to execute Empire launcher code
+description: |
+  PowerShell module that uses NT Symbolic Debugger (ntsd) to execute Empire launcher code.
+  Uses the ntsd command to launch a specified binary (default: calc.exe) with debugging
+  enabled, allowing for code execution within the context of the target process.
 software: ''
 tactics: [TA0005]
 techniques: [T1218]

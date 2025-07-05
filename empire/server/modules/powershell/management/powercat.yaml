@@ -1,12 +1,16 @@
-# Needs Revisions
 name: PowerCat
 authors:
   - name: besimorhino
     handle: ''
     link: ''
-description: powercat is a powershell function. First you need to load the function
-  before you can execute it.You can put one of the below commands into your powershell
-  profile so powercat is automaticallyloaded when powershell starts..
+description: "PowerCat is a PowerShell implementation of netcat functionality that
+  provides \nnetwork connectivity, file transfer, and command execution capabilities.
+  This \nmodule loads the PowerCat function and enables various network operations
+  \nincluding listening, connecting, relaying, and data exfiltration.\n\nPowerCat
+  supports multiple protocols including TCP, UDP, and DNS tunneling, \nmaking it
+  versatile for different network environments and restrictions. The \ntool can function
+  as a listener, client, relay, or data transfer utility, \nproviding operators with
+  flexible network communication options.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1546.013]
@@ -24,7 +28,7 @@ options:
     required: true
     value: ''
   - name: l
-    description: Listen for a connection
+    description: Listen for a connection.
     required: false
     value: 'False'
     strict: true
@@ -32,7 +36,7 @@ options:
       - True
       - False
   - name: c
-    description: Connect to a listener
+    description: Connect to a listener.
     required: false
     value: ''
   - name: p
@@ -40,11 +44,11 @@ options:
     required: false
     value: ''
   - name: e
-    description: 'Execute. (GAPING_SECURITY_HOLE)'
+    description: Execute command on remote system (GAPING_SECURITY_HOLE).
     required: false
     value: ''
   - name: ep
-    description: Switch. Execute Powershell.
+    description: Execute PowerShell on remote system.
     required: false
     value: 'False'
     strict: true
@@ -52,7 +56,7 @@ options:
       - True
       - False
   - name: r
-    description: 'Relay. Format: -r tcp:10.1.1.1:443'
+    description: 'Relay connection format: -r tcp:10.1.1.1:443.'
     required: false
     value: 'False'
     strict: true
@@ -60,7 +64,7 @@ options:
       - True
       - False
   - name: u
-    description: Transfer data over UDP.
+    description: Transfer data over UDP instead of TCP.
     required: false
     value: 'False'
     strict: true
@@ -68,23 +72,23 @@ options:
       - True
       - False
   - name: dns
-    description: Transfer data over dns (dnscat2).
+    description: Transfer data over DNS (dnscat2 protocol).
     required: false
     value: ''
   - name: dnsft
-    description: 'DNS Failure Threshold. '
+    description: DNS Failure Threshold for retry attempts.
     required: false
     value: ''
   - name: t
-    description: 'Timeout option. Default: 60 '
+    description: 'Timeout option in seconds (default: 60).'
     required: false
     value: ''
   - name: i
-    description: 'Input: Filepath (string), byte array, or string.'
+    description: 'Filepath (string), byte array, or string.'
     required: false
     value: ''
   - name: o
-    description: Console Output Type
+    description: Console Output Type.
     required: false
     value: 'Host'
     strict: true
@@ -93,7 +97,7 @@ options:
       - Bytes
       - Strings
   - name: of
-    description: Output File Path
+    description: Output File Path for saving data.
     required: false
     value: ''
   - name: d
@@ -105,7 +109,7 @@ options:
       - True
       - False
   - name: rep
-    description: Repeater. Restart after disconnecting.
+    description: Repeater mode - restart after disconnecting.
     required: false
     value: 'False'
     strict: true
@@ -113,7 +117,7 @@ options:
       - True
       - False
   - name: g
-    description: Generate Payload
+    description: Generate Payload for remote execution.
     required: false
     value: 'False'
     strict: true
@@ -121,7 +125,7 @@ options:
       - True
       - False
   - name: ge
-    description: Generate Encoded Payload
+    description: Generate Encoded Payload for obfuscation.
     required: false
     value: 'False'
     strict: true

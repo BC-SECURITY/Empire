@@ -1,11 +1,15 @@
-# Needs Revisions
 name: Start-WebcamRecorder
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module uses the DirectX.Capture and DShowNET .NET assemblies to
-  capture video from a webcam.
+description: |
+  Captures video from a webcam using DirectX.Capture and DShowNET .NET assemblies to record
+  video output from the host's webcam and save it as an AVI file. The module leverages Windows
+  DirectShow technology to access camera hardware directly, bypassing application-level
+  restrictions. Supports customizable recording duration and output file path configuration.
+  The recording process uses DirectX components to interface with webcam drivers and capture
+  video streams in real-time. Output is saved in AVI format with configurable quality settings.
 software: ''
 tactics: [TA0009]
 techniques: [T1125]

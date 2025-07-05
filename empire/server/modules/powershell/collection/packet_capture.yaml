@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-PacketCapture
 authors:
   - name: ''
@@ -7,7 +6,17 @@ authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Starts a packet capture on a host using netsh.
+description: |
+  Initiates network packet capture using Windows' built-in netsh trace functionality. This module
+  leverages the Windows Network Diagnostics Framework to capture network traffic at the system level,
+  generating Event Trace Log (ETL) files that can be analyzed with tools like Network Monitor or
+  converted to PCAP format. The capture operates at the network interface level, capturing all
+  packets traversing the system including TCP, UDP, and other protocols. Supports configurable
+  file size limits, persistent captures that survive system reboots, and can be stopped remotely.
+  Useful for network reconnaissance, traffic analysis, and monitoring network communications
+  between systems. The ETL format provides detailed packet information including timestamps,
+  protocol headers, and payload data. Requires administrative privileges to access network
+  diagnostic capabilities.
 software: ''
 tactics: [TA0009]
 techniques: [T1040]

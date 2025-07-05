@@ -1,10 +1,14 @@
-# Needs Revisions
 name: Get-SubFolders
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Returns a list of all the folders in the specified top level folder.
+description: |
+  Enumerates and returns a list of all subfolders within a specified top-level Outlook folder on the target system. This module enables operators to map the structure of a user's mailbox, identify custom folders, and discover locations where sensitive or interesting data may be stored.
+
+  Folder enumeration is a key reconnaissance step for targeted email collection, data exfiltration, or identifying non-standard storage locations used by the target. The module supports specifying any default or custom folder as the starting point for enumeration.
+
+  Typical use cases include mailbox mapping, preparation for targeted searches, and identifying hidden or rarely used folders that may contain valuable information.
 software: ''
 tactics: [TA0009]
 techniques: [T1114]
@@ -23,7 +27,8 @@ options:
     required: true
     value: ''
   - name: DefaultFolder
-    description: Folder to search in.
+    description: Name of the top-level Outlook folder to enumerate (e.g., Inbox,
+      Sent Items).
     required: true
     value: Inbox
   - name: OutputFunction
@@ -39,5 +44,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Get-SubFolders {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
-  Get-SubFolders completed!"
+script_end: Get-SubFolders {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Get-SubFolders
+  completed!"

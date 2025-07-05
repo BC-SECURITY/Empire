@@ -1,10 +1,22 @@
-# Needs Revisions
 name: New-GPOImmediateTask
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Builds an 'Immediate' schtask to push out through a specified GPO.
+description: "Creates and links a malicious Group Policy Object (GPO) that deploys
+  an immediate \nscheduled task to target systems in an Active Directory environment.
+  This technique \nleverages legitimate Group Policy infrastructure to distribute
+  and execute payloads \nacross multiple domain-joined systems simultaneously.\n\nThe
+  module creates a new GPO or modifies an existing one, adding an immediate task
+  \nthat executes as SYSTEM when Group Policy is processed. This provides both privilege
+  \nescalation (SYSTEM context) and widespread lateral movement capability throughout
+  \nthe domain.\n\nThis technique requires domain administrator privileges (or equivalent
+  GPO creation/\nmodification rights) but is highly effective for establishing persistence
+  and moving \nlaterally at scale. It's particularly dangerous because Group Policy
+  is trusted \ninfrastructure in most Windows environments.\n\nDetection requires
+  monitoring for GPO creation/modification events, analysis of \nGroup Policy Objects
+  for suspicious scheduled tasks, or endpoint monitoring for \nunexpected scheduled
+  task creation via Group Policy processing.\n"
 software: S0111
 tactics: [TA0008]
 techniques: [T1053.003, T1021.002]

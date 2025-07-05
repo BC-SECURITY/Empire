@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Invoke-DCOM
 authors:
   - name: ''
     handle: '@rvrsh3ll'
     link: ''
-description: Execute a stager or command on remote hosts using DCOM.
+description: "Executes commands or Empire stagers on remote hosts using Distributed
+  Component Object Model (DCOM) \nfor lateral movement. DCOM provides object-oriented
+  interfaces that can be remotely executed with \nappropriate permissions (typically
+  admin) without triggering suspicious processes like PsExec. \n\nThis module supports
+  multiple COM application methods including MMC20.Application, ShellWindows, \nShellBrowserWindow,
+  and ExcelDDE, allowing flexibility to evade detection or adapt to different \ntarget
+  environments. It's an effective technique for establishing remote access when WMI
+  or other \nmethods are monitored but DCOM isn't explicitly blocked.\n"
 software: ''
 tactics: [TA0008]
 techniques: [T1021.003]

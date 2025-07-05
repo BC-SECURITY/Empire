@@ -3,13 +3,11 @@ authors:
   - name: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
     handle: ''
     link: ''
-description: |
-  Tests network egress filtering by attempting outbound connections across 
-  specified ports and protocols (TCP/UDP). Identifies allowed or blocked 
-  egress paths for C2 communication, supports port ranges (e.g., 22-25), 
-  and allows custom delays between connection attempts. Useful for bypassing 
-  firewall restrictions, identifying accidental port openings, and planning 
-  exfiltration routes.
+description: "Tests network egress filtering by attempting outbound connections across
+  \nspecified ports and protocols (TCP/UDP). Identifies allowed or blocked \negress
+  paths for C2 communication, supports port ranges (e.g., 22-25), \nand allows custom
+  delays between connection attempts. Useful for bypassing \nfirewall restrictions,
+  identifying accidental port openings, and planning \nexfiltration routes.\n"
 software: ''
 tactics: [TA0007]
 techniques: [T1016.001]

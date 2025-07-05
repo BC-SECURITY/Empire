@@ -1,5 +1,4 @@
-# Needs Revisions
-name: Get Group Policy Preferences
+name: ZeroLogon
 authors:
   - name: Jake Krasnov
     handle: '@hubbl3'
@@ -7,10 +6,13 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: CVE-2020-1472 or ZeroLogon exploits a flaw in the Netlogon protocol
-  to allow anyone on the network to reset the domain administrators hash and elevate
-  their privileges. This will change the password of the domain controller account
-  and may break communication with other domain controllers. So, be careful!
+description: |
+  Exploits CVE-2020-1472 (ZeroLogon) vulnerability in the Netlogon protocol to reset
+  domain controller passwords and gain domain administrative privileges. The vulnerability
+  allows attackers to set the domain controller's password to a known value, effectively
+  gaining control over the domain. This technique can compromise entire Active Directory
+  environments and should be used with extreme caution as it may disrupt domain controller
+  communication and affect network operations.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]

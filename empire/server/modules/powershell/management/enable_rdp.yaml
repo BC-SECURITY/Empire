@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Enable-RDP
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Enables RDP on the remote machine and adds a firewall exception.
+description: "Enables Remote Desktop Protocol (RDP) services on a target Windows
+  system by \nmodifying multiple registry values and starting required services.
+  The module \nsets \"fDenyTSConnections\" to 0, configures firewall exceptions,
+  and ensures \nthe Terminal Services service is running.\n\nThe module requires
+  administrative privileges and creates several detectable \nartifacts, including
+  registry modifications, service state changes, and potentially \nfirewall rule
+  adjustments. In monitored environments, these changes may trigger \nsecurity alerts
+  as they modify standard Windows configurations.\n"
 software: ''
 tactics: [TA0005, TA0008]
 techniques: [T1021.001, T1112]

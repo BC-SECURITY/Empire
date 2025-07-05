@@ -1,10 +1,11 @@
-# Needs Revisions
 name: Get-BrowserData
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Search through browser history or bookmarks
+description: |
+  PowerShell module that searches through browser history or bookmarks on the local system.
+  Uses the PowerShell engine to search through the browser's history and bookmarks.
 software: ''
 tactics: [TA0007]
 techniques: [T1217]

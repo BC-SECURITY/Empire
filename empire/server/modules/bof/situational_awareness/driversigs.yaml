@@ -1,11 +1,11 @@
-# Needs Revisions
 name: driversigs
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Enumerate installed services Imagepaths to check the signing cert against
-  known AV/EDR vendors.
+description: "Enumerates installed service image paths and checks their code signing
+  certificates against known AV and EDR vendors. \nUseful for detecting security
+  products and assessing defensive tooling present on the host.\n"
 software: ''
 tactics: [TA0007, TA0009]
 techniques: [T1005, T1518.001, T1652]

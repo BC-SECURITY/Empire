@@ -1,12 +1,14 @@
-# Needs Revisions
 name: Disable-SecuritySettings
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This function checks for the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode
-  registry keys for Outlook security. This function must be run in an administrative
-  context in order to set the values for the registry keys.
+description: |
+  Modifies Microsoft Outlook security settings by adjusting registry keys related to the ObjectModelGuard, PromptOOMSend, and AdminSecurityMode. This module allows operators to disable or reset security prompts and protections that restrict programmatic access to Outlook, such as those that block automated email sending or access to address books.
+
+  Disabling these security features is useful for post-exploitation scenarios where automated email access, phishing, or data extraction is required without user interaction. The module can also reset settings to their defaults for stealth or cleanup purposes. Administrative privileges may be required for some registry changes.
+
+  Typical use cases include enabling automated email operations, bypassing security prompts for malicious macros, or preparing a target environment for further email-based attacks.
 software: ''
 tactics: [TA0005]
 techniques: [T1047, T1112, T1562.001]
@@ -25,19 +27,21 @@ options:
     required: true
     value: ''
   - name: AdminUser
-    description: Optional AdminUser credentials to use for registry changes.
+    description: Optional administrative username for registry changes (leave blank
+      to use current context).
     required: false
     value: ''
   - name: AdminPassword
-    description: Optional AdminPassword credentials to use for registry changes.
+    description: Optional administrative password for registry changes.
     required: false
     value: ''
   - name: Version
-    description: The version of Microsoft Outlook.
+    description: Version of Microsoft Outlook to target (e.g., 2016, 2019, 365).
     required: true
     value: ''
   - name: Reset
-    description: Reset security settings to default values.
+    description: Reset security settings to default values (set to True to restore
+      defaults).
     required: false
     value: 'False'
     strict: true

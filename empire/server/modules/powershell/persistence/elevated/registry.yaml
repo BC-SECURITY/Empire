@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-Registry
 authors:
   - name: Matt Graeber
@@ -7,8 +6,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Persist a stager (or script) via the HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Run
-  registry key. This has an easy detection/removal rating.
+description: "Establishes persistence by creating a registry entry in HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run
+  \nthat executes a stager or script during system startup. This module creates a
+  permanent persistence \nmechanism that survives reboots and user logon/logoff cycles.\n\nRegistry-based
+  persistence is one of the most common and well-known persistence techniques, making
+  it \nrelatively easy to detect and remove. However, it provides reliable execution
+  and is often overlooked \nin basic security assessments. The module can store the
+  payload in the registry itself or reference \nan external file, providing flexibility
+  for different operational requirements.\n\nThis technique requires administrative
+  privileges and creates visible registry artifacts that can be \ndetected by security
+  monitoring tools.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]
@@ -22,12 +29,12 @@ comments:
   - https://github.com/mattifestation/PowerSploit/blob/master/Persistence/Persistence.psm1
 options:
   - name: Listener
-    description: Listener to use.
+    description: Listener to use for the stager.
     required: false
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Obfuscate the launcher PowerShell code to evade signature-based
+      detection.
     required: false
     value: 'False'
     strict: true
@@ -36,7 +43,7 @@ options:
       - False
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+      is True.
     required: false
     value: Token\All\1
     depends_on:
@@ -47,24 +54,26 @@ options:
     required: false
     value: mattifestation etw
   - name: KeyName
-    description: Key name for the run trigger.
+    description: Name for the registry key that will trigger execution.
     required: true
     value: Updater
   - name: RegPath
-    description: Registry location to store the script code. Last element is the
-      key name.
+    description: Registry location to store the script code (last element is the
+      key name).
     required: false
     value: HKLM:SOFTWARE\Microsoft\Windows\CurrentVersion\Debug
   - name: ADSPath
-    description: Alternate-data-stream location to store the script code.
+    description: Alternate-data-stream location to store the script code (leave blank
+      to use registry).
     required: false
     value: ''
   - name: ExtFile
-    description: Use an external file for the payload instead of a stager.
+    description: Path to external file containing the payload (leave blank to use
+      stager).
     required: false
     value: ''
   - name: Cleanup
-    description: Cleanup the trigger and any script from specified location.
+    description: Remove the persistence mechanism and clean up artifacts.
     required: false
     value: 'False'
     strict: true

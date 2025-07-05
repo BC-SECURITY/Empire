@@ -1,11 +1,12 @@
-# Needs Revisions
 name: Invoke-Script
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Load and execute a PowerShell script from either a URL or base64 string,
-  then run a function within the script with parameters.
+description: |
+  PowerShell module that loads and executes a PowerShell script from either a URL or base64 string,
+  then runs a function within the script with parameters. Uses the PowerShell engine to execute
+  the script and run the specified function with the provided parameters.
 software: S0194
 tactics: [TA0002]
 techniques: [T1059]

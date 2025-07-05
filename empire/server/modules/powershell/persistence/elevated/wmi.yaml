@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-WMI
 authors:
   - name: Matt Graeber
@@ -13,8 +12,17 @@ authors:
   - name: ''
     handle: '@janit0rjoe'
     link: ''
-description: Persist a stager (or script) using a permanent WMI subscription. This
-  has a difficult detection/removal rating.
+description: "Establishes persistence using a permanent WMI event subscription that
+  executes a stager or script \nwhen specific system events occur. This module creates
+  a sophisticated persistence mechanism that \nleverages Windows Management Instrumentation
+  to trigger execution based on various system events \nsuch as process creation,
+  logon events, or scheduled times.\n\nWMI-based persistence uses legitimate Windows
+  management infrastructure \nand can be configured to trigger on common system events,
+  making detection more difficult. The \nmodule supports multiple trigger types including
+  daily execution, specific days of the week/month, \nand failed logon attempts,
+  providing operational flexibility while maintaining stealth.\n\nThis technique
+  requires administrative privileges and creates WMI artifacts that can be detected
+  \nby advanced security monitoring tools.\n"
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
@@ -28,12 +36,12 @@ comments:
   - https://github.com/mattifestation/PowerSploit/blob/master/Persistence/Persistence.psm1
 options:
   - name: Listener
-    description: Listener to use.
+    description: Listener to use for the stager.
     required: true
     value: ''
   - name: Obfuscate
-    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
+    description: Obfuscate the launcher PowerShell code to evade signature-based
+      detection.
     required: false
     value: 'False'
     strict: true
@@ -42,7 +50,7 @@ options:
       - False
   - name: ObfuscateCommand
     description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
+      is True.
     required: false
     value: Token\All\1
     depends_on:
@@ -53,20 +61,21 @@ options:
     required: false
     value: mattifestation etw
   - name: DailyTime
-    description: Daily time to trigger the script (HH:mm).
+    description: 'Daily time to trigger the script (format: HH:mm).'
     required: false
     value: ''
   - name: Day
-    description: Day of month to trigger the script (1-31). Optional to DailyTime.
+    description: Day of month to trigger the script (1-31, optional with DailyTime).
     required: false
     value: ''
   - name: DayOfWeek
-    description: Day of week to trigger the script (0-6). Sunday = 0. Optional to
-      DailyTime.
+    description: Day of week to trigger the script (0-6, Sunday = 0, optional with
+      DailyTime).
     required: false
     value: ''
   - name: FailedLogon
-    description: Trigger script with a failed logon attempt from a specified user
+    description: Trigger script on failed logon attempts from a specified user (set
+      to True to enable).
     required: false
     value: 'False'
     strict: true
@@ -74,15 +83,16 @@ options:
       - True
       - False
   - name: SubName
-    description: Name to use for the event subscription.
+    description: Name for the WMI event subscription.
     required: true
     value: Updater
   - name: ExtFile
-    description: Use an external file for the payload instead of a stager.
+    description: Path to external file containing the payload (leave blank to use
+      stager).
     required: false
     value: ''
   - name: Cleanup
-    description: Cleanup the trigger and any script from specified location.
+    description: Remove the persistence mechanism and clean up artifacts.
     required: false
     value: 'False'
     strict: true

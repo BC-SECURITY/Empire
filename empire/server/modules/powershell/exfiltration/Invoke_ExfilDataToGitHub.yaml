@@ -3,12 +3,11 @@ authors:
   - name: Nga Hoang
     handle: ''
     link: ''
-description: |
-  Exfiltrates data to GitHub repositories using authenticated REST API calls 
-  with Personal Access Tokens (PAT). Supports both file uploads (LocalFilePath) 
-  and direct data insertion (Data), including recursive directory uploads and 
-  file filtering (e.g., *.pdf). The PAT is provided as a Base64-encoded string 
-  to minimize credential exposure.
+description: "Exfiltrates data to GitHub repositories using authenticated REST API
+  calls \nwith Personal Access Tokens (PAT). Supports both file uploads (LocalFilePath)
+  \nand direct data insertion (Data), including recursive directory uploads and \nfile
+  filtering (e.g., *.pdf). The PAT is provided as a Base64-encoded string \nto minimize
+  credential exposure.\n"
 software: ''
 tactics: [TA0010]
 techniques: [T1567.001]

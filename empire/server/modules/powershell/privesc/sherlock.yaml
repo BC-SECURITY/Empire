@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Sherlock
 authors:
   - name: 'Daniel Duggan'
     handle: '@_RastaMouse'
     link: 'https://twitter.com/_rastamouse'
-description: Find Windows local privilege escalation vulnerabilities.
+description: |
+  Performs automated vulnerability scanning to identify Windows local privilege escalation
+  opportunities. Searches for known security vulnerabilities, misconfigurations, and
+  weak security settings that could lead to privilege escalation. Includes checks for
+  missing patches, vulnerable services, weak permissions, and other security weaknesses
+  that have been documented in public exploits. Provides detailed information about
+  identified vulnerabilities including CVE references, affected systems, and potential
+  exploitation methods.
 software: ''
 tactics: [TA0007]
 techniques: [T1012, T1518, T11082]

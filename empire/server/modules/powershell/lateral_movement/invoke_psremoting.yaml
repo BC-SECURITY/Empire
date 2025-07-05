@@ -1,10 +1,20 @@
-# Needs Revisions
 name: Invoke-PSRemoting
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Executes a stager on remote hosts using PSRemoting.
+description: "Executes PowerShell commands or Empire stagers on remote hosts using
+  Windows PowerShell \nRemoting (WinRM). This technique leverages the built-in remote
+  management functionality \nof modern Windows systems, which operates over HTTP/HTTPS
+  (5985/5986).\n\nPowerShell Remoting provides a native and potentially more stealthy
+  alternative to \nother lateral movement techniques as it uses legitimate administration
+  channels that \nmay be expected in enterprise environments. The module requires
+  administrative \ncredentials on the target and that PowerShell Remoting is enabled
+  (default on server \ninstallations since Windows Server 2012).\n\nThe module supports
+  both interactive sessions and one-time command execution. PowerShell \nRemoting
+  traffic is encrypted by default, providing additional security for command \nand
+  output transmission, but may be subject to detection through PowerShell logging,
+  \nETW, or network traffic analysis if specifically monitored.\n"
 software: ''
 tactics: [TA0008]
 techniques: [T1059.001, T1021.006, T1570]

@@ -1,12 +1,16 @@
-# Needs Revisions
-name: PrintNightmare
+name: Invoke-Printnightmare
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Exploits CVE-2021-1675 (PrintNightmare) locally to add a new local administrator
-  user with a known password. Optionally, this can be used to execute your own custom
-  DLL to execute any other code as NT AUTHORITY\SYSTEM.
+description: |
+  Exploits CVE-2021-1675 (PrintNightmare) vulnerability in Windows Print Spooler
+  to achieve privilege escalation and create administrative accounts. The vulnerability
+  allows unprivileged users to add malicious printer drivers that execute arbitrary
+  code with SYSTEM privileges. Can create new local administrator accounts with
+  known credentials or execute custom DLL payloads for more sophisticated attacks.
+  The technique exploits the Windows print spooler service to bypass security
+  controls and gain elevated privileges on the target system.
 software: ''
 tactics: [TA0004]
 techniques: [T1068]

@@ -1,11 +1,20 @@
-# Needs Revisions
 name: Invoke-SMBExec
 authors:
   - name: ''
     handle: '@rvrsh3ll'
     link: ''
-description: Executes a stager on remote hosts using SMBExec.ps1. This module requires
-  a username and NTLM hash
+description: "Executes commands or Empire stagers on remote systems using the SMBExec
+  technique, \na lateral movement method that creates and leverages a service on
+  the target system \nsimilar to PsExec but with some OPSEC improvements.\n\nUnlike
+  traditional PsExec, SMBExec avoids writing the payload to disk by leveraging \ncommand
+  output redirection through SMB named pipes. It creates a Windows service \nthat
+  executes the command and redirects output over SMB back to the attacker, then \nremoves
+  the service to clean up evidence.\n\nThis technique requires administrative credentials
+  (or equivalent) on the target \nsystem and functions over standard SMB ports (445/TCP).
+  It supports both plaintext \ncredentials and NTLM hashes for authentication via
+  pass-the-hash techniques.\n\nWhile more stealthy than traditional PsExec, SMBExec
+  still generates Windows service \ncreation events and may be detected by security
+  monitoring focused on service creation \npatterns and suspicious command execution.\n"
 software: ''
 tactics: [TA0008]
 techniques: [T1021.002, T1569.002, T1078.002]

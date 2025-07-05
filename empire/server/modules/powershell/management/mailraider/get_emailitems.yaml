@@ -1,10 +1,14 @@
-# Needs Revisions
 name: Get-EmailItems
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Returns all of the items for the specified folder.
+description: |
+  Retrieves all items (emails, contacts, calendar events, etc.) from a specified Outlook folder on the target system. This module enables operators to extract large volumes of mailbox data for analysis, exfiltration, or reconnaissance.
+
+  The module supports specifying the target folder (such as Inbox, Sent Items, or custom folders) and limits the number of items retrieved to avoid excessive data transfer or detection. It is useful for gathering intelligence, identifying sensitive communications, or mapping user activity within an organization.
+
+  Typical use cases include bulk email collection, mailbox reconnaissance, and preparation for targeted phishing or social engineering campaigns.
 software: ''
 tactics: [TA0009]
 techniques: [T1114]
@@ -23,11 +27,12 @@ options:
     required: true
     value: ''
   - name: FolderName
-    description: The Name of the Outlook Default Folder.
+    description: Name of the Outlook folder to retrieve items from (e.g., Inbox,
+      Sent Items).
     required: true
     value: Inbox
   - name: MaxEmails
-    description: Maximum number of emails to grab.
+    description: Maximum number of items to retrieve from the folder.
     required: true
     value: '100'
   - name: OutputFunction

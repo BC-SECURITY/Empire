@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Exploit-Jenkins
 authors:
   - name: ''
     handle: '@luxcupitor'
     link: ''
-description: Exploit unauthenticated Jenkins Script consoles.
+description: "Exploits the Jenkins Script Console feature to execute arbitrary Groovy/Java
+  code \non Jenkins servers where the attacker has access to the console. This module
+  allows \nfor command execution or Empire stager deployment through Jenkins' built-in
+  scripting \nfunctionality.\n\nThe technique requires authenticated access to the
+  Jenkins web interface with \nsufficient privileges to access the Script Console
+  (typically admin privileges). \nOnce accessed, the console allows execution of
+  Groovy scripts in the context of \nthe Jenkins server process, which typically
+  runs with high privileges on the host.\n\nThis approach is particularly effective
+  for targeting DevOps infrastructure, as \nJenkins servers often have extensive
+  network access and trusted connections to \nother systems for CI/CD purposes. The
+  module supports both direct command execution \nand downloading/executing files
+  from remote sources.\n\nWhile Jenkins may log script console usage, many organizations
+  don't actively monitor \nthese logs, making this technique relatively stealthy
+  compared to endpoint-based \nexecution methods.\n"
 software: ''
 tactics: [TA0002, TA0008]
 techniques: [T1210, T1059.006]

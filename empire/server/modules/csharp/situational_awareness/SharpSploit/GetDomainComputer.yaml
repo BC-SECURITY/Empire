@@ -1,11 +1,15 @@
-# Needs Revisions
 name: GetDomainComputer
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Gets a list of specified (or all) computer `DomainObject`s in the current
-  Domain.
+description: |
+  C# module that leverages SharpSploit's Domain enumeration capabilities to discover
+  and enumerate computer objects within Active Directory. Uses SharpSploit's DomainSearcher
+  class to query the current domain for computer accounts, returning detailed DomainObject
+  information including computer names, descriptions, and domain attributes. Supports
+  targeted enumeration of specific computers by name or comprehensive enumeration of
+  all domain computers.
 software: ''
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615]

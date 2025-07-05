@@ -91,8 +91,8 @@ csharp:
     }
   ReferenceSourceLibraries:
     - Name: Certify
-      Description: Certify is a C# tool to enumerate and abuse misconfigurations in
-        Active Directory Certificate Services (AD CS).
+      Description: Certify is a C# tool to enumerate and abuse misconfigurations
+        in Active Directory Certificate Services (AD CS).
       Location: Certify\
       Language: CSharp
       CompatibleDotNetVersions:

@@ -1,10 +1,15 @@
-# Needs Revisions
 name: PersistWMI
 authors:
   - name: Anthony Rose
     handle: Cx01N
     link: https://twitter.com/Cx01N_
-description: Creates a WMI Event, Consumer and Binding to execute a payload.
+description: |
+  C# module that establishes persistence through Windows Management Instrumentation (WMI) by
+  creating event filters, consumers, and bindings. Leverages WMI's event-driven architecture
+  to trigger payload execution based on system events such as process starts. Supports both
+  command-line execution and ActiveScript (JScript/VBScript) payloads, providing flexible
+  persistence mechanisms that can evade traditional startup detection while maintaining
+  stealth through legitimate WMI infrastructure.
 software: ''
 tactics: [TA0003]
 techniques: [T1546.003]
@@ -16,17 +21,7 @@ language: csharp
 min_language_version: ''
 options:
   - name: EventName
-    description: |
-      Creates a WMI Event, Consumer and Binding to execute a payload.
-      EventName: An arbitrary name to be assigned to the new WMI Event. E.g. \"Evil\"
-      Persistence\".\n\tEventFilter: Specifies the event trigger to use. The options
-      are \"ProcessStart\".\n\tEventConsumer: Specifies the action to carry out. The
-      options are \"CommandLine\" (OS Command) and \"ActiveScript\" (JScript or VBScript).
-      Payload: Specifies the CommandLine or ActiveScript payload to run. E.g. \"powershell
-      -Sta -Nop -Window Hidden -EncodedCommand <blah>\".\n\tProcessName: Specifies
-      the process name when the \"ProcessStart\" trigger is selected. E.g. \"notepad.exe\"
-      ScriptingEngine: Specifies the scripting engine when the \"ActiveScript\"
-      consumer is selected. The options are \"JScript\" and \"VBScript\".
+    description: An arbitrary name to be assigned to the new WMI Event.
     required: true
     value: Evil Persistence
     strict: false
@@ -46,7 +41,7 @@ options:
   - name: Payload
     description: Specifies the CommandLine or ActiveScript payload to run.
     required: true
-    value: powershell -Sta -Nop -Window Hidden -EncodedCommand <blah>
+    value: 'powershell -Sta -Nop -Window Hidden -EncodedCommand <blah>'
     strict: false
     suggested_values: []
   - name: ProcessName

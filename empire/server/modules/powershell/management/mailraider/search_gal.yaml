@@ -1,11 +1,14 @@
-# Needs Revisions
 name: Invoke-SearchGAL
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: returns any exchange users that match the specified search criteria.
-  Searchable fields are FirstName, LastName, JobTitle, Email-Address, and Department.
+description: |
+  Searches the Microsoft Exchange Global Address List (GAL) for users matching specified criteria such as name, job title, email address, or department. This module enables operators to enumerate users, gather intelligence on organizational structure, and identify potential targets for phishing or lateral movement.
+
+  The module supports multi-attribute searching and multi-threaded operation for efficiency. Results include user details such as display name, email address, job title, and department, providing valuable reconnaissance data for social engineering or privilege escalation.
+
+  Typical use cases include mapping the organization, identifying high-value targets, and preparing for targeted email attacks or internal spear-phishing campaigns.
 software: ''
 tactics: [TA0007]
 techniques: [T1114, T1087.003]
@@ -24,23 +27,24 @@ options:
     required: true
     value: ''
   - name: FullName
-    description: Full Name to search for.
+    description: Full name of the user to search for (leave blank to match any).
     required: true
     value: Inbox
   - name: JobTitle
-    description: Job Title to search for.
+    description: Job title to search for (leave blank to match any).
     required: true
     value: ''
   - name: Email
-    description: EMail address to search for.
+    description: Email address to search for (leave blank to match any).
     required: false
     value: ''
   - name: Dept
-    description: Department to search for.
+    description: Department to search for (leave blank to match any).
     required: false
     value: ''
   - name: MaxThreads
-    description: Maximum number of threads to use when searching.
+    description: Maximum number of threads to use for searching (higher values increase
+      speed but may be more detectable).
     required: true
     value: '15'
   - name: OutputFunction
@@ -56,5 +60,5 @@ options:
       - ConvertTo-Html
       - ConvertTo-Xml
 script_path: management/MailRaider.ps1
-script_end: Invoke-SearchGAL {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n
-  Invoke-SearchGAL completed!"
+script_end: Invoke-SearchGAL {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`n  Invoke-SearchGAL
+  completed!"

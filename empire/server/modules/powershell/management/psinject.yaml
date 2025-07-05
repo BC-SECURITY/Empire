@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-PSInject
 authors:
   - name: Will Schroeder
@@ -10,9 +9,14 @@ authors:
   - name: leechristensen (@tifkin_)
     handle: ''
     link: ''
-description: Utilizes Powershell to to inject a Stephen Fewer formed ReflectivePick
-  which executes PS codefrom memory in a remote process. ProcID or ProcName must
-  be specified.
+description: "Injects and executes PowerShell commands or scripts into the memory
+  space of another \nprocess on the target system. This technique allows Empire to
+  run PowerShell code \nwhile masking the execution under a legitimate process, bypassing
+  process-based \nmonitoring and potentially evading detection by security products.\n\nThe
+  module uses reflective injection techniques to create a new PowerShell runtime
+  \nenvironment within the target process, then executes the specified script or
+  commands \nwithin that isolated environment. This approach avoids spawning powershell.exe,
+  \nwhich is often monitored by security solutions.\n"
 software: ''
 tactics: [TA0002]
 techniques: [T1055.001]

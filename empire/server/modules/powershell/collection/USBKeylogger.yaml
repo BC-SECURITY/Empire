@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-USBKeyStrokes
 authors:
   - name: ''
@@ -7,7 +6,14 @@ authors:
   - name: ''
     handle: '@CyberPoint_SRT'
     link: ''
-description: Logs USB keys pressed using Event Tracing for Windows (ETW)
+description: |
+  Captures keystrokes in real-time using Windows API calls to monitor user input across
+  all applications. The module uses GetAsyncKeyState and related Windows functions to
+  detect key presses, including special keys like Shift, Ctrl, Alt, arrow keys, and
+  function keys. Captures the active window title when it changes, providing context
+  for the keystrokes being logged. Supports configurable polling intervals to balance
+  between responsiveness and system performance. The keylogger runs as a background
+  process and can capture credentials, sensitive data, and user behavior patterns.
 software: ''
 tactics: [TA0006, TA0009]
 techniques: [T1056.001]

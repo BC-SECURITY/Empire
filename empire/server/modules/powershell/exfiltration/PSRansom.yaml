@@ -3,11 +3,10 @@ authors:
   - name: ''
     handle: '@JoelGMSec'
     link: ''
-description: |
-  PowerShell-based ransomware simulator that encrypts and decrypts files 
-  using AES-256 with optional recovery key support. Supports C2 exfiltration 
-  of data during encryption and includes a demonstration mode that changes 
-  the desktop wallpaper and displays a ransom note popup.
+description: "PowerShell-based ransomware simulator that encrypts and decrypts files
+  \nusing AES-256 with optional recovery key support. Supports C2 exfiltration \nof
+  data during encryption and includes a demonstration mode that changes \nthe desktop
+  wallpaper and displays a ransom note popup.\n"
 software: ''
 tactics: [TA0040]
 techniques: [T1486, T1491.001, T1140, T1083]

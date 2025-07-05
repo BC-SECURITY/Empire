@@ -2,6 +2,7 @@
 # powershell/lateral_movement/Invoke-Template
 name: Invoke-Template
 # The authors responsible for the original code and/or writing the Empire module for it.
+
 authors:
   - name: Author 1
     handle: '@author1'
@@ -9,27 +10,35 @@ authors:
 description: |
   A description of what the module does and how it works.
 # Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
+
 software:
 # Techniques that from the MITRE ATT&CK framework (https://attack.mitre.org/techniques/enterprise/)
 techniques:
   - T1141
   - T1514
 # True if the module needs to run in the background
+
 background: false
 # File extension to save the file as
+
 output_extension:
 # True if the module needs admin rights to run
 needs_admin: false
 # True if the method doesn't touch disk/is reasonably opsec safe
+
 opsec_safe: false
 # The language for this module. Currently, only powershell and python are valid.
+
 language: powershell
 # The minimum PowerShell or Python version needed for the module to run
+
 min_language_version: '2'
 # List of any references/other comments
+
 comments:
   - 'http://github.com/bc-security/empire'
 # Any options needed by the module, settable during runtime
+
 options:
   # The 'Agent' option is the only one that MUST be in a module
   - name: Agent
@@ -41,6 +50,7 @@ options:
     required: true
     value: ''
 # For many modules - inlining the script will be just fine.
+
 # If the code can be used by multiple modules, or it is very large.
 # the script_path field can be used instead. Examples of this are in the wiki.
 script: |

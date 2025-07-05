@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-AntiVirusProduct
 authors:
   - name: ''
@@ -7,7 +6,12 @@ authors:
   - name: Jan Egil Ring
     handle: ''
     link: ''
-description: Get antivirus product information.
+description: |
+  Queries Windows Management Instrumentation (WMI) to enumerate installed antivirus products
+  on the target system. Extracts product name, executable path, definition status, and real-time
+  protection status by parsing the AntiVirusProduct class in the SecurityCenter2 namespace.
+  Provides insight into endpoint protection posture, detection capabilities, and potential
+  evasion opportunities. Supports remote and local queries.
 software: ''
 tactics: [TA0007]
 techniques: [T1518.001]

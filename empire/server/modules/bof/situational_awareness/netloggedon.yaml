@@ -1,10 +1,9 @@
-# Needs Revisions
 name: netloggedon
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Return users logged on the local or remote computer.
+description: Returns users logged on the local or remote computer.
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1049, T1106]

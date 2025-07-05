@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Get-UACLevel
 authors:
   - name: Petr Medonos
     handle: ''
     link: ''
-description: Enumerates UAC level
+description: |
+  Checks User Account Control (UAC) configuration and enforcement level on the target
+  system to understand privilege escalation requirements and security posture. Queries
+  UAC settings including consent prompt behavior, secure desktop usage, and elevation
+  policies. Provides insight into the system's security model, potential privilege
+  escalation techniques, and whether administrative actions require user interaction
+  or can be performed silently. Information gathered includes UAC level, consent prompt
+  settings, and secure desktop configuration.
 software: ''
 tactics: [TA0007]
 techniques: [T1012, T1082]

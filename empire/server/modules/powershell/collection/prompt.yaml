@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-Prompt
 authors:
   - name: greg.fossk
@@ -11,7 +10,16 @@ authors:
     handle: ''
     link: ''
 description: |
-  Prompts the current user to enter their credentials in a forms box and returns the results.
+  Performs credential harvesting through social engineering by displaying a fake system error
+  message followed by a Windows credential prompt. The module first shows a customizable
+  message box with configurable icon types (Critical, Question, Exclamation, Information)
+  to create urgency or concern, then presents a legitimate Windows credential dialog
+  requesting username and password. The tool validates entered credentials against the
+  local machine or domain controller and will repeatedly prompt until valid credentials
+  are provided or the user cancels. This technique exploits user trust in system dialogs
+  and urgency created by error messages to harvest credentials without sophisticated
+  technical attacks. The module supports custom error messages, titles, and icon types
+  to match different pretext scenarios.
 software:
 tactics: [TA0006]
 techniques: [T1056.002]

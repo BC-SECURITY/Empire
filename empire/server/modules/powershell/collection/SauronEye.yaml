@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-SauronEye
 authors:
   - name: ''
@@ -7,8 +6,14 @@ authors:
   - name: ''
     handle: '@S3cur3Th1sSh1t'
     link: https://twitter.com/ShitSecure
-description: SauronEye is a search tool built to aid red teams in finding files containing
-  specific keywords.
+description: |
+  Performs comprehensive file system searches to identify files containing specific keywords,
+  supporting multiple search criteria including file types, content patterns, date ranges,
+  and file sizes. The module can search file contents using regex patterns, filter by
+  file extensions (.txt, .doc, .docx, .xls, etc.), and restrict searches to specific
+  directories or system folders. Includes advanced features such as VBA macro detection
+  in legacy Office files, date-based filtering for files modified before/after specific
+  dates, and configurable file size limits for content searching.
 software: ''
 tactics: [TA0007]
 techniques: [T1083]
@@ -26,11 +31,11 @@ options:
     required: true
     value: ''
   - name: 'filetypes '
-    description: Filetypes to search for/in
+    description: File extensions to search for (space-separated list)
     required: false
     value: .txt .doc .docx .xls
   - name: contents
-    description: Search file contents
+    description: Whether to search inside file contents or just filenames
     required: false
     value: 'True'
     strict: true
@@ -38,27 +43,28 @@ options:
       - True
       - False
   - name: keywords
-    description: Keywords to search for
+    description: Keywords or regex patterns to search for in files
     required: false
     value: password pass*
   - name: directories
-    description: Directories to search
+    description: Specific directories to search (leave empty for current directory)
     required: false
     value: ''
   - name: maxfilesize
-    description: Max file size to search contents in, in kilobytes
+    description: Maximum file size in KB for content searching (prevents processing
+      large files)
     required: false
     value: ''
   - name: beforedate
-    description: 'Filter files last modified before this date, format: yyyy-MM-dd'
+    description: 'Only search files modified before this date (format: yyyy-MM-dd)'
     required: false
     value: ''
   - name: afterdate
-    description: 'Filter files last modified after this date, format: yyyy-MM-dd'
+    description: 'Only search files modified after this date (format: yyyy-MM-dd)'
     required: false
     value: ''
   - name: systemdirs
-    description: Search in filesystem directories %APPDATA% and %WINDOWS%
+    description: Include system directories (%APPDATA% and %WINDOWS%) in search
     required: false
     value: 'False'
     strict: true
@@ -66,7 +72,7 @@ options:
       - True
       - False
   - name: vbamacrocheck
-    description: Check if 2003 Office files (*.doc and *.xls) contain a VBA macro
+    description: Check for VBA macros in legacy Office files (*.doc and *.xls)
     required: false
     value: 'True'
     strict: true

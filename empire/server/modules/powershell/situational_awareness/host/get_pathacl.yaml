@@ -1,11 +1,16 @@
-# Needs Revisions
 name: Get-PathAcl
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Enumerates the ACL for a given file path.
-software: ''
+description: |
+  Enumerates access control lists (ACLs) for specified file system paths to understand
+  permission structures and identify potential privilege escalation opportunities.
+  Analyzes both discretionary (DACL) and system (SACL) access control lists, showing
+  user and group permissions, inheritance settings, and audit policies. Useful for
+  identifying misconfigured permissions, understanding security boundaries, and finding
+  paths where the current user has elevated access. Essential for privilege escalation
+  planning and understanding the security posture of critical system directories and files.software: ''
 tactics: [TA0007]
 techniques: [T1083, T1106]
 background: true

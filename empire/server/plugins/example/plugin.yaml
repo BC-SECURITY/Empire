@@ -6,6 +6,7 @@ authors:
 description: |
   A description of what the module does and how it works.
 # Software and tools that from the MITRE ATT&CK framework (https://attack.mitre.org/software/)
+
 software:
 # Techniques that from the MITRE ATT&CK framework (https://attack.mitre.org/techniques/enterprise/)
 techniques:
@@ -14,6 +15,7 @@ techniques:
 comments:
   - Any additional comments about the module.
 # The entry point for the plugin. The file that contains the `Plugin` class.
+
 main: example.py
 auto_start: true
 auto_execute:
