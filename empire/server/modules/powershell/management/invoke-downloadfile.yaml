@@ -1,8 +1,8 @@
-# Needs Revisions
+name: Invoke-DownloadFile
 authors:
-  - name: Cx01N
-    handle: ''
-    link: ''
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
 description: |
   A PowerShell module that downloads files from remote sources using
   native PowerShell capabilities. This module provides a clean and
