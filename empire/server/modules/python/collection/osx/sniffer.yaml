@@ -1,4 +1,3 @@
-# Needs Revisions
 name: PcapSniffer
 authors:
   - name: Alex Rymdeko-Harvey
@@ -7,7 +6,17 @@ authors:
   - name: ''
     handle: '@Killswitch-GUI'
     link: ''
-description: This module will do a full network stack capture.
+description: |
+  Captures network traffic using libpcap on macOS systems for
+  comprehensive network analysis. Leverages the native libpcap
+  library to perform full packet capture at the network interface
+  level. Supports configurable interface selection, packet count
+  limits, and output file paths. Generates standard PCAP files
+  compatible with Wireshark and other network analysis tools.
+  Requires root privileges to access network interfaces and
+  perform packet capture. Useful for network reconnaissance,
+  traffic analysis, and capturing sensitive data in transit
+  on macOS systems.
 software: ''
 tactics: []
 techniques:

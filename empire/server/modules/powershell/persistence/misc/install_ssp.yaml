@@ -4,7 +4,24 @@ authors:
   - name: Matt Graeber
     handle: '@mattifestation'
     link: https://twitter.com/mattifestation
-description: Installs a security support provider (SSP) dll.
+description: |
+  A persistence module that installs a Security Support Provider (SSP) DLL
+  to intercept and monitor authentication processes. This technique provides
+  long-term credential harvesting capabilities by integrating with the
+  Windows authentication infrastructure.
+
+  The module copies the specified SSP DLL to the System32 directory and
+  registers it in the Windows registry to be loaded by LSASS during
+  system startup. Once installed, the SSP can intercept authentication
+  requests, capture credentials, and provide persistent access to
+  authentication data.
+
+  This approach is particularly effective for credential harvesting as
+  it operates at the authentication layer and can capture credentials
+  in various formats. The SSP remains active across system restarts
+  and provides a reliable method for maintaining access to authentication
+  information. However, it requires administrative privileges and
+  creates visible file and registry artifacts.
 software: ''
 tactics: [TA0004]
 techniques: [T1101.005]

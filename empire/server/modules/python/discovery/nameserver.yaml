@@ -1,10 +1,14 @@
-# Needs Revisions
 name: Nameserver IP
 authors:
   - name: '0x636f646f'
     handle: '@BuildAndDestroy'
     link: https://github.com/BuildAndDestroy
-description: Retrieve the nameserver IPv4 Address
+description: |
+  Retrieves the primary DNS nameserver IPv4 address configured on the target
+  system. This module queries the system's network configuration to identify
+  the DNS server that the system uses for domain name resolution. Provides
+  essential network reconnaissance information for understanding the target's
+  network infrastructure and DNS configuration.
 software: ''
 techniques:
   - T1016.001

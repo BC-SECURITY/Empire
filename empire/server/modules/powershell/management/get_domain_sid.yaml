@@ -4,7 +4,21 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Returns the SID for the current or specified domain.
+description: |
+  A reconnaissance module that retrieves the Security Identifier (SID) for
+  the current or specified Active Directory domain. This module performs
+  domain enumeration by querying domain controllers to obtain the unique
+  identifier that represents the domain's security boundary.
+
+  The module queries Active Directory for domain controllers and extracts
+  the domain SID from their objectSID attribute. Domain SIDs are fundamental
+  to Windows security architecture and are used throughout the operating
+  system for access control, group membership, and security auditing.
+
+  This information is essential for understanding domain structure,
+  performing privilege escalation activities, and mapping security
+  relationships within Active Directory environments. The domain SID
+  serves as the foundation for all user and group SIDs within the domain.
 software: ''
 tactics: [TA0007]
 techniques: [T1069.002, T1018, T1087.002]

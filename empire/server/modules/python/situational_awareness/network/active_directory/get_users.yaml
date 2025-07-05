@@ -1,10 +1,24 @@
-# Needs Revisions
 name: Get Users
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module list users found in Active Directory
+description: |
+  An Active Directory enumeration module that retrieves a comprehensive list
+  of all user accounts within the target domain. This module performs essential
+  reconnaissance to identify potential targets for credential harvesting and
+  social engineering attacks.
+
+  The module queries Active Directory via LDAP to extract all user accounts
+  while filtering out computer accounts and service accounts. This information
+  is essential for understanding the domain's user population and identifying
+  potential targets for privilege escalation and lateral movement.
+
+  The enumeration results provide critical intelligence for user targeting
+  and social engineering by revealing the complete user base within the domain.
+  This module is fundamental for domain reconnaissance and helps operators
+  identify potential targets for credential harvesting, privilege escalation,
+  and targeted attacks based on user roles and organizational structure.
 software: ''
 tactics: []
 techniques:

@@ -1,11 +1,19 @@
-# Needs Revisions
 name: NativeScreenshotMSS
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Takes a screenshot of an OSX desktop using the Python mss module. The
-  python-mss module utilizes ctypes and the CoreFoundation library.
+description: |
+  Captures screenshots of macOS desktop displays using the Python
+  mss module, which leverages ctypes and the CoreFoundation library
+  for native screen capture capabilities. Supports capturing from
+  specific monitors or all connected displays simultaneously.
+  Generates high-quality PNG images that are saved to disk for
+  later retrieval. Provides visual reconnaissance capabilities
+  for capturing the current state of user desktops, including
+  open applications, documents, and user activity. Useful for
+  surveillance, intelligence gathering, and understanding user
+  behavior through visual analysis of desktop contents.
 software: ''
 tactics: []
 techniques:

@@ -1,10 +1,18 @@
-# Needs Revisions
 name: ScreenSharing
 authors:
   - name: ''
     handle: '@n00py'
     link: https://twitter.com/n00py1
-description: Enables ScreenSharing to allow you to connect to the host via VNC.
+description: |
+  Enables macOS Screen Sharing and VNC access by configuring the
+  Apple Remote Desktop (ARD) agent. Uses the kickstart utility to
+  activate remote management services, enable VNC legacy mode,
+  and set a custom VNC password. Requires sudo privileges to
+  modify system services and network settings. Creates a persistent
+  remote access capability that allows VNC connections to the
+  target system. Useful for remote desktop access, visual
+  reconnaissance, and maintaining persistent access through
+  legitimate remote management protocols.
 software: ''
 tactics: []
 techniques:

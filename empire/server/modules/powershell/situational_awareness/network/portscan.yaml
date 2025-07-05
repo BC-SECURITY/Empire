@@ -4,8 +4,26 @@ authors:
   - name: Rich Lundeen
     handle: ''
     link: ''
-description: Does a simple port scan using regular sockets, based (pretty) loosely
-  on nmap.
+description: |
+  A network reconnaissance module that performs comprehensive port
+  scanning across specified hosts and network ranges. This module
+  uses native PowerShell socket connections to identify open ports
+  and services, providing detailed network visibility for situational
+  awareness and security assessments.
+
+  The module supports various scanning modes including targeted
+  port scanning, top port scanning, ping-only discovery, and
+  comprehensive network enumeration. It can scan individual hosts,
+  host ranges, or read target lists from files, making it flexible
+  for different network reconnaissance scenarios.
+
+  Based loosely on nmap functionality, this module provides
+  multiple output formats including greppable, XML, and readable
+  formats for integration with other security tools. The module
+  includes options for host discovery, port filtering, and output
+  customization, making it an essential tool for network mapping
+  and service enumeration in penetration testing and security
+  assessment scenarios.
 software: ''
 tactics: [TA0007]
 techniques: [T1046]

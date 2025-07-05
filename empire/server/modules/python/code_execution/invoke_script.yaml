@@ -1,11 +1,14 @@
-# Needs Revisions
 name: Invoke-PythonScript
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Load and execute a Python script from either a URL or base64 string,
-  and optionally run a function within the script with parameters.
+description: |
+  Dynamically loads and executes Python scripts from remote URLs or base64-encoded strings
+  to enable flexible code execution capabilities. Supports both direct script execution
+  and function calls with parameters within loaded scripts. This module provides a
+  powerful mechanism for executing custom Python payloads without requiring persistent
+  file storage on the target system.
 software: S0194
 tactics:
   - TA0002

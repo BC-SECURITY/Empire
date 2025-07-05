@@ -1,10 +1,14 @@
-# Needs Revisions
 name: Spawn
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Spawns a new Empire agent.
+description: |
+  Creates and launches a new Empire agent process on the target system using
+  the specified listener configuration. This module enables process spawning
+  capabilities to establish additional agent instances for redundancy,
+  lateral movement, or process migration. The new agent connects to the
+  designated listener with configurable User-Agent settings.
 software: ''
 tactics: []
 techniques:

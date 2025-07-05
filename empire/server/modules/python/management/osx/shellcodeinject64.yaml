@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Shellcode Inject x64
 authors:
   - name: Chris Ross
@@ -7,7 +6,16 @@ authors:
   - name: ''
     handle: '@midnite_runr'
     link: ''
-description: Inject shellcode into a x64 bit process
+description: |
+  Injects x64 shellcode into a specified process on macOS using
+  Mach injection techniques. Leverages the Mach messaging system
+  to allocate memory in the target process, write shellcode to
+  the allocated memory, and execute it within the process context.
+  Requires administrative privileges to perform process injection.
+  Uses a custom C extension to interface with macOS system calls
+  for memory manipulation and process control. Useful for process
+  injection attacks, code execution in foreign processes, and
+  evading detection by executing code within legitimate processes.
 software: ''
 tactics:
   - TA0002

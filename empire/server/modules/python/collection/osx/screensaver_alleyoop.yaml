@@ -1,4 +1,3 @@
-# Needs Revisions
 name: ScreensaverAlleyOop
 authors:
   - name: ''
@@ -13,9 +12,17 @@ authors:
   - name: ''
     handle: '@Killswitch-GUI'
     link: ''
-description: Launches a screensaver with a prompt for credentials with osascript.
-  This locks the user out until the password can unlock the user keychain. This allows
-  you to prevent Sudo/su failed logon attempts. (credentials till I get them!)
+description: |
+  Launches a screensaver with credential prompts using AppleScript
+  to lock the user out until the correct password is provided.
+  Leverages the ScreenSaverEngine to display authentication dialogs
+  and locks the keychain to prevent sudo/su failed login attempts.
+  Continuously prompts for passwords until the correct one is found
+  or the maximum attempt count is reached. Uses the security
+  command-line tool to lock and unlock the keychain for password
+  validation. Useful for credential harvesting, social engineering,
+  and forcing users to provide their passwords through persistent
+  authentication prompts.
 software: ''
 tactics: []
 techniques:

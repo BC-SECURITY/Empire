@@ -4,9 +4,22 @@ authors:
   - name: Petr Medonos
     handle: ''
     link: ''
-description: Bypasses UAC (even with Always Notify level set) by by performing an
-  registry modification of the "windir" value in "Environment" based on James Forshaw
-  findings.
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  by manipulating environment variables in the Windows registry. This
+  technique exploits a vulnerability in how Windows handles environment
+  variable expansion during elevated process creation.
+
+  The module modifies the "windir" value in the Environment registry
+  key to redirect system path resolution, allowing the execution of
+  arbitrary code with elevated privileges. This technique is based on
+  research by James Forshaw and can bypass UAC even when set to the
+  highest "Always Notify" level.
+
+  This approach is particularly effective as it doesn't require user
+  interaction and can bypass most UAC configurations. However, it
+  creates registry modifications that may be detected by security
+  monitoring tools and requires cleanup after successful execution.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

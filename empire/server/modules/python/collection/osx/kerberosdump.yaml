@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Dump Kerberos Tickets
 authors:
   - name: ''
@@ -7,7 +6,16 @@ authors:
   - name: Benjamin Delpy
     handle: '@gentilkiwi'
     link: https://twitter.com/gentilkiwi
-description: This module will dump ccache kerberostickets to the specified directory
+description: |
+  Extracts Kerberos ticket cache files (ccache) from active user
+  sessions on macOS systems. Identifies loginwindow processes to
+  determine active users and uses launchctl to copy credential
+  caches for each user to temporary files. Leverages the kcc
+  utility to export Kerberos tickets in ccache format compatible
+  with ticket reuse attacks. Lists available ticket files for
+  collection and analysis. Useful for credential harvesting,
+  Kerberos reconnaissance, and collecting authentication tickets
+  for lateral movement in Active Directory environments.
 software: ''
 tactics: []
 techniques:

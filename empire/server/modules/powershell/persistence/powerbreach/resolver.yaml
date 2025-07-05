@@ -4,8 +4,22 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Starts the Resolver Backdoor. Attempts to resolve specified hostname.
-  If the resolved ip address does not match it then calls back
+description: |
+  A persistence module that maintains access by routinely resolving a specified
+  hostname and comparing the result to a trigger IP address. If the resolved
+  IP address does not match the expected value, the module initiates a callback
+  to the attacker's server.
+
+  This DNS-based trigger mechanism allows for covert, remote activation of a
+  backdoor based on external DNS changes, providing a flexible and stealthy
+  persistence strategy that can be controlled by the operator. The module
+  continuously monitors DNS resolution results and only activates when the
+  expected IP address changes.
+
+  The resolver backdoor technique is particularly effective for maintaining
+  long-term access as it leverages legitimate DNS resolution processes and
+  can be triggered remotely by the operator through DNS manipulation,
+  providing a reliable and stealthy persistence mechanism.
 software: S0194
 tactics: [TA0004]
 techniques: [T1546]

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Unix-Privesc-Check
 authors:
   - name: ''
@@ -7,9 +6,30 @@ authors:
   - name: ''
     handle: '@pentestmonkey'
     link: ''
-description: This script is intended to be executed locally ona Linux box to enumerate
-  basic system info, and search for commonprivilege escalation vectors with a all
-  in one shell script.
+description: |
+  A comprehensive Unix/Linux privilege escalation enumeration script that performs automated
+  security auditing to identify common privilege escalation vectors. This module downloads
+  and executes the unix-privesc-check tool locally on the target system to enumerate system
+  information and search for security misconfigurations that could allow local privilege
+  escalation.
+
+  The script performs extensive checks including:
+  - File permission analysis on critical system files and directories
+  - SUID/SGID program identification and security assessment
+  - Cron job and startup script permission validation
+  - User account and password policy auditing
+  - Network service configuration analysis
+  - Kernel and system hardening verification
+  - Exploit mitigation technique detection (ASLR, NX, SELinux, etc.)
+  - Database trust relationship assessment
+  - SSH key and authentication method enumeration
+
+  The module supports two modes: 'standard' for quick enumeration and 'detailed' for
+  comprehensive analysis including open file descriptor checks and binary analysis.
+  Results are returned with specific warning codes (UPC001-UPC043) for easy identification
+  of security issues. This tool is essential for penetration testers and security
+  auditors to systematically identify privilege escalation opportunities on Unix/Linux
+  systems.
 software: ''
 tactics: []
 techniques:

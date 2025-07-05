@@ -4,8 +4,22 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Set reversible encryption on a given domain account and then force the
-  password to be set on next user login.
+description: |
+  A module that downgrades domain account security by enabling reversible
+  encryption and forcing a password reset on the next user login. This
+  technique weakens the security posture of targeted accounts to facilitate
+  credential harvesting and privilege escalation.
+
+  The module modifies domain account properties to enable reversible
+  encryption, which stores passwords in a less secure format that can
+  be more easily extracted by credential harvesting tools. Additionally,
+  it forces the account to require a password change on next login,
+  potentially capturing the new password through various means.
+
+  This technique is particularly effective for compromising high-value
+  accounts as it reduces their security protections and creates
+  opportunities for credential harvesting. The module includes repair
+  functionality to restore account security settings when needed.
 software: ''
 tactics: [TA0003]
 techniques: [T1098]

@@ -1,10 +1,17 @@
-# Needs Revisions
 name: Chronos API Delete Job
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Delete a Chronos job using the HTTP API service for the Chronos Framework
+description: |
+  Removes scheduled jobs from Apache Chronos using the Chronos REST API.
+  Sends DELETE requests to the Chronos API endpoint to terminate and
+  remove specified scheduled jobs from the distributed job scheduler.
+  Uses a custom HTTP request class to handle DELETE method operations
+  not natively supported by urllib2. Useful for cleaning up evidence
+  after scheduled job operations, removing persistence mechanisms,
+  and managing the lifecycle of scheduled tasks in cloud-native
+  environments.
 software: ''
 tactics: []
 techniques:

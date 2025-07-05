@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Get-SQLServerLoginDefaultPw
 authors:
   - name: ''
@@ -7,8 +6,27 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Based on the instance name, test if SQL Server is configured with default
-  passwords.
+description: |
+  A reconnaissance module that tests SQL Server instances for default
+  password configurations. This module leverages the SQL Server
+  instance name to determine potential default credentials and
+  attempts to authenticate using known default password combinations.
+
+  The module can test individual SQL Server instances or perform
+  comprehensive checks across all discovered instances in a domain
+  environment. It uses the instance name to identify the likely
+  default username and then attempts authentication with common
+  default passwords associated with that instance type.
+
+  This technique is based on research from PowerUpSQL and provides
+  a systematic approach to identifying SQL Server instances with
+  weak default configurations. The module is particularly effective
+  for discovering SQL Server instances that have not been properly
+  secured after installation, as many SQL Server deployments retain
+  default credentials that are well-documented and easily exploitable.
+  This makes it an essential tool for database security assessments
+  and penetration testing scenarios where SQL Server access is a
+  priority.
 software: ''
 tactics: [TA0007]
 techniques: [T1505]

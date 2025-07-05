@@ -1,10 +1,25 @@
-# Needs Revisions
 name: Get Computers
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will list all computer objects from active directory
+description: |
+  An Active Directory enumeration module that retrieves a comprehensive list
+  of all computer objects within the target domain. This module performs
+  essential reconnaissance to map the network infrastructure and identify
+  potential targets for lateral movement and privilege escalation.
+
+  The module queries Active Directory via LDAP to extract all computer objects
+  including workstations, servers, and domain controllers. This information
+  is essential for understanding the network topology and identifying
+  potential targets for lateral movement and privilege escalation attacks.
+
+  The enumeration results provide critical intelligence for network mapping
+  and lateral movement by revealing the complete computer infrastructure
+  within the domain. This module is fundamental for domain reconnaissance
+  and helps operators identify potential targets for credential harvesting,
+  privilege escalation, and lateral movement based on computer roles and
+  network positioning.
 software: ''
 tactics: []
 techniques:

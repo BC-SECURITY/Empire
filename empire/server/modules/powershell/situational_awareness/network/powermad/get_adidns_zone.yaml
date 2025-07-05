@@ -7,7 +7,27 @@ authors:
   - name: ''
     handle: '@snovvcrash'
     link: ''
-description: Query ADIDNS zones in the specified domain. Part of Powermad.
+description: |
+  A network reconnaissance module that queries Active Directory
+  Integrated DNS (ADIDNS) zones within the specified domain.
+  This module is part of the PowerMad toolkit and provides
+  essential information about DNS infrastructure and potential
+  attack vectors for DNS-based attacks.
+
+  The module can enumerate DNS zones across different Active
+  Directory partitions including DomainDNSZones, ForestDNSZones,
+  and System partitions. It provides detailed information about
+  each zone including zone properties, DNS records, and
+  configuration settings that could reveal potential DNS
+  hijacking or poisoning opportunities.
+
+  This technique is particularly effective for understanding
+  the DNS infrastructure and identifying potential attack
+  vectors such as DNS record manipulation, zone transfer
+  attempts, or DNS-based lateral movement techniques. The
+  gathered intelligence can be used for planning DNS-based
+  attacks, understanding network architecture, and identifying
+  potential points of compromise within the DNS infrastructure.
 software: ''
 tactics: [TA0007]
 techniques: [T1016]

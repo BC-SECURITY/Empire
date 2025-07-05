@@ -4,8 +4,22 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Starts the event-loop backdoor. Monitors security logs for trigger and
-  calls back when seen
+description: |
+  A persistence module that monitors Windows security event logs for a specific
+  trigger value. When the designated value is detected in an event log entry,
+  the module initiates a callback to the attacker's server.
+
+  This event-driven persistence technique leverages legitimate system logging
+  mechanisms to provide a stealthy and flexible method for re-establishing
+  access, as the backdoor is only activated in response to specific,
+  operator-defined events. The module continuously scans security logs
+  for the trigger value and maintains stealth by blending with normal
+  system monitoring activities.
+
+  The event log backdoor technique is particularly effective for maintaining
+  long-term access as it uses legitimate system processes and can be
+  triggered by various events that may occur naturally in the environment,
+  providing a reliable and difficult-to-detect persistence mechanism.
 software: ''
 tactics: [TA0004]
 techniques: [T1546.003]

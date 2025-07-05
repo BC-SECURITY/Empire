@@ -4,7 +4,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Uploads a .jpg image to the target and sets it as the desktop wallpaper.
+description: Uploads a specified image to the target system and sets it as the desktop
+  wallpaper, visually altering the user's environment for humorous, disruptive, or
+  psychological effect. This module leverages PowerShell to transfer a .jpg image,
+  save it locally, and use Windows API calls to change the desktop background, supporting
+  various wallpaper styles. The technique is intended for pranks, red team morale-boosting,
+  or psychological operations, and is non-destructive in nature. Changing the wallpaper
+  can surprise, amuse, or confuse users, and is a classic method for demonstrating
+  access or delivering a visual message. No administrative privileges are required,
+  and the prank is harmless, leaving no persistent changes beyond the wallpaper modification.
+  Use responsibly and with consideration for the target audience.
 software: ''
 tactics: [TA0040]
 techniques: [T1491.001]

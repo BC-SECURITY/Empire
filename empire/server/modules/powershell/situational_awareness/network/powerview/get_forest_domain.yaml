@@ -1,10 +1,22 @@
-# Needs Revisions
 name: Get-ForestDomain
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Return all domains for a given forest. Part of PowerView.
+description: Enumerates all domains within an Active Directory forest to identify
+  the complete domain hierarchy and forest structure. This module leverages PowerView's
+  Get-ForestDomain function to query forest-level domain information and retrieve
+  comprehensive details about all domains within the forest, including domain names,
+  SIDs, functional levels, and domain relationships. The reconnaissance capability
+  is essential for understanding the complete scope of the Active Directory environment,
+  identifying all potential target domains, and mapping the forest's domain hierarchy.
+  By analyzing forest domain information, operators can identify child domains, understand
+  domain relationships, and determine the full scope of potential lateral movement
+  opportunities across the forest. This information is crucial for enterprise-wide
+  reconnaissance, cross-domain attack planning, and understanding the complete Active
+  Directory topology. The module provides foundational information about the forest's
+  domain structure that is essential for comprehensive Active Directory reconnaissance
+  and multi-domain operations.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482]

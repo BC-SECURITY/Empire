@@ -1,10 +1,25 @@
-# Needs Revisions
 name: Get Domain Controllers
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will list all domain controllers from active directory
+description: |
+  An Active Directory enumeration module that identifies all domain controllers
+  within the target domain. This module performs critical reconnaissance to
+  map the authentication infrastructure and identify high-value targets for
+  privilege escalation and persistence.
+
+  The module queries Active Directory via LDAP to extract domain controller
+  objects using specific userAccountControl flags that identify DCs. This
+  information is essential for understanding the domain's authentication
+  infrastructure and identifying primary targets for credential harvesting
+  and privilege escalation.
+
+  The enumeration results provide critical intelligence for domain compromise
+  and persistence by revealing the complete domain controller infrastructure.
+  This module is fundamental for domain reconnaissance and helps operators
+  identify the most valuable targets for credential harvesting, privilege
+  escalation, and establishing persistent access to the domain infrastructure.
 software: ''
 tactics: []
 techniques:

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Chainbreaker
 authors:
   - name: ''
@@ -7,7 +6,17 @@ authors:
   - name: ''
     handle: '@Killswitch-GUI'
     link: ''
-description: A keychain dump module that allows for decryption via known password.
+description: |
+  Decrypts and extracts passwords from macOS Keychain files using
+  a known user password. Leverages the Chainbreaker tool to parse
+  and decrypt keychain database structures including generic
+  passwords, internet passwords, certificates, and private keys.
+  Supports custom keychain file paths and uses the user's login
+  password to decrypt the keychain master key. Provides comprehensive
+  credential extraction from the macOS Keychain including website
+  passwords, application passwords, WiFi passwords, and system
+  credentials. Useful for post-exploitation credential harvesting
+  when the user's password is known or obtained through other means.
 software: ''
 tactics: []
 techniques:

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: CreateDylibHijacker
 authors:
   - name: ''
@@ -7,10 +6,17 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Configures and Empire dylib for use in a Dylib hijack, given the path
-  to a legitimate dylib of a vulnerable application. The architecture of the dylib
-  must match the target application. The configured dylib will be copied local to
-  the hijackerPath
+description: |
+  Creates a malicious dynamic library (dylib) for use in library
+  hijacking attacks on macOS applications. Generates a dylib with
+  the same architecture as the target application that loads the
+  Empire agent when the vulnerable application starts. Requires
+  a legitimate dylib path from a vulnerable application and
+  supports both x86 and x64 architectures. The malicious dylib
+  is placed in a location where the application will load it
+  instead of the legitimate library. Useful for establishing
+  persistence through application hijacking and maintaining
+  access when vulnerable applications are launched.
 software: ''
 tactics: []
 techniques:

@@ -1,10 +1,18 @@
-# Needs Revisions
 name: Linux Hashdump
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Extracts the /etc/passwd and /etc/shadow, unshadowing the result.
+description: |
+  Extracts and combines user account information from /etc/passwd and
+  /etc/shadow files to create unshadowed password hashes. Reads both
+  system files, parses the colon-delimited fields, and merges the
+  data to produce a format compatible with password cracking tools.
+  Requires root privileges to access the protected /etc/shadow file.
+  Provides comprehensive user account enumeration including usernames,
+  password hashes, user IDs, group IDs, and account information.
+  Useful for credential harvesting, password analysis, and user
+  enumeration on Linux systems.
 software: ''
 tactics: []
 techniques:

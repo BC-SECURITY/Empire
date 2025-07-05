@@ -1,10 +1,23 @@
-# Needs Revisions
 name: Get-DomainOU
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Gets a list of all current OUs in a domain. Part of PowerView.
+description: Enumerates Organizational Units (OUs) within an Active Directory domain
+  to identify the hierarchical structure, administrative boundaries, and organizational
+  layout. This module leverages PowerView's Get-DomainOU function to query the domain's
+  OU container and retrieve comprehensive information about all organizational units,
+  including their distinguished names, descriptions, creation dates, and Group Policy
+  links. The reconnaissance capability is essential for understanding the domain's
+  administrative structure, identifying logical groupings of users and computers,
+  and mapping the organizational hierarchy. By analyzing OU structures, operators
+  can identify potential administrative boundaries, understand delegation patterns,
+  and locate specific organizational units that may contain high-value targets. The
+  module supports filtering by identity, Group Policy links, and custom LDAP queries
+  to focus reconnaissance efforts on specific organizational areas. This information
+  is crucial for targeted reconnaissance, understanding administrative control structures,
+  and identifying potential privilege escalation opportunities within specific organizational
+  contexts.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615]

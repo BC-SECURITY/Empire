@@ -1,11 +1,21 @@
-# Needs Revisions
 name: Get-NetLoggedon
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Execute the NetWkstaUserEnum Win32API call to query a given host for
-  actively logged on users. Part of PowerView.
+description: Enumerates actively logged-on users on a target system by leveraging
+  the NetWkstaUserEnum Win32API call to identify users currently authenticated to
+  the workstation or server. This module provides visibility into user authentication
+  states, including domain and local user accounts, logon times, and session information.
+  The reconnaissance capability is essential for understanding user presence across
+  the network, identifying potential lateral movement targets, and mapping active
+  user sessions. By querying logged-on user information, operators can identify which
+  users are actively working on systems, determine session persistence for targeted
+  attacks, and understand the network's current usage patterns. This information
+  is crucial for timing attacks, identifying high-value targets, and understanding
+  the operational patterns of the target environment. The module supports both local
+  and remote queries to build a comprehensive picture of user activity across the
+  network.
 software: S0194
 tactics: [TA0007]
 techniques: [T1033, T1018]

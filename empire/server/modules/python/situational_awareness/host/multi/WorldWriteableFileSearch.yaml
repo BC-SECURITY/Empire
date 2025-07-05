@@ -1,10 +1,16 @@
-# Needs Revisions
 name: Search for world writeable files
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module can be used to identify world writeable files.
+description: |
+  Searches for world-writable directories that can be exploited for
+  privilege escalation or persistence. Uses the find command to
+  recursively search the filesystem for directories with write
+  permissions for all users (other than sticky bit directories).
+  Identifies potential attack vectors where malicious files can be
+  placed or where privilege escalation can be achieved through
+  file manipulation.
 software: ''
 tactics: []
 techniques:

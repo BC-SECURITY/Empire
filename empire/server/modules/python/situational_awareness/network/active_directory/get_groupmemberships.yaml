@@ -1,10 +1,24 @@
-# Needs Revisions
 name: Get Group Membership
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module check what groups a user is member of
+description: |
+  An Active Directory enumeration module that identifies all group memberships
+  for a specified user within the target domain. This module performs targeted
+  reconnaissance to understand user privileges and organizational role through
+  comprehensive group membership analysis.
+
+  The module queries Active Directory via LDAP to extract all group memberships
+  for the specified user account. This information is essential for understanding
+  the user's privilege level, access rights, and organizational position within
+  the domain structure.
+
+  The enumeration results provide critical intelligence for privilege escalation
+  and access control analysis by revealing the complete scope of a user's
+  permissions and group affiliations. This module is fundamental for user
+  reconnaissance and helps operators understand the target's role and potential
+  access to sensitive resources within the domain.
 software: ''
 tactics: []
 techniques:

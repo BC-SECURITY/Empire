@@ -4,8 +4,26 @@ authors:
   - name: ''
     handle: '@_nullbind'
     link: ''
-description: Displays Service Principal Names (SPN) for domain accounts based on
-  SPN service name, domain account, or domain group via LDAP queries.
+description: |
+  A network reconnaissance module that enumerates Service Principal
+  Names (SPNs) from Active Directory using LDAP queries. This module
+  discovers service accounts and their associated services, providing
+  valuable information for Kerberos-based attacks and service
+  enumeration.
+
+  The module can search for SPNs by service type, user account, or
+  group membership. It supports wildcard searches and can identify
+  various service types including SQL Server, Exchange, HTTP, and
+  other enterprise services. This information is crucial for
+  understanding the service landscape and identifying potential
+  targets for Kerberoasting attacks.
+
+  Service Principal Names are essential for Kerberos authentication
+  and can reveal service accounts that may have elevated privileges
+  or access to sensitive resources. The module provides detailed
+  output including service names, user accounts, and service
+  locations, making it an essential tool for Active Directory
+  reconnaissance and privilege escalation planning.
 software: ''
 tactics: [TA0007]
 techniques: [T1558, T1087.002]

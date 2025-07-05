@@ -4,7 +4,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Restore a backed up service binary.
+description: |
+  A privilege escalation module that restores previously backed up
+  service binaries to their original locations. This module is part
+  of the cleanup process after using service-based privilege escalation
+  techniques to restore system integrity and remove evidence of
+  compromise.
+
+  The module takes a service name and optional backup path to restore
+  the original service executable that was previously replaced or
+  modified during privilege escalation operations. This is essential
+  for maintaining operational security and ensuring that the target
+  system returns to its original state after successful privilege
+  escalation.
+
+  This restoration process is critical for maintaining stealth and
+  avoiding detection by system administrators or security monitoring
+  tools. By restoring the original service binaries, the module helps
+  ensure that the privilege escalation activity leaves minimal traces
+  and doesn't disrupt normal system functionality.
 software: S0194
 tactics: [TA0005]
 techniques: [T1070.004, T1070.009]

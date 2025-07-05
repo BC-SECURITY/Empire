@@ -1,10 +1,10 @@
-# Needs Revisions
 name: Invoke-Ask
 authors:
   - name: Jack64
     handle: ''
     link: ''
-description: Leverages Start-Process' -Verb runAs option inside a YES-Required loop
+description: |
+  Leverages Start-Process' -Verb runAs option inside a YES-Required loop
   to prompt the user for a high integrity context before running the agent code.
   UAC will report Powershell is requesting Administrator privileges. Because this
   does not use the BypassUAC DLLs, it should not trigger any AV alerts.

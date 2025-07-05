@@ -1,10 +1,20 @@
-# Needs Revisions
 name: Get-DomainGPO
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Gets a list of all current GPOs in a domain. Part of PowerView.
+description: Enumerates Group Policy Objects (GPOs) within an Active Directory domain
+  to identify policy configurations, security settings, and administrative controls.
+  This module leverages PowerView's Get-DomainGPO function to query the domain's
+  Group Policy container and retrieve comprehensive information about all GPOs, including
+  their display names, GUIDs, creation dates, modification timestamps, and linked
+  locations. The module supports filtering by identity, computer-specific policies,
+  user-specific policies, and custom LDAP queries to focus reconnaissance efforts
+  on specific policy areas. This reconnaissance capability is essential for understanding
+  the domain's security posture, identifying potential policy-based attack vectors,
+  and mapping administrative control structures. The module can reveal security policies,
+  software deployment configurations, user rights assignments, and other domain-wide
+  settings that may impact lateral movement and privilege escalation opportunities.
 software: S0194
 tactics: [TA0007]
 techniques: [T1615]

@@ -1,10 +1,19 @@
-# Needs Revisions
 name: LoginHook
 authors:
   - name: ''
     handle: '@Killswitch-GUI'
     link: ''
-description: Installs Empire agent via LoginHook.
+description: |
+  Establishes persistence by configuring a macOS LoginHook that
+  executes the Empire agent when users log into the system.
+  Uses the defaults command to set the loginHook property in
+  the system preferences, which runs a specified script during
+  the login process. Requires sudo privileges to modify system
+  preferences and configure the login hook. The hook script
+  is executed for every user login, providing persistent
+  access across user sessions and system reboots. Useful for
+  maintaining long-term access to compromised macOS systems
+  through legitimate system mechanisms.
 software: ''
 tactics: []
 techniques:

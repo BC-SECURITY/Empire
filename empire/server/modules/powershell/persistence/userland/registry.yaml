@@ -9,11 +9,13 @@ authors:
   - name: ''
     handle: '@enigma0x3'
     link: ''
-description: "Establishes persistence by creating a registry entry in HKCU:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run
-  \nthat executes a stager or script during user logon. This module creates a user-level
-  persistence \nmechanism that triggers when the specific user logs into the system.\n\nUser-level
-  registry persistence is less privileged than system-level persistence but provides
-  \nreliable execution for the target user account. The module can store the payload
+description: |
+  Establishes persistence by creating a registry entry in HKCU:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run
+  that executes a stager or script during user logon. This module creates a user-level
+  persistence mechanism that triggers when the specific user logs into the system.
+
+  User-level registry persistence is less privileged than system-level persistence but provides
+  reliable execution for the target user account. The module can store the payload
   in the registry, \nalternate data streams, event logs, or reference an external
   file, providing flexibility for \ndifferent operational requirements and stealth
   considerations.\n\nThis technique does not require administrative privileges and

@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Situational Awareness
 authors:
   - name: Alex Rymdeko-Harvey
@@ -7,7 +6,23 @@ authors:
   - name: ''
     handle: '@Killswitch-GUI'
     link: ''
-description: This module will enumerate the basic items needed for OP.
+description: |
+  A comprehensive macOS host enumeration module that performs essential
+  situational awareness gathering for operational planning and target
+  analysis. This module collects critical system information to understand
+  the target environment and identify potential attack vectors.
+
+  The module enumerates basic system information including user accounts,
+  installed applications, network configurations, and recent user activity.
+  This information is essential for understanding the target's environment,
+  identifying potential vulnerabilities, and planning subsequent attack
+  strategies based on the discovered system state.
+
+  The enumeration results provide critical intelligence for operational
+  planning by revealing the target's system configuration, user behavior
+  patterns, and potential attack surfaces. This module is fundamental for
+  host reconnaissance and helps operators understand the target environment
+  to identify the most effective attack vectors and persistence mechanisms.
 software: ''
 tactics: []
 techniques:

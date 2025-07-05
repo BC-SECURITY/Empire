@@ -4,7 +4,17 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Displays a specified message to the user.
+description: Displays a custom pop-up message box on the target user's desktop, simulating
+  system alerts, error messages, or other notifications for psychological manipulation
+  or humorous effect. This module leverages PowerShell to invoke a Windows message
+  box with customizable text, icon type, and title, allowing operators to craft convincing
+  or disruptive messages. The technique is useful for red team operations, social
+  engineering demonstrations, or pranks, and can be used to induce confusion, prompt
+  user action, or simply amuse. The message box appears as a legitimate system dialog,
+  increasing its believability and potential impact. Operators should use this module
+  responsibly, as repeated or alarming messages may disrupt user productivity or
+  cause unnecessary concern. No administrative privileges are required, making it
+  effective in a wide range of environments.
 software: ''
 tactics: [TA0040]
 techniques: [T1491.001]

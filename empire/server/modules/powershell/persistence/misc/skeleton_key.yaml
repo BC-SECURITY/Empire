@@ -7,8 +7,22 @@ authors:
   - name: Benjamin Delpy
     handle: '@gentilkiwi'
     link: https://twitter.com/gentilkiwi
-description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::skeleton
-  to implant a skeleton key w/ password 'mimikatz'. ONLY APPLICABLE ON DOMAIN CONTROLLERS!
+description: |
+  A persistence module that implants a skeleton key into the domain controller's
+  LSASS memory space, allowing access to any domain account using a universal
+  password. This technique creates a backdoor that bypasses normal authentication
+  mechanisms and provides persistent access to the entire domain.
+
+  The skeleton key technique modifies the authentication process in memory to
+  accept a predefined password ('mimikatz' by default) for any domain account,
+  while preserving the original password functionality. This approach is
+  particularly effective as it operates entirely in memory and doesn't
+  modify the Active Directory database.
+
+  This technique is only applicable on domain controllers and provides
+  a powerful persistence mechanism that can survive password changes and
+  domain policy updates. The skeleton key remains active until the domain
+  controller is restarted or the LSASS process is recycled.
 software: S0194
 tactics: [TA0004, TA0006]
 techniques: [T1556.001]

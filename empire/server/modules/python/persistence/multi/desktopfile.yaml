@@ -1,11 +1,19 @@
-# Needs Revisions
 name: DesktopFile
 authors:
   - name: ''
     handle: '@jarrodcoulter'
     link: ''
-description: Installs an Empire launcher script in ~/.config/autostart on Linux versions
-  with GUI.
+description: |
+  Creates and installs a desktop entry file in the ~/.config/autostart
+  directory to establish persistence on Linux systems with graphical
+  user interfaces. The desktop file follows the freedesktop.org
+  specification and automatically launches the Empire agent when
+  the user logs into the desktop environment. Creates a properly
+  formatted .desktop file with the specified name and configures
+  it to execute the Empire launcher script. Includes functionality
+  to remove the persistence mechanism for cleanup. Useful for
+  establishing persistence on Linux desktop systems and maintaining
+  access across user sessions and system reboots.
 software: ''
 tactics: []
 techniques:

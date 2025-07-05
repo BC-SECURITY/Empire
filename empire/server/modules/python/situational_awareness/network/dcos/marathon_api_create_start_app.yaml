@@ -1,10 +1,15 @@
-# Needs Revisions
 name: Marathon API Create and Start App
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Create and Start a Marathon App using Marathon's REST API
+description: |
+  Creates and starts applications on Apache Marathon using the Marathon
+  REST API. Leverages Marathon's container orchestration capabilities
+  to deploy custom applications with configurable resource allocations
+  including CPU, memory, and disk space. Sends JSON payloads to the
+  Marathon API endpoint to create new application definitions and
+  immediately start the specified number of instances.
 software: ''
 tactics: []
 techniques:

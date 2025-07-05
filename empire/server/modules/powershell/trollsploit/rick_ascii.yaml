@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Invoke-RickASCII
 authors:
   - name: ''
@@ -7,8 +6,16 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Spawns a a new powershell.exe process that runs Lee Holmes' ASCII Rick
-  Roll.
+description: Launches a new PowerShell process on the target system that displays
+  an animated ASCII art rendition of Rick Astley, effectively delivering a classic
+  "Rickroll" prank in text mode. This module leverages a PowerShell-encoded command
+  to spawn a maximized console window and play the ASCII animation, surprising and
+  amusing the user. The technique is intended for humorous psychological operations,
+  red team morale-boosting, or lighthearted demonstrations, and is non-destructive
+  in nature. The prank is instantly recognizable and can be used to inject levity
+  into engagements or to test user awareness. No administrative privileges are required,
+  and the prank is harmless, leaving no persistent changes on the system. Use responsibly
+  and with consideration for the target audience.
 software: ''
 tactics: [TA0040]
 techniques: [T1491.001]

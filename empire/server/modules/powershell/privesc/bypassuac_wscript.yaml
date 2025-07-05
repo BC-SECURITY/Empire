@@ -10,9 +10,23 @@ authors:
   - name: Vozzie
     handle: ''
     link: ''
-description: Drops wscript.exe and a custom manifest into C:\Windows\ and then proceeds
-  to execute VBScript using the wscript executablewith the new manifest. The VBScript
-  executed by C:\Windows\wscript.exe will run elevated.
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  by exploiting a vulnerability in the Windows Script Host (WSH). This
+  technique drops a custom wscript.exe executable and manifest into
+  the C:\Windows\ directory, then executes VBScript using the modified
+  wscript executable to achieve elevated privileges.
+
+  The module creates a custom manifest that modifies the execution
+  context of wscript.exe, allowing VBScript code to run with elevated
+  privileges without triggering UAC prompts. This technique exploits
+  the fact that Windows Script Host components in the Windows directory
+  are trusted by the system and can execute with higher privileges.
+
+  This approach is based on research by @enigma0x3 and @harmyj0y, and
+  leverages the UAC bypass vulnerability discovered in the Windows
+  Script Host. While effective, this technique requires dropping files
+  to disk, which may be detected by security monitoring tools.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

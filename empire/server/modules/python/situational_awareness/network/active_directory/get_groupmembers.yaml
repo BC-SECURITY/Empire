@@ -1,10 +1,24 @@
-# Needs Revisions
 name: Get Group Members
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will return a list of group members
+description: |
+  An Active Directory enumeration module that retrieves membership information
+  for specified groups within the target domain. This module performs targeted
+  reconnaissance to identify users with elevated privileges and understand
+  organizational structure through group membership analysis.
+
+  The module queries Active Directory via LDAP to extract member information
+  from specified groups, defaulting to Domain Admins if no group is specified.
+  This information is essential for understanding privilege distribution and
+  identifying high-value targets within the domain.
+
+  The enumeration results provide critical intelligence for privilege escalation
+  and lateral movement by identifying users with administrative access and
+  understanding the domain's security group structure. This module is fundamental
+  for domain reconnaissance and helps operators identify potential targets
+  for credential harvesting and privilege escalation attacks.
 software: ''
 tactics: []
 techniques:

@@ -1,10 +1,26 @@
 # Needs Revisions
-name: Get-SecurityPackages
+name: Get-SSPs
 authors:
-  - name: Matt Graeber
-    handle: '@mattifestation'
-    link: https://twitter.com/mattifestation
-description: Enumerates all loaded security packages (SSPs).
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A reconnaissance module that enumerates Security Support Providers (SSPs)
+  installed on the target system. This module provides visibility into
+  the authentication mechanisms and security packages configured on the
+  system, which can be useful for understanding the security posture
+  and identifying potential persistence opportunities.
+
+  The module queries the Windows registry to identify installed SSPs,
+  including both built-in Windows SSPs and any custom SSPs that may
+  have been installed. This information can be valuable for security
+  assessments and identifying potential backdoors or unauthorized
+  authentication mechanisms.
+
+  SSP enumeration is particularly useful for understanding the system's
+  authentication infrastructure and identifying any custom security
+  packages that may have been installed for malicious purposes or
+  legitimate security enhancements.
 software: ''
 tactics: [TA0004]
 techniques: [T1101.005]

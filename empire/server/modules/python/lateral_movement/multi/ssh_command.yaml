@@ -1,10 +1,17 @@
-# Needs Revisions
 name: SSHCommand
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will send a command via ssh.
+description: |
+  Executes commands on remote systems via SSH using password authentication.
+  Leverages Python's pty module to handle interactive SSH sessions and
+  automatically provides credentials when prompted. Supports custom SSH
+  connections with configurable login credentials and target commands.
+  The module establishes an SSH connection to the specified host, executes
+  the command, and returns the output. Useful for lateral movement across
+  network segments, remote command execution, and maintaining access to
+  multiple systems through SSH connections.
 software: ''
 tactics: []
 techniques:

@@ -7,8 +7,23 @@ authors:
   - name: Benjamin Delpy
     handle: '@gentilkiwi'
     link: https://twitter.com/gentilkiwi
-description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::memssp
-  to log all authentication events to C:\Windows\System32\mimisla.log.
+description: |
+  A persistence module that installs a memory-based Security Support Provider
+  (SSP) into the LSASS process to log all authentication events. This technique
+  provides continuous credential monitoring and logging capabilities without
+  requiring persistent file-based components.
+
+  The memssp technique injects a custom SSP directly into LSASS memory space,
+  where it can intercept and log all authentication attempts, including
+  successful logons, failed attempts, and credential changes. The logged
+  information is written to a file at C:\Windows\System32\mimisla.log,
+  providing a comprehensive audit trail of authentication activities.
+
+  This approach is particularly effective for credential harvesting and
+  monitoring as it operates at the authentication layer and can capture
+  credentials in various formats. The memory-based implementation provides
+  stealth advantages over traditional file-based SSPs, though it requires
+  re-injection after system restarts.
 software: S0194
 tactics: [TA0004, TA0006]
 techniques: [T1101.005, T1056]

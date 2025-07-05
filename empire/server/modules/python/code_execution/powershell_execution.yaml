@@ -1,10 +1,16 @@
-# Needs Revisions
 name: powershell_execution
 authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: Executes Powershell code from a Python code.
+description: |
+  Executes PowerShell commands and scripts on Windows systems through IronPython's
+  .NET integration capabilities. Leverages the System.Management.Automation
+  namespace to create PowerShell runspaces and execute commands directly within
+  the Python environment. This module provides seamless integration between
+  Python and PowerShell execution contexts, enabling the use of PowerShell
+  security tools, system administration commands, and Windows-specific
+  reconnaissance techniques.
 software: ''
 tactics:
   - TA0002

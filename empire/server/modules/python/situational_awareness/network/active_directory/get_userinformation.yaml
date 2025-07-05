@@ -1,10 +1,25 @@
-# Needs Revisions
 name: Get User Information
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will return the user profile specified
+description: |
+  An Active Directory enumeration module that retrieves comprehensive user profile
+  information for a specified user account within the target domain. This module
+  performs detailed reconnaissance to gather complete user attributes and account
+  details for intelligence gathering and targeting purposes.
+
+  The module queries Active Directory via LDAP to extract all available user
+  attributes including account details, contact information, organizational data,
+  and security settings. This information is essential for understanding the
+  user's role, privileges, and potential access to sensitive resources within
+  the domain.
+
+  The enumeration results provide critical intelligence for social engineering,
+  privilege escalation, and lateral movement by revealing detailed user profiles
+  and organizational relationships. This module is fundamental for user
+  reconnaissance and helps operators build comprehensive profiles of potential
+  targets for credential harvesting and targeted attacks.
 software: ''
 tactics: []
 techniques:

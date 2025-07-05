@@ -1,11 +1,20 @@
-# Needs Revisions
 name: Mail
 authors:
   - name: ''
     handle: '@n00py'
     link: https://twitter.com/n00py1
-description: Installs a mail rule that will execute an AppleScript stager when a
-  trigger word is present in the Subject of an incoming mail.
+description: |
+  Establishes persistence by creating a mail rule in the macOS
+  Mail application that executes an AppleScript stager when
+  emails with specific trigger words in the subject line are
+  received. Configures the Mail application to automatically
+  run the Empire agent stager when matching emails arrive,
+  providing a covert persistence mechanism. Supports custom
+  rule names and trigger words for flexibility. Includes
+  safety checks for security software detection. Useful for
+  maintaining access through email-triggered execution and
+  establishing persistence that activates when specific
+  emails are received.
 software: ''
 tactics: []
 techniques:

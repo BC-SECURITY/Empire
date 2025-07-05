@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Remove-KeePassConfigTrigger
 authors:
   - name: Lee Christensen
@@ -7,7 +6,25 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: This module removes all triggers from all KeePass configs found by Find-KeePassConfig.
+description: |
+  A PowerShell module that removes all custom triggers from KeePass
+  configuration files to clean up evidence of compromise and prevent
+  detection. This module is part of the KeeThief toolkit designed
+  for stealthy credential harvesting operations.
+
+  The module first terminates any running KeePass processes to ensure
+  configuration files are not locked, then systematically removes
+  all custom triggers that may have been previously installed for
+  credential exfiltration. This cleanup process helps operators
+  maintain operational security by removing traces of the attack
+  and preventing security tools from detecting the compromise.
+
+  This defensive capability is essential for maintaining stealth
+  during credential harvesting operations and ensuring that
+  security monitoring systems do not detect the presence of
+  malicious triggers. The cleanup process helps operators
+  maintain long-term access while minimizing the risk of
+  discovery through configuration analysis.
 software: ''
 tactics: [TA0005]
 techniques: [T1070.009]

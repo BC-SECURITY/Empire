@@ -4,8 +4,23 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Takes a user/group name and optional domain, and determines the computers
-  in the domain the user/group has local admin (or RDP) rights to. Part of PowerView.
+description: Identifies computers where specific users or groups have been granted
+  local administrative access through Group Policy Objects (GPOs), enabling targeted
+  lateral movement planning and privilege escalation analysis. This module leverages
+  PowerView's Get-DomainGPOUserLocalGroupMapping function to analyze GPO configurations
+  and determine which computers in the domain have been configured to grant local
+  administrative access to specific users or groups through policy enforcement. The
+  reconnaissance capability is essential for understanding policy-based administrative
+  access distribution, identifying potential lateral movement targets, and mapping
+  the scope of policy-granted administrative privileges across the domain. By analyzing
+  GPO user local group mappings, operators can identify specific computers where
+  target users have administrative access, understand the distribution of policy-based
+  privileges, and discover potential lateral movement paths through policy-granted
+  administrative access. The module supports targeting specific users, groups, or
+  local groups to focus reconnaissance efforts on particular administrative relationships.
+  This information is crucial for lateral movement planning, privilege escalation
+  targeting, and understanding the distribution of administrative access across the
+  domain through policy-based mechanisms.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615]

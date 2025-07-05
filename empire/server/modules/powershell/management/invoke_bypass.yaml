@@ -1,10 +1,26 @@
-# Needs Revisions
 name: Invoke-Script
 authors:
   - name: "Anthony Rose"
     handle: "@Cx01N"
     link: "https://twitter.com/Cx01N_"
-description: Run a bypass from the server.
+description: |
+  A PowerShell module that executes bypass techniques from the Empire
+  server to evade detection and monitoring systems. This module
+  applies various obfuscation and evasion techniques to PowerShell
+  launchers before execution on the target system.
+
+  The module supports multiple bypass techniques including ETW
+  bypass, AMSI bypass, and other evasion methods that can be
+  combined to create highly obfuscated payloads. These bypasses
+  are prepended to the launcher code to ensure the payload can
+  execute without triggering security monitoring systems.
+
+  The module also supports optional code obfuscation using
+  Invoke-Obfuscation techniques to further hide the malicious
+  code from detection mechanisms. This multi-layered approach
+  to evasion makes it particularly effective for maintaining
+  stealth during post-exploitation activities and avoiding
+  detection by advanced security solutions.
 software: ''
 tactics: [TA0005]
 techniques: [T1562.006]

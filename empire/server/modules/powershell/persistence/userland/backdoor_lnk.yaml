@@ -4,8 +4,21 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Backdoor a specified .LNK file with a version that launches the original
-  binary and then an Empire stager.
+description: |
+  A persistence module that modifies an existing shortcut (.LNK) file to execute
+  both the original target application and an Empire stager. By backdooring a
+  shortcut already present on the system, the module ensures that normal user
+  workflows are preserved while covertly establishing persistence.
+
+  The module supports restoration of the original shortcut and can use either
+  a stager or an external payload, providing flexibility in deployment and
+  cleanup. This approach is particularly effective as it leverages existing
+  user behavior patterns and doesn't require creating new files that might
+  raise suspicion.
+
+  The backdoor LNK technique provides a stealthy persistence mechanism that
+  maintains the appearance of normal system operation while ensuring continued
+  access through user-initiated shortcut execution.
 software: ''
 tactics: [TA0004]
 techniques: [T1204.001, T1547.009]

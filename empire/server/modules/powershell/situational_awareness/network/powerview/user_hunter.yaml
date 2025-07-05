@@ -1,11 +1,30 @@
-# Needs Revisions
 name: Find-DomainUserLocation
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Finds which machines users of a specified group are logged into. Part
-  of PowerView.
+description: |
+  A sophisticated Active Directory reconnaissance module that identifies
+  which machines specific users or user groups are currently logged
+  into across the domain. This module is part of the PowerView toolkit
+  and provides critical intelligence for user hunting and lateral
+  movement planning.
+
+  The module can target specific users, user groups, or use LDAP
+  filters to identify target users based on various criteria such
+  as administrative privileges, delegation settings, or group
+  memberships. It then enumerates active sessions across domain
+  computers to locate where these users are currently logged in,
+  providing real-time intelligence about user activity.
+
+  This technique is particularly effective for identifying high-value
+  targets and understanding user behavior patterns. The module includes
+  stealth options to minimize detection, threading capabilities for
+  efficient enumeration, and access checking to identify systems
+  where the current user has administrative privileges. This gathered
+  intelligence is essential for planning targeted attacks, lateral
+  movement strategies, and understanding the overall user landscape
+  within the Active Directory environment.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1069.002, T1615, T1018]

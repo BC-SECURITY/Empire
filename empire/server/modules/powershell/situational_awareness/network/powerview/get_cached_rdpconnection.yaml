@@ -1,11 +1,23 @@
-# Needs Revisions
 name: Get-WMIRegCachedRDPConnection
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Uses remote registry functionality to query all entries for the Windows
-  Remote Desktop Connection Client" on a machine. Part of PowerView.
+description: Enumerates cached Remote Desktop Protocol (RDP) connection information
+  from the Windows registry to identify historical remote access patterns and potential
+  lateral movement targets. This module leverages PowerView's Get-WMIRegCachedRDPConnection
+  function to query the Windows Remote Desktop Connection Client registry entries
+  and retrieve comprehensive information about cached RDP connections, including
+  target servers, connection timestamps, and user credentials. The reconnaissance
+  capability is essential for understanding remote access patterns, identifying potential
+  lateral movement opportunities, and mapping the network's remote access landscape.
+  By analyzing cached RDP connections, operators can identify systems that users
+  have previously accessed, understand remote access workflows, and discover potential
+  targets for lateral movement. The module supports both local and remote registry
+  queries to provide visibility into RDP connection history across the network. This
+  information is crucial for lateral movement planning, understanding user access
+  patterns, and identifying potential privilege escalation opportunities through
+  historical remote access relationships.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1018, T1615, T1076]

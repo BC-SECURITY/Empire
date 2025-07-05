@@ -1,11 +1,18 @@
-# Needs Revisions
 name: SearchEmail
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Searches for Mail .emlx messages, optionally only returning messages
-  with the specified SearchTerm.
+description: |
+  Searches and extracts email messages from the macOS Mail application
+  by scanning .emlx files in the user's Mail directory. Supports
+  optional keyword filtering to find specific messages containing
+  search terms. Scans the Mail application's message storage format
+  to locate and extract email content, headers, and metadata.
+  Provides email reconnaissance capabilities for intelligence
+  gathering and communication analysis. Useful for collecting
+  sensitive email communications, contact information, and
+  understanding user communication patterns.
 software: ''
 tactics: []
 techniques:

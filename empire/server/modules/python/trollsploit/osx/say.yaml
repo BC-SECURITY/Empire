@@ -1,10 +1,26 @@
-# Needs Revisions
 name: Say
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Performs text to speech using "say".
+description: |
+  A macOS prank module that leverages the built-in text-to-speech
+  functionality to generate audible output on the target system.
+  This module uses the native "say" command to convert text input
+  into spoken audio through the system's speakers.
+
+  The module supports various voice options including different
+  accents and languages available in macOS, allowing for customized
+  audio output. This can be used to create humorous or disruptive
+  effects by making the computer speak unexpected messages or
+  phrases without user interaction.
+
+  The text-to-speech functionality can be particularly effective
+  for creating psychological impact through unexpected audio
+  output, especially in quiet environments or when users are
+  not expecting the system to produce speech. This module is
+  commonly used for pranks and social engineering scenarios
+  where audible disruption can create confusion or amusement.
 software: ''
 tactics: []
 techniques:

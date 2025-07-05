@@ -1,11 +1,23 @@
-# Needs Revisions
 name: Get-NetLocalGroup
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Returns a list of all current users in a specified local group on a
-  local or remote machine. Part of PowerView.
+description: Enumerates local group membership on target systems to identify users
+  with local administrative access, supporting both local and remote queries with
+  recursive domain group resolution. This module leverages PowerView's Get-NetLocalGroup
+  function to query local group membership information and retrieve comprehensive
+  details about local group members, including local users, domain users, and domain
+  groups. The reconnaissance capability is essential for understanding local administrative
+  access patterns, identifying privilege escalation opportunities, and mapping local
+  administrative relationships across the network. By analyzing local group memberships,
+  operators can identify users with local administrative access, understand domain
+  group inheritance in local contexts, and discover potential lateral movement opportunities
+  through local administrative access. The module supports recursive domain group
+  resolution to identify all domain users who have local administrative access through
+  nested group memberships. This information is crucial for lateral movement planning,
+  privilege escalation targeting, and understanding the distribution of administrative
+  access across the network.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1615, T1069.001]

@@ -1,10 +1,18 @@
-# Needs Revisions
 name: ClipboardGrabber
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will write log output of clipboard to stdout (or disk).
+description: |
+  Monitors and captures clipboard content from the macOS system
+  clipboard using the AppKit framework. Leverages NSPasteboard
+  to access the general pasteboard and retrieve clipboard data
+  in real-time. Supports configurable monitoring duration and
+  optional file output for persistent logging. Detects changes
+  in clipboard content and logs new entries with timestamps.
+  Provides clipboard reconnaissance capabilities for capturing
+  sensitive data that users copy and paste, including passwords,
+  text snippets, and other confidential information.
 software: ''
 tactics: []
 techniques:

@@ -4,8 +4,22 @@ authors:
   - name: ''
     handle: '@sixdub'
     link: ''
-description: Backup backdoor for a backdoor user. Looks for a speicifed user account.
-  If not found, then calls back to the server
+description: |
+  A persistence module that establishes a backup backdoor by monitoring for the
+  presence of a specified user account on the target system. If the designated
+  user account is not found, the module initiates a callback to the attacker's
+  server, enabling re-establishment of access.
+
+  This approach provides a resilient persistence mechanism that can automatically
+  trigger a new connection if the primary backdoor user is removed, ensuring
+  continued access even after partial remediation by defenders. The module
+  continuously monitors for the specified user account and maintains stealth
+  by only activating when the account is absent.
+
+  The dead user backdoor technique is particularly effective for maintaining
+  long-term access in environments where user accounts may be periodically
+  cleaned up or removed by security teams, providing a reliable fallback
+  mechanism for persistence.
 software: ''
 tactics: [TA0004]
 techniques: [T1546]

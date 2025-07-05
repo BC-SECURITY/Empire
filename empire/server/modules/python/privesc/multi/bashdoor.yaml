@@ -1,11 +1,25 @@
-# Needs Revisions
 name: bashdoor
 authors:
   - name: ''
     handle: '@n00py'
     link: https://twitter.com/n00py1
-description: Creates an alias in the .bash_profile to cause the sudo command to execute
-  a stager and pass through the origional command back to sudo
+description: |
+  A privilege escalation technique that creates a malicious alias in the
+  user's .bash_profile to intercept and hijack the sudo command. This module establishes
+  a backdoor by modifying the shell environment to execute a stager payload whenever
+  the user runs sudo, while transparently passing the original command through to the
+  legitimate sudo binary.
+
+  The technique works by:
+  - Creating an alias in .bash_profile that redirects 'sudo' to a custom function
+  - The function executes the Empire stager to establish a high-privilege agent
+  - The original sudo command is then executed normally to maintain stealth
+  - This allows for persistent privilege escalation without requiring password entry
+
+  This method is particularly effective because it leverages the user's existing sudo
+  privileges and creates a persistent mechanism for elevated access. The backdoor
+  remains active across shell sessions and can be triggered by any sudo command
+  execution.
 software: ''
 tactics: []
 techniques:

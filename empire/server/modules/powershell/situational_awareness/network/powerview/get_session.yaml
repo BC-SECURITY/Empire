@@ -1,11 +1,20 @@
-# Needs Revisions
 name: Get-NetSession
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Execute the NetSessionEnum Win32API call to query a given host for active
-  sessions on the host. Part of PowerView.
+description: Enumerates active network sessions on a target system by leveraging
+  the NetSessionEnum Win32API call to identify users currently connected to file
+  shares, administrative sessions, and other network resources. This module provides
+  visibility into active user sessions, including session types, connection times,
+  idle durations, and client information. The reconnaissance capability is particularly
+  valuable for understanding user activity patterns, identifying potential lateral
+  movement opportunities, and mapping user presence across the network. By querying
+  session information, operators can identify which users are actively working on
+  systems, determine session persistence for targeted attacks, and understand the
+  network's current usage patterns. This information is crucial for timing attacks,
+  identifying high-value targets, and understanding the operational patterns of the
+  target environment.
 software: S0194
 tactics: [TA0007]
 techniques: [T1076, T1018, T1933]

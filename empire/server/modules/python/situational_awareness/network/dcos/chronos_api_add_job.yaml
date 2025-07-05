@@ -1,10 +1,15 @@
-# Needs Revisions
 name: Chronos API Add Job
 authors:
   - name: Bryce Kunz
     handle: '@TweekFawkes'
     link: https://twitter.com/TweekFawkes
-description: Add a Chronos job using the HTTP API service for the Chronos Framework
+description: |
+  Creates scheduled jobs on Apache Chronos using the Chronos REST API.
+  Leverages Chronos' distributed job scheduler capabilities to create
+  recurring tasks with configurable schedules, resource allocations,
+  and execution parameters. Sends JSON payloads to the Chronos API
+  to define new scheduled jobs with specified commands, owners,
+  descriptions, and ISO8601 schedule formats.
 software: ''
 tactics: []
 techniques:

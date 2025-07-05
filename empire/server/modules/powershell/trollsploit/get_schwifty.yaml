@@ -4,8 +4,17 @@ authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: |
-  Play's a hidden version of Rick and Morty Get Schwifty video while maxing out a computer's volume.
+description: Launches a hidden browser session on the target system to play the "Get
+  Schwifty" video from Rick and Morty at maximum volume, creating a disruptive and
+  humorous audio-visual prank. This module leverages PowerShell to manipulate system
+  volume settings and control a hidden Internet Explorer instance, ensuring the video
+  plays loudly and unexpectedly. Operators can optionally specify a different YouTube
+  video URL for custom pranks. The technique is intended for psychological operations,
+  red team morale-boosting, or lighthearted demonstrations, and is non-destructive
+  in nature. The sudden loud music and hidden playback can startle or amuse users,
+  making it effective for attention-grabbing or stress-testing user awareness. No
+  administrative privileges are required, and the prank is harmless, leaving no persistent
+  changes on the system. Use responsibly and with consideration for the target audience.
 software:
 tactics: [TA0040]
 techniques: [T1491.001]

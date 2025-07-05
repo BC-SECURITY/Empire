@@ -1,4 +1,3 @@
-# Needs Revisions
 name: Dylib Hijack Vulnerability Scanner
 authors:
   - name: ''
@@ -7,9 +6,29 @@ authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: This module can be used to identify applications vulnerable to dylib
-  hijacking on a target system. This has been modified from the original to remove
-  the dependancy for the macholib library.
+description: |
+  A sophisticated macOS vulnerability scanner that identifies applications
+  vulnerable to dynamic library (dylib) hijacking attacks. This module
+  performs comprehensive binary analysis to detect potential privilege
+  escalation and persistence opportunities through library hijacking.
+
+  The module scans macOS binaries for weak library loading mechanisms
+  that can be exploited to inject malicious code through dylib hijacking.
+  This vulnerability occurs when applications load libraries from writable
+  locations or use relative paths that can be manipulated by unprivileged
+  users.
+
+  The scanner analyzes both running processes and static binaries to identify
+  applications that load libraries from insecure locations or use vulnerable
+  loading mechanisms. This information is essential for identifying potential
+  privilege escalation vectors and persistence mechanisms that can be exploited
+  to maintain elevated access on compromised macOS systems.
+
+  The enumeration results provide critical intelligence for privilege escalation
+  and persistence by revealing applications vulnerable to dylib hijacking attacks.
+  This module is fundamental for macOS security assessment and helps operators
+  identify potential attack vectors for maintaining elevated privileges through
+  library injection techniques.
 software: ''
 tactics: []
 techniques:

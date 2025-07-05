@@ -1,11 +1,22 @@
-# Needs Revisions
 name: Get-DomainGroupMember
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Returns the members of a given group, with the option to "Recurse" to
-  find all effective group members. Part of PowerView.
+description: Enumerates group membership details within Active Directory to identify
+  direct and nested group members, supporting both direct membership queries and
+  recursive group expansion. This module leverages PowerView's Get-DomainGroupMember
+  function to query group membership information and retrieve comprehensive details
+  about group members, including user accounts, computer objects, and nested groups.
+  The reconnaissance capability is essential for understanding the domain's group
+  structure, identifying privilege escalation opportunities, and mapping administrative
+  access relationships. By analyzing group memberships, operators can identify users
+  with specific permissions, understand nested group relationships, and discover
+  potential privilege escalation paths through group membership inheritance. The
+  module supports recursive group expansion using both traditional recursion and
+  LDAP_MATCHING_RULE_IN_CHAIN for efficient nested group discovery. This information
+  is crucial for privilege escalation planning, understanding administrative access
+  patterns, and identifying high-value targets within specific group contexts.
 software: S0194
 tactics: [TA0007]
 techniques: [T1482, T1615, T1069.002]

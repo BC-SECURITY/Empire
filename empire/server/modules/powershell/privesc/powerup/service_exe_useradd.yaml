@@ -4,8 +4,26 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Backs up a service's binary and replaces the original with a binary
-  that creates/adds a local administrator.
+description: |
+  A privilege escalation module that performs service binary replacement
+  to create a local administrator account. This technique backs up the
+  original service executable and replaces it with a malicious binary
+  that creates or modifies user accounts with elevated privileges.
+
+  The module identifies vulnerable services and creates a backup of
+  the original service binary before replacing it with a custom
+  executable. The replacement binary is designed to create a new
+  local administrator account or add an existing user to the
+  Administrators group, providing persistent access with elevated
+  privileges.
+
+  This technique is particularly effective because services often
+  run with elevated privileges, allowing the creation of administrative
+  accounts that would normally require administrative rights. The
+  module provides options to specify the username, password, and
+  target local group, making it flexible for different operational
+  requirements. This approach is based on the PowerUp toolkit and
+  represents a sophisticated method of service-based privilege escalation.
 software: S0194
 tactics: [TA0003, TA0004]
 techniques: [T1543.010, T1136.001, T1068]

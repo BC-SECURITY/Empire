@@ -4,8 +4,23 @@ authors:
   - name: ''
     handle: '@enigma0x3'
     link: ''
-description: Bypasses UAC by performing an image hijack on the .msc file extension
-  and starting eventvwr.exe. No files are dropped to disk, making this opsec safe.
+description: |
+  A privilege escalation module that bypasses User Account Control (UAC)
+  using a fileless technique that exploits the Windows Event Viewer
+  (eventvwr.exe) and registry hijacking. This technique performs an
+  image hijack on the .msc file extension association to execute
+  arbitrary code with elevated privileges.
+
+  The module manipulates the registry to redirect .msc file execution
+  to a custom handler, then triggers eventvwr.exe which attempts to
+  load an .msc file. This causes the hijacked handler to execute with
+  elevated privileges, bypassing UAC restrictions without dropping
+  any files to disk.
+
+  This approach is particularly stealthy as it's completely fileless
+  and leverages legitimate Windows components. The technique was
+  discovered by @enigma0x3 and represents a sophisticated method of
+  UAC bypass that can evade many detection mechanisms.
 software: ''
 tactics: [TA0004]
 techniques: [T1548.002]

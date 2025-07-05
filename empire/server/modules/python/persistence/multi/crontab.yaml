@@ -1,10 +1,19 @@
-# Needs Revisions
 name: Persistence with crontab
 authors:
   - name: ''
     handle: '@Cx01N'
     link: ''
-description: This module establishes persistence via crontab
+description: |
+  Establishes persistence by creating scheduled cron jobs that execute
+  specified commands at regular intervals. Adds new cron entries to
+  the user's crontab without affecting existing scheduled tasks.
+  Supports configurable scheduling using standard cron syntax and
+  includes functionality to remove all cron jobs for cleanup.
+  The module creates a temporary crontab file, appends the new job,
+  and installs the updated crontab. Useful for maintaining long-term
+  access to compromised systems, executing recurring reconnaissance
+  tasks, and establishing persistence that survives system reboots
+  and user sessions.
 software: ''
 tactics: []
 techniques:

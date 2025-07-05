@@ -1,11 +1,16 @@
-# Needs Revisions
 name: NativeScreenshot
 authors:
   - name: Chris Ross
     handle: '@xorrior'
     link: https://twitter.com/xorrior
-description: Takes a screenshot of an OSX desktop using the Python Quartz libraries
-  and returns the data.
+description: |
+  Captures screenshots of macOS desktop displays using the Python
+  Quartz libraries and returns the data. Supports capturing from
+  specific monitors or all connected displays simultaneously.
+  Generates high-quality PNG images that are returned as bytes
+  for later retrieval. Provides visual reconnaissance capabilities
+  for capturing the current state of user desktops, including
+  open applications, documents, and user activity.
 software: ''
 tactics: []
 techniques:

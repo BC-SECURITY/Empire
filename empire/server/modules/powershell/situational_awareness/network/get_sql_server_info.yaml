@@ -7,7 +7,25 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: Returns basic server and user information from target SQL Servers.
+description: |
+  A network reconnaissance module that gathers detailed information
+  from SQL Server instances across the network. This module
+  connects to target SQL Servers to retrieve server configuration,
+  user permissions, database information, and other system details
+  that are valuable for database security assessments.
+
+  The module can target individual SQL Server instances or perform
+  comprehensive enumeration across all discovered instances in the
+  domain. It extracts information including server versions, service
+  accounts, database names, user roles, and configuration settings
+  that could reveal potential security weaknesses or misconfigurations.
+
+  This technique is particularly effective for understanding the
+  SQL Server landscape, identifying privileged service accounts,
+  and discovering databases that may contain sensitive information.
+  The gathered intelligence can be used for privilege escalation
+  planning, data exfiltration targeting, and overall database
+  security posture assessment.
 software: ''
 tactics: [TA0007]
 techniques: [T1046]

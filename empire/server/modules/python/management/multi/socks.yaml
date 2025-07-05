@@ -1,10 +1,15 @@
-# Needs Revisions
 name: SOCKSv5 Proxy
 authors:
   - name: klustic
     handle: ''
     link: ''
-description: Spawn an AROX relay to extend a SOCKS proxy through your agent.
+description: |
+  Establishes a SOCKSv5 proxy tunnel through the Empire agent
+  using the AlmondRocks (AROX) relay system. Creates a proxy
+  connection that routes traffic through the compromised system
+  to extend network access and enable lateral movement. Requires
+  a standalone AlmondRocks server to be configured and running
+  for the relay to connect to.
 software: ''
 tactics: []
 techniques:

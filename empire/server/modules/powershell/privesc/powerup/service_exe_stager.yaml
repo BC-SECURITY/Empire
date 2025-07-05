@@ -4,8 +4,24 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Backs up a service's binary and replaces the original with a binary
-  that launches a stager.bat.
+description: |
+  A privilege escalation module that performs service binary replacement
+  to achieve elevated privileges. This technique backs up the original
+  service executable and replaces it with a malicious binary that
+  launches a stager to establish a privileged connection.
+
+  The module identifies vulnerable services and creates a backup of
+  the original service binary before replacing it with a custom
+  executable. The replacement binary is designed to launch a stager
+  that connects back to the Empire server with elevated privileges,
+  while maintaining the appearance of normal service functionality.
+
+  This technique is particularly effective because services often
+  run with elevated privileges, providing an immediate path to
+  administrative access. The module includes options for self-deletion
+  of the launcher file and obfuscation to maintain operational
+  security. This approach is based on the PowerUp toolkit and
+  represents a sophisticated method of service-based privilege escalation.
 software: S0194
 tactics: [TA0003, TA0004]
 techniques: [T1543.010, T1068]

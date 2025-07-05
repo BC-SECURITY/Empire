@@ -1,11 +1,23 @@
-# Needs Revisions
 name: Get-DomainDFSshare
 authors:
   - name: ''
     handle: '@meatballs__'
     link: ''
-description: Returns a list of all fault-tolerant distributed file systems for a
-  given domain. Part of PowerView.
+description: Enumerates Distributed File System (DFS) shares within an Active Directory
+  domain to identify fault-tolerant file sharing infrastructure and potential data
+  repositories. This module leverages PowerView's Get-DomainDFSshare function to
+  query the domain's DFS configuration and retrieve comprehensive information about
+  all DFS namespaces, including share names, target paths, referral information,
+  and fault-tolerant configurations. The reconnaissance capability is essential for
+  understanding the domain's file sharing architecture, identifying centralized data
+  repositories, and mapping the distribution of file resources across multiple servers.
+  By analyzing DFS shares, operators can identify potential data exfiltration targets,
+  understand file sharing patterns, and discover opportunities for lateral movement
+  through file access. The module supports filtering by domain and custom search
+  bases to focus reconnaissance efforts on specific organizational areas. This information
+  is crucial for data collection operations, understanding the domain's file sharing
+  landscape, and identifying potential data exfiltration vectors through centralized
+  file repositories.
 software: S0194
 tactics: [TA0007]
 techniques: [T1069, T1615, T1135]

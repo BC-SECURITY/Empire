@@ -1,11 +1,28 @@
-# Needs Revisions
 name: dscl Get-Users
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: This module will use the current user context to query active directory
-  for a list of users.
+description: |
+  A macOS-specific Active Directory enumeration module that leverages the
+  Directory Service command line utility (dscl) to query all user accounts
+  within the target domain using the current user's authentication context.
+  This module performs essential reconnaissance to identify potential targets
+  for credential harvesting and social engineering attacks.
+
+  The module uses dscl to query Active Directory for all user objects without
+  requiring explicit LDAP credentials, relying instead on the current user's
+  domain authentication. This approach is particularly effective in macOS
+  environments where dscl provides native Active Directory integration and
+  can access domain information through the system's directory service
+  framework without additional authentication overhead.
+
+  The enumeration results provide critical intelligence for user targeting
+  and social engineering by revealing the complete user base within the
+  domain. This module is fundamental for macOS-based domain reconnaissance
+  and helps operators identify potential targets for credential harvesting,
+  privilege escalation, and targeted attacks based on user roles and
+  organizational structure using native macOS directory service capabilities.
 software: ''
 tactics: []
 techniques:

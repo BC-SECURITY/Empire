@@ -1,10 +1,26 @@
-# Needs Revisions
-name: Change Login Message for the user.
+name: Change Login Message for the user
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Change the login message for the user.
+description: |
+  A macOS prank module that modifies the system login message displayed
+  to users during the login process. This module can either set a custom
+  message or remove the existing login message entirely, allowing for
+  humorous or disruptive modifications to the user experience.
+
+  The module uses macOS defaults commands to modify the loginwindow
+  preferences, specifically targeting the LoginwindowText property that
+  controls the message displayed on the login screen. This modification
+  affects all users who log into the system and can be used to display
+  custom messages, warnings, or humorous content during the authentication
+  process.
+
+  The module requires administrative privileges to modify system-wide
+  login preferences and can be used to create psychological impact
+  through unexpected messaging during the login process. This type of
+  modification can be particularly effective for creating confusion
+  or amusement depending on the content of the displayed message.
 software: ''
 tactics: []
 techniques:

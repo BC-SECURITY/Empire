@@ -1,10 +1,17 @@
-# Needs Revisions
 name: Kerberos inject
 authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: Generates a kerberos keytab and injects it into the current runspace.
+description: |
+  Creates and injects Kerberos keytab files into the current
+  session for authentication. Generates keytab files using
+  ktutil with specified service principal names and NTLM hashes,
+  then uses kinit to inject the credentials into the current
+  Kerberos session. Supports custom keytab file names and
+  principal specifications. Enables Kerberos authentication
+  using pre-computed credentials without requiring password
+  prompts.
 software: ''
 tactics: []
 techniques:

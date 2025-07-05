@@ -7,8 +7,22 @@ authors:
   - name: Benjamin Delpy
     handle: '@gentilkiwi'
     link: https://twitter.com/gentilkiwi
-description: Runs PowerSploit's Invoke-Mimikatz function to execute misc::addsid
-  to add sid history for a user. ONLY APPLICABLE ON DOMAIN CONTROLLERS!
+description: |
+  A privilege escalation module that adds SID history to a user account,
+  granting them the security context and permissions of another user or
+  group. This technique allows operators to elevate privileges by
+  manipulating the Security Identifier history attribute.
+
+  The module uses Mimikatz to add the SID of a target user or group to
+  the SID history of another user account. This effectively grants the
+  target user all the permissions and access rights associated with
+  the SID being added, including domain administrative privileges if
+  the SID belongs to a privileged group.
+
+  This technique is only applicable on domain controllers and provides
+  a powerful method for privilege escalation and lateral movement.
+  The SID history modification persists across password changes and
+  can be used to maintain elevated access to domain resources.
 software: S0194
 tactics: [TA0004, TA0005]
 techniques: [T1134.005]

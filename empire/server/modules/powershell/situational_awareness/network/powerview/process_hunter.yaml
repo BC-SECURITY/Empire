@@ -1,11 +1,24 @@
-# Needs Revisions
 name: Find-DomainProcess
 authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: Query the process lists of remote machines, searching for processes
-  with a specific name or owned by a specific user. Part of PowerView.
+description: Performs comprehensive process hunting across multiple domain systems
+  by querying remote process lists to identify specific processes or processes owned
+  by particular users. This module leverages PowerView's Find-DomainProcess function
+  to systematically enumerate running processes across the domain, supporting both
+  process name-based hunting and user-based targeting. The module can search for
+  specific applications, services, or processes owned by privileged users such as
+  Domain Admins, enabling operators to identify high-value targets and understand
+  the domain's operational landscape. The reconnaissance capability is essential
+  for identifying potential lateral movement opportunities, understanding user activity
+  patterns, and mapping the distribution of specific applications or services across
+  the network. By combining computer enumeration with process discovery, operators
+  can build a comprehensive picture of the domain's computing environment and identify
+  systems where target users are actively working or where specific applications
+  are running. The module supports advanced filtering options including operating
+  system, site membership, and delegation settings to focus reconnaissance efforts
+  on relevant systems.
 software: S0194
 tactics: [TA0007]
 techniques: [T1018, T1057]
