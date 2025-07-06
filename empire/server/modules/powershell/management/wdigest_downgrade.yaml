@@ -3,17 +3,22 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Modifies the Windows registry to force the WDigest authentication protocol
-  to store \ncredentials in memory in cleartext. This technique targets a security
-  improvement \nintroduced in Windows 8.1/2012 R2 that prevented WDigest from storing
-  plaintext \npasswords in memory by default.\n\nBy setting the \"UseLogonCredential\"
-  registry value to 1, the module forces Windows \nto cache plaintext credentials
-  in LSASS memory during future logons, making them \naccessible to credential harvesting
-  tools like Mimikatz. This effectively downgrades \nthe system's authentication
-  security to pre-Windows 8.1 behavior.\n\nThis modification does not immediately
-  capture credentials but prepares the system \nfor future credential theft when
-  users log in. It's particularly useful as a \npersistence technique when combined
-  with other modules that can later extract these \ncredentials from memory.\n"
+description: |
+  Modifies the Windows registry to force the WDigest authentication protocol
+  to store credentials in memory in cleartext. This technique targets a security
+  improvement introduced in Windows 8.1/2012 R2 that prevented WDigest from storing
+  plaintext passwords in memory by default.
+  
+  By setting the "UseLogonCredential"
+  registry value to 1, the module forces Windows to cache plaintext credentials
+  in LSASS memory during future logons, making them accessible to credential harvesting
+  tools like Mimikatz. This effectively downgrades the system's authentication
+  security to pre-Windows 8.1 behavior.
+  
+  This modification does not immediately
+  capture credentials but prepares the system for future credential theft when
+  users log in. It's particularly useful as a persistence technique when combined
+  with other modules that can later extract these credentials from memory.
 software: ''
 tactics: [TA0005]
 techniques: [T1112, T1562.010]

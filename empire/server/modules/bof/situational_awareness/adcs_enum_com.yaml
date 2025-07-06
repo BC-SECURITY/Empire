@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: "Enumerates the Active Directory Certificate Services (AD CS) configuration
-  in the current domain using the ICertConfig COM interface. \nOutputs all enterprise
-  Certificate Authorities (CAs) and their published certificate templates.\n"
+description: |
+  Enumerates the Active Directory Certificate Services (AD CS) configuration
+  in the current domain using the ICertConfig COM interface. Outputs all enterprise
+  Certificate Authorities (CAs) and their published certificate templates.
 software: ''
 tactics: [TA0043, TA0007]
 techniques: [T1590.001, T1590.003, T1482, T1559.001]

@@ -6,19 +6,26 @@ authors:
   - name: ''
     handle: '@0xbadjuju'
     link: ''
-description: "Executes commands or Empire stagers on remote systems by leveraging
-  SQL Server's \nxp_cmdshell stored procedure. This technique enables lateral movement
-  through \nSQL Server instances that have the xp_cmdshell feature enabled or where
-  the \nattacker has sufficient privileges to enable it.\n\nThe module connects to
-  a remote SQL Server using provided credentials, enables \nthe xp_cmdshell procedure
-  if necessary (requiring sysadmin privileges), executes \nthe specified command,
-  and optionally disables xp_cmdshell afterward to cover tracks.\n\nThis technique
-  is particularly effective in environments where SQL Servers are \ntrusted and less
-  monitored than traditional endpoints. It operates over standard \nSQL Server ports
-  (typically 1433/TCP) and can bypass network segmentation that \nmight otherwise
-  prevent direct access to target systems.\n\nBe aware that xp_cmdshell usage is
-  often logged and may trigger alerts in security-\nconscious environments where
-  SQL Server activity is monitored.\n"
+description: |
+  Executes commands or Empire stagers on remote systems by leveraging
+  SQL Server's xp_cmdshell stored procedure. This technique enables lateral movement
+  through SQL Server instances that have the xp_cmdshell feature enabled or where
+  the attacker has sufficient privileges to enable it.
+  
+  The module connects to
+  a remote SQL Server using provided credentials, enables the xp_cmdshell procedure
+  if necessary (requiring sysadmin privileges), executes the specified command,
+  and optionally disables xp_cmdshell afterward to cover tracks.
+  
+  This technique
+  is particularly effective in environments where SQL Servers are trusted and less
+  monitored than traditional endpoints. It operates over standard SQL Server ports
+  (typically 1433/TCP) and can bypass network segmentation that might otherwise
+  prevent direct access to target systems.
+  
+  Be aware that xp_cmdshell usage is
+  often logged and may trigger alerts in security-conscious environments where
+  SQL Server activity is monitored.
 software: ''
 tactics: [TA0002, TA0008]
 techniques: [T1505.001]

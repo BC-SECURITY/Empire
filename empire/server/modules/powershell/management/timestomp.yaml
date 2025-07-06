@@ -3,16 +3,21 @@ authors:
   - name: ''
     handle: '@obscuresec'
     link: ''
-description: "Executes time-stomp functionality by modifying file timestamps (MAC
-  attributes) \nto manipulate forensic artifacts and evade timeline analysis. This
-  module allows \noperators to alter the Modified, Accessed, and Created timestamps
-  of files to \nblend malicious activities with legitimate system operations.\n\nTime-stomping
-  is a critical anti-forensics technique that helps operators avoid \ndetection during
-  post-incident analysis. By setting file timestamps to match \nlegitimate system
-  files or historical dates, malicious files can appear to be \npart of normal system
-  operations or pre-date the security incident.\n\nThe module can clone timestamps
-  from existing files or set custom timestamps, \nproviding flexibility for different
-  operational scenarios and forensic evasion \nrequirements.\n"
+description: |
+  Executes time-stomp functionality by modifying file timestamps (MAC
+  attributes) to manipulate forensic artifacts and evade timeline analysis. This
+  module allows operators to alter the Modified, Accessed, and Created timestamps
+  of files to blend malicious activities with legitimate system operations.
+  
+  Time-stomping
+  is a critical anti-forensics technique that helps operators avoid detection during
+  post-incident analysis. By setting file timestamps to match legitimate system
+  files or historical dates, malicious files can appear to be part of normal system
+  operations or pre-date the security incident.
+  
+  The module can clone timestamps
+  from existing files or set custom timestamps, providing flexibility for different
+  operational scenarios and forensic evasion requirements.
 software: ''
 tactics: [TA0005]
 techniques: [T1070.006]

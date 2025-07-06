@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: "Lists the host’s IPv4 addresses, hostname, and DNS server configuration.
-  \nUseful for identifying network settings and gaining insight into local subnet
-  and name resolution infrastructure.\n"
+description: |
+  Lists the host's IPv4 addresses, hostname, and DNS server configuration.
+  Useful for identifying network settings and gaining insight into local subnet
+  and name resolution infrastructure.
 software: ''
 tactics: [TA0007]
 techniques: [T1016, T1049]

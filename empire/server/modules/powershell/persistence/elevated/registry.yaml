@@ -6,16 +6,21 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Establishes persistence by creating a registry entry in HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run
-  \nthat executes a stager or script during system startup. This module creates a
-  permanent persistence \nmechanism that survives reboots and user logon/logoff cycles.\n\nRegistry-based
+description: |
+  Establishes persistence by creating a registry entry in HKLM:SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run
+  that executes a stager or script during system startup. This module creates a
+  permanent persistence mechanism that survives reboots and user logon/logoff cycles.
+  
+  Registry-based
   persistence is one of the most common and well-known persistence techniques, making
-  it \nrelatively easy to detect and remove. However, it provides reliable execution
-  and is often overlooked \nin basic security assessments. The module can store the
-  payload in the registry itself or reference \nan external file, providing flexibility
-  for different operational requirements.\n\nThis technique requires administrative
+  it relatively easy to detect and remove. However, it provides reliable execution
+  and is often overlooked in basic security assessments. The module can store the
+  payload in the registry itself or reference an external file, providing flexibility
+  for different operational requirements.
+  
+  This technique requires administrative
   privileges and creates visible registry artifacts that can be \ndetected by security
-  monitoring tools.\n"
+  monitoring tools.
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]

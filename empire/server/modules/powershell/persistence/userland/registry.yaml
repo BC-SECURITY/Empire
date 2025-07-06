@@ -16,11 +16,13 @@ description: |
 
   User-level registry persistence is less privileged than system-level persistence but provides
   reliable execution for the target user account. The module can store the payload
-  in the registry, \nalternate data streams, event logs, or reference an external
-  file, providing flexibility for \ndifferent operational requirements and stealth
-  considerations.\n\nThis technique does not require administrative privileges and
-  creates visible registry artifacts \nthat can be detected by security monitoring
-  tools.\n"
+  in the registry, alternate data streams, event logs, or reference an external
+  file, providing flexibility for different operational requirements and stealth
+  considerations.
+  
+  This technique does not require administrative privileges and
+  creates visible registry artifacts that can be detected by security monitoring
+  tools.
 software: ''
 tactics: [TA0003]
 techniques: [T1547.001]

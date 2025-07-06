@@ -3,17 +3,22 @@ authors:
   - name: ''
     handle: '@424f424f'
     link: https://twitter.com/424f424f
-description: "Executes commands on remote Linux/Unix systems over SSH using provided
-  credentials \nor key-based authentication. This module allows operators to run
-  arbitrary commands \nor Empire stagers on SSH-enabled hosts, making it especially
-  useful for lateral \nmovement in mixed Windows/Linux environments.\n\nThe module
-  supports both password-based and key-based authentication methods \nand can execute
-  either single commands or transfer and execute more complex \nscripts. It operates
-  over standard SSH ports (typically 22/TCP) and handles \ncommand output retrieval.\n\nSSH
-  command execution is generally less suspicious than many Windows lateral \nmovement
-  techniques as it uses legitimate administrative channels. However, \nSSH access
-  may be logged by security monitoring systems, and failed authentication \nattempts
-  can trigger lockouts or alerts.\n"
+description: |
+  Executes commands on remote Linux/Unix systems over SSH using provided
+  credentials or key-based authentication. This module allows operators to run
+  arbitrary commands or Empire stagers on SSH-enabled hosts, making it especially
+  useful for lateral movement in mixed Windows/Linux environments.
+  
+  The module
+  supports both password-based and key-based authentication methods and can execute
+  either single commands or transfer and execute more complex scripts. It operates
+  over standard SSH ports (typically 22/TCP) and handles command output retrieval.
+  
+  SSH
+  command execution is generally less suspicious than many Windows lateral movement
+  techniques as it uses legitimate administrative channels. However, SSH access
+  may be logged by security monitoring systems, and failed authentication attempts
+  can trigger lockouts or alerts.
 software: ''
 tactics: [TA0008]
 techniques: [T1021.004]

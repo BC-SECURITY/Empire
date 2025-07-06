@@ -6,16 +6,20 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Establishes persistence by creating a scheduled task that runs with
-  SYSTEM privileges to execute \na stager or script. This module leverages the Windows
-  Task Scheduler to create a reliable \npersistence mechanism that can trigger on
-  various events including daily execution, user logon, \nor idle time.\n\nScheduled
-  task persistence provides moderate stealth as it uses legitimate Windows functionality
-  \nand can be configured with various triggers to blend with normal system activity.
-  The module \ncan store the payload in the registry or reference an external file,
-  and supports multiple \nscheduling options for operational flexibility.\n\nThis
+description: |
+  Establishes persistence by creating a scheduled task that runs with
+  SYSTEM privileges to execute a stager or script. This module leverages the Windows
+  Task Scheduler to create a reliable persistence mechanism that can trigger on
+  various events including daily execution, user logon, or idle time.
+  
+  Scheduled task persistence provides moderate stealth as it uses legitimate Windows functionality
+  and can be configured with various triggers to blend with normal system activity.
+  The module can store the payload in the registry or reference an external file,
+  and supports multiple scheduling options for operational flexibility.
+  
+  This
   technique requires administrative privileges and creates visible scheduled task
-  artifacts \nthat can be detected by security monitoring tools.\n"
+  artifacts that can be detected by security monitoring tools.
 software: S0111
 tactics: [TA0003, TA0004]
 techniques: [T1053.005]

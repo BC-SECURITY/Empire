@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: "Lists the local Address Resolution Protocol (ARP) table to reveal IP-to-MAC
-  address mappings. \nUseful for identifying other hosts on the same subnet and gathering
-  network reconnaissance data.\n"
+description: |
+  Lists the local Address Resolution Protocol (ARP) table to reveal IP-to-MAC
+  address mappings. Useful for identifying other hosts on the same subnet and gathering
+  network reconnaissance data.
 software: ''
 tactics: [TA0007]
 techniques: [T1016, T1018, T1106]

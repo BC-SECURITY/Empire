@@ -3,14 +3,17 @@ authors:
   - name: ''
     handle: '@leesoh'
     link: ''
-description: "Kills Windows Event Log Service threads to disable logging and evade
-  detection \nmechanisms. This module targets the Windows Event Log service by terminating
-  \nits worker threads, effectively stopping event logging without disabling the
-  \nservice itself.\n\nEvent log manipulation is a critical anti-forensics technique
-  that prevents \nsecurity events from being recorded, making post-incident analysis
-  more \ndifficult. By killing the service threads rather than stopping the service,
-  \nthe module maintains the appearance of normal system operation while \npreventing
-  new events from being logged.\n"
+description: |
+  Kills Windows Event Log Service threads to disable logging and evade
+  detection mechanisms. This module targets the Windows Event Log service by terminating
+  its worker threads, effectively stopping event logging without disabling the
+  service itself.
+  
+  Event log manipulation is a critical anti-forensics technique
+  that prevents security events from being recorded, making post-incident analysis
+  more difficult. By killing the service threads rather than stopping the service,
+  the module maintains the appearance of normal system operation while preventing
+  new events from being logged.
 software: ''
 tactics: [TA0005]
 techniques: [T1562.006]

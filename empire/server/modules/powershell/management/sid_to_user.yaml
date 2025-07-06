@@ -3,16 +3,21 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Converts a specified Security Identifier (SID) to its corresponding
-  user account name. \nThis module performs reverse identity resolution by translating
-  Windows security \nidentifiers back into human-readable usernames.\n\nSIDs are
-  unique identifiers assigned to security principals in Windows systems, \nincluding
-  users, groups, and computers. This reverse lookup capability is essential \nfor
-  understanding security events, access control entries, and user permissions \nwhen
-  only SIDs are available in logs or system output.\n\nThe module supports both local
-  and domain SIDs, enabling operators to identify \nuser accounts from various sources
-  including security logs, registry entries, \nfile permissions, and Active Directory
-  objects.\n"
+description: |
+  Converts a specified Security Identifier (SID) to its corresponding
+  user account name. This module performs reverse identity resolution by translating
+  Windows security identifiers back into human-readable usernames.
+  
+  SIDs are
+  unique identifiers assigned to security principals in Windows systems, including
+  users, groups, and computers. This reverse lookup capability is essential for
+  understanding security events, access control entries, and user permissions when
+  only SIDs are available in logs or system output.
+  
+  The module supports both local
+  and domain SIDs, enabling operators to identify user accounts from various sources
+  including security logs, registry entries, file permissions, and Active Directory
+  objects.
 software: ''
 tactics: [TA0007]
 techniques: [T1098, T1087.002]

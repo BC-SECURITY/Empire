@@ -3,9 +3,10 @@ authors:
   - name: Anthony Rose
     handle: '@Cx01N'
     link: https://twitter.com/Cx01N_
-description: "Displays access control lists (ACLs) for a specified file or directory.
-  \nIf a folder is provided, permissions are enumerated recursively to identify access
-  rights across all nested items.\n"
+description: |
+  Displays access control lists (ACLs) for a specified file or directory.
+  If a folder is provided, permissions are enumerated recursively to identify access
+  rights across all nested items.
 software: ''
 tactics: [TA0007]
 techniques: [T1083, T1106]

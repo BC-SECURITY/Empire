@@ -9,17 +9,22 @@ authors:
   - name: ''
     handle: '@monogas'
     link: ''
-description: "Injects Position Independent Code (PIC) shellcode payload into a target
-  process \nusing the Invoke-Shellcode technique. This module allows operators to
-  execute \narbitrary shellcode within the context of an existing process, bypassing
-  \ntraditional process creation monitoring.\n\nShellcode injection is a sophisticated
-  technique that loads and executes \nmachine code directly in memory without creating
-  files on disk. This approach \nhelps evade file-based detection mechanisms and
-  allows operators to run \ncustom payloads within trusted processes.\n\nThe module
-  supports injection into both 32-bit and 64-bit processes, with \nautomatic architecture
-  detection. This capability is essential for executing \ncustom tools, establishing
-  persistence mechanisms, or running specialized \npayloads that require direct memory
-  execution.\n"
+description: |
+  Injects Position Independent Code (PIC) shellcode payload into a target
+  process using the Invoke-Shellcode technique. This module allows operators to
+  execute arbitrary shellcode within the context of an existing process, bypassing
+  traditional process creation monitoring.
+  
+  Shellcode injection is a sophisticated
+  technique that loads and executes machine code directly in memory without creating
+  files on disk. This approach helps evade file-based detection mechanisms and
+  allows operators to run custom payloads within trusted processes.
+  
+  The module
+  supports injection into both 32-bit and 64-bit processes, with automatic architecture
+  detection. This capability is essential for executing custom tools, establishing
+  persistence mechanisms, or running specialized payloads that require direct memory
+  execution.
 software: S0194
 tactics: [TA0005]
 techniques: [T1620]

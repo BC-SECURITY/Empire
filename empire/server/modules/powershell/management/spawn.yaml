@@ -3,15 +3,19 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Spawns a new Empire agent in a fresh PowerShell process, creating a
-  separate \ncommunication channel and execution environment. This module allows
-  operators \nto create additional persistence points and maintain multiple concurrent
-  \nconnections to the target system.\n\nThe spawned agent runs in a new powershell.exe
-  process, providing isolation \nfrom the parent agent and reducing the risk of detection
-  through process \nmonitoring. This technique is useful for maintaining access when
-  the original \nagent may be compromised or when additional stealth is required.\n\nThe
-  module supports various stager languages (PowerShell, C#, IronPython) \nand includes
-  options for obfuscation and bypass techniques to evade detection.\n"
+description: |
+  Spawns a new Empire agent in a fresh PowerShell process, creating a
+  separate communication channel and execution environment. This module allows
+  operators to create additional persistence points and maintain multiple concurrent
+  connections to the target system.
+  
+  The spawned agent runs in a new powershell.exe
+  process, providing isolation from the parent agent and reducing the risk of detection
+  through process monitoring. This technique is useful for maintaining access when
+  the original agent may be compromised or when additional stealth is required.
+  
+  The module supports various stager languages (PowerShell, C#, IronPython) and includes
+  options for obfuscation and bypass techniques to evade detection.
 software: ''
 tactics: [TA0002]
 techniques: [T1059.001]

@@ -6,17 +6,22 @@ authors:
   - name: Will Schroeder
     handle: '@harmj0y'
     link: https://twitter.com/harmj0y
-description: "Creates a new Empire agent running under the context of different user
-  credentials \nusing Windows credential delegation. This module allows operators
-  to establish \nadditional agents with different permission sets without requiring
-  direct access \nto the target user's session.\n\nUnlike simple RunAs execution,
-  this technique spawns a persistent agent that maintains \nthe alternate user's
-  context for all subsequent commands. This is particularly useful \nfor maintaining
-  access to resources that require specific user privileges or for \npivoting through
-  environments with complex permission structures.\n\nThe module leverages Windows
-  authentication mechanisms to create a new process with \ndelegated credentials,
-  then injects and executes the Empire stager code within that \nprocess. This results
-  in a new agent check-in to the Empire server under the specified \nuser context.\n"
+description: |
+  Creates a new Empire agent running under the context of different user
+  credentials using Windows credential delegation. This module allows operators
+  to establish additional agents with different permission sets without requiring
+  direct access to the target user's session.
+  
+  Unlike simple RunAs execution,
+  this technique spawns a persistent agent that maintains the alternate user's
+  context for all subsequent commands. This is particularly useful for maintaining
+  access to resources that require specific user privileges or for pivoting through
+  environments with complex permission structures.
+  
+  The module leverages Windows
+  authentication mechanisms to create a new process with delegated credentials,
+  then injects and executes the Empire stager code within that process. This results
+  in a new agent check-in to the Empire server under the specified user context.
 software: ''
 tactics: [TA0004, TA0005]
 techniques: [T1134.002]

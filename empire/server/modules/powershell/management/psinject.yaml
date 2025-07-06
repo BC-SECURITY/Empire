@@ -9,14 +9,16 @@ authors:
   - name: leechristensen (@tifkin_)
     handle: ''
     link: ''
-description: "Injects and executes PowerShell commands or scripts into the memory
-  space of another \nprocess on the target system. This technique allows Empire to
-  run PowerShell code \nwhile masking the execution under a legitimate process, bypassing
-  process-based \nmonitoring and potentially evading detection by security products.\n\nThe
-  module uses reflective injection techniques to create a new PowerShell runtime
-  \nenvironment within the target process, then executes the specified script or
-  commands \nwithin that isolated environment. This approach avoids spawning powershell.exe,
-  \nwhich is often monitored by security solutions.\n"
+description: |
+  Injects and executes PowerShell commands or scripts into the memory
+  space of another process on the target system. This technique allows Empire to
+  run PowerShell code while masking the execution under a legitimate process, bypassing
+  process-based monitoring and potentially evading detection by security products.
+  
+  The module uses reflective injection techniques to create a new PowerShell runtime
+  environment within the target process, then executes the specified script or
+  commands within that isolated environment. This approach avoids spawning powershell.exe,
+  which is often monitored by security solutions.
 software: ''
 tactics: [TA0002]
 techniques: [T1055.001]
