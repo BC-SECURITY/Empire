@@ -12,13 +12,13 @@ description: |
   Windows API functionality to start a process as another user, optionally using
   the LOGON_NETCREDENTIALS_ONLY flag to provide network-only credentials (similar
   to "runas.exe /netonly").
-  
+
   This technique is useful for accessing network resources,
   running commands with alternate permissions, or performing actions as a different
   user without fully logging into their session. It is commonly used for lateral
   movement, privilege separation, and operational flexibility in post-exploitation
   scenarios.
-  
+
   The module supports specifying domain, username, and password, and
   can execute any command or application with the provided credentials. The NetOnly
   option allows the process to use the supplied credentials for network authentication

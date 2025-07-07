@@ -8,7 +8,7 @@ description: |
   detection mechanisms. This module targets the Windows Event Log service by terminating
   its worker threads, effectively stopping event logging without disabling the
   service itself.
-  
+
   Event log manipulation is a critical anti-forensics technique
   that prevents security events from being recorded, making post-incident analysis
   more difficult. By killing the service threads rather than stopping the service,

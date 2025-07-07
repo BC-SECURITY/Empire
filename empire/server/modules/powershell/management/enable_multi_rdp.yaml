@@ -11,13 +11,13 @@ description: |
   RDP sessions on systems where this is normally restricted (like Windows desktop
   editions). This module modifies termsrv.dll in memory and adjusts registry settings
   to bypass Microsoft's single-session limitation.
-  
+
   This technique is particularly
   useful for maintaining persistent access while legitimate users continue to work
   on the system, allowing operators to connect via RDP without disconnecting existing
   user sessions or alerting them to the intrusion. It effectively transforms desktop
   Windows editions to behave like Terminal Server/RDS.
-  
+
   The module requires administrative
   privileges and involves modifying system files and registry values. These changes
   may be detected by file integrity monitoring or advanced EDR solutions. System

@@ -14,7 +14,7 @@ description: |
   space of another process on the target system. This technique allows Empire to
   run PowerShell code while masking the execution under a legitimate process, bypassing
   process-based monitoring and potentially evading detection by security products.
-  
+
   The module uses reflective injection techniques to create a new PowerShell runtime
   environment within the target process, then executes the specified script or
   commands within that isolated environment. This approach avoids spawning powershell.exe,

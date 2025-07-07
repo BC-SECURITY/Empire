@@ -8,12 +8,12 @@ description: |
   system by modifying registry values and stopping related services. This module
   changes the "fDenyTSConnections" registry key to prevent new RDP connections
   and terminates the "TermService" service.
-  
+
   This technique is useful for limiting
   remote access capabilities after exploitation to prevent other attackers from
   accessing the compromised system or to hinder incident response efforts. It can
   also be used defensively to close potential access vectors.
-  
+
   The module requires
   administrative privileges on the target system and creates artifacts in Windows
   registry and service control logs. Changes can be reversed by re-enabling RDP

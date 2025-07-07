@@ -7,13 +7,13 @@ description: |
   Converts a specified Security Identifier (SID) to its corresponding
   user account name. This module performs reverse identity resolution by translating
   Windows security identifiers back into human-readable usernames.
-  
+
   SIDs are
   unique identifiers assigned to security principals in Windows systems, including
   users, groups, and computers. This reverse lookup capability is essential for
   understanding security events, access control entries, and user permissions when
   only SIDs are available in logs or system output.
-  
+
   The module supports both local
   and domain SIDs, enabling operators to identify user accounts from various sources
   including security logs, registry entries, file permissions, and Active Directory

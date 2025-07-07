@@ -8,7 +8,7 @@ description: |
   provides network connectivity, file transfer, and command execution capabilities.
   This module loads the PowerCat function and enables various network operations
   including listening, connecting, relaying, and data exfiltration.
-  
+
   PowerCat supports multiple protocols including TCP, UDP, and DNS tunneling, making it
   versatile for different network environments and restrictions. The tool can function
   as a listener, client, relay, or data transfer utility, providing operators with

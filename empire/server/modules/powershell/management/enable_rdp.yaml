@@ -8,7 +8,7 @@ description: |
   system by modifying multiple registry values and starting required services.
   The module sets "fDenyTSConnections" to 0, configures firewall exceptions,
   and ensures the Terminal Services service is running.
-  
+
   The module requires
   administrative privileges and creates several detectable artifacts, including
   registry modifications, service state changes, and potentially firewall rule

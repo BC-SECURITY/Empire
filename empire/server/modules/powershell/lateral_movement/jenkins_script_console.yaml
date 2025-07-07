@@ -8,19 +8,19 @@ description: |
   code on Jenkins servers where the attacker has access to the console. This module
   allows for command execution or Empire stager deployment through Jenkins' built-in
   scripting functionality.
-  
+
   The technique requires authenticated access to the
   Jenkins web interface with sufficient privileges to access the Script Console
   (typically admin privileges). Once accessed, the console allows execution of
   Groovy scripts in the context of the Jenkins server process, which typically
   runs with high privileges on the host.
-  
+
   This approach is particularly effective
   for targeting DevOps infrastructure, as Jenkins servers often have extensive
   network access and trusted connections to other systems for CI/CD purposes. The
   module supports both direct command execution and downloading/executing files
   from remote sources.
-  
+
   While Jenkins may log script console usage, many organizations
   don't actively monitor these logs, making this technique relatively stealthy
   compared to endpoint-based execution methods.

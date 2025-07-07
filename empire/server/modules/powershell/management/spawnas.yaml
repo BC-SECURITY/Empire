@@ -11,13 +11,13 @@ description: |
   credentials using Windows credential delegation. This module allows operators
   to establish additional agents with different permission sets without requiring
   direct access to the target user's session.
-  
+
   Unlike simple RunAs execution,
   this technique spawns a persistent agent that maintains the alternate user's
   context for all subsequent commands. This is particularly useful for maintaining
   access to resources that require specific user privileges or for pivoting through
   environments with complex permission structures.
-  
+
   The module leverages Windows
   authentication mechanisms to create a new process with delegated credentials,
   then injects and executes the Empire stager code within that process. This results

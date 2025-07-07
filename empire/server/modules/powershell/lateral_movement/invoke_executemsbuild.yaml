@@ -9,13 +9,13 @@ description: |
   MSBuild's ability to compile and execute inline C# code from XML project files,
   bypassing application allowlisting solutions that may block PowerShell.exe but
   trust MSBuild.exe.
-  
+
   The module creates a specially crafted XML file that embeds
   the payload within an MSBuild project, then remotely triggers MSBuild to process
   this file, executing the payload in memory. Since MSBuild is a trusted Microsoft-signed
   binary (LOLBins technique), this execution method often evades traditional detection
   methods that focus on suspicious process lineage.
-  
+
   Best used in environments
   where PowerShell execution is monitored or restricted but MSBuild.exe is available
   and not heavily monitored.

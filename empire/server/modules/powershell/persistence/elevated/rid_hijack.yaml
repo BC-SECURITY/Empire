@@ -9,13 +9,13 @@ description: |
   access tokens. This technique allows operators to elevate a regular user account
   to have the same privileges as the built-in Administrator account (RID 500) without
   modifying group memberships.
-  
+
   RID hijacking is a sophisticated privilege escalation
   technique that works by directly modifying the SAM database to change how Windows
   interprets user privileges. This approach bypasses traditional group-based access
   control and can be used to create hidden administrative accounts that appear
   as regular users to most security tools.
-  
+
   This technique requires administrative
   privileges to implement and creates persistent privilege escalation that survives
   reboots and password changes.

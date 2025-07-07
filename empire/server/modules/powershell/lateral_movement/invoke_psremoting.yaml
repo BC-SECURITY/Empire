@@ -8,13 +8,13 @@ description: |
   Windows PowerShell Remoting (WinRM). This technique leverages the built-in remote
   management functionality of modern Windows systems, which operates over HTTP/HTTPS
   (5985/5986).
-  
+
   PowerShell Remoting provides a native
   alternative to other lateral movement techniques as it uses legitimate administration
   channels that may be expected in enterprise environments. The module requires
   administrative credentials on the target and that PowerShell Remoting is enabled
   (default on server installations since Windows Server 2012).
-  
+
   The module supports
   both interactive sessions and one-time command execution. PowerShell Remoting
   traffic is encrypted by default, providing additional security for command and

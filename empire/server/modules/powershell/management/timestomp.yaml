@@ -8,13 +8,13 @@ description: |
   attributes) to manipulate forensic artifacts and evade timeline analysis. This
   module allows operators to alter the Modified, Accessed, and Created timestamps
   of files to blend malicious activities with legitimate system operations.
-  
+
   Time-stomping
   is a critical anti-forensics technique that helps operators avoid detection during
   post-incident analysis. By setting file timestamps to match legitimate system
   files or historical dates, malicious files can appear to be part of normal system
   operations or pre-date the security incident.
-  
+
   The module can clone timestamps
   from existing files or set custom timestamps, providing flexibility for different
   operational scenarios and forensic evasion requirements.

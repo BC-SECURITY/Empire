@@ -18,13 +18,13 @@ description: |
   a sophisticated persistence mechanism that leverages Windows Management Instrumentation
   to trigger execution based on various system events such as process creation,
   logon events, or scheduled times.
-  
+
   WMI-based persistence uses legitimate Windows
   management infrastructure and can be configured to trigger on common system events,
   making detection more difficult. The module supports multiple trigger types including
   daily execution, specific days of the week/month, and failed logon attempts,
   providing operational flexibility while maintaining stealth.
-  
+
   This technique requires administrative privileges and creates WMI artifacts that can be detected
   by advanced security monitoring tools.
 software: ''

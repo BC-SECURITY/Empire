@@ -8,18 +8,18 @@ description: |
   an immediate scheduled task to target systems in an Active Directory environment.
   This technique leverages legitimate Group Policy infrastructure to distribute
   and execute payloads across multiple domain-joined systems simultaneously.
-  
+
   The
   module creates a new GPO or modifies an existing one, adding an immediate task
   that executes as SYSTEM when Group Policy is processed. This provides both privilege
   escalation (SYSTEM context) and widespread lateral movement capability throughout
   the domain.
-  
+
   This technique requires domain administrator privileges (or equivalent
   GPO creation/modification rights) but is highly effective for establishing persistence
   and moving laterally at scale. It's particularly dangerous because Group Policy
   is trusted infrastructure in most Windows environments.
-  
+
   Detection requires
   monitoring for GPO creation/modification events, analysis of Group Policy Objects
   for suspicious scheduled tasks, or endpoint monitoring for unexpected scheduled

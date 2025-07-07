@@ -8,12 +8,12 @@ description: |
   remote desktop access to the target system. This module provides graphical user
   interface access without requiring traditional VNC server installation or file
   system artifacts.
-  
+
   The VNC agent can operate in two modes: bind mode (listening
   on a local port) or reverse mode (connecting back to a specified IP address).
   This flexibility allows operators to work around network restrictions and firewall
   configurations.
-  
+
   Password authentication is supported to secure the VNC connection,
   and the in-memory execution helps evade detection by traditional endpoint protection
   solutions that monitor for VNC server installations.

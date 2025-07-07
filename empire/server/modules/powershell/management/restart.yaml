@@ -7,7 +7,7 @@ description: |
   Forces a system restart of the target machine using the native PowerShell
   Restart-Computer cmdlet. This module provides immediate system reboot capability
   for operational requirements, system maintenance, or to clear volatile memory.
-  
+
   System restarts are often necessary during post-exploitation activities to clear memory
   artifacts, reload system configurations, or ensure persistence mechanisms are
   properly activated. The forced restart bypasses user prompts and application

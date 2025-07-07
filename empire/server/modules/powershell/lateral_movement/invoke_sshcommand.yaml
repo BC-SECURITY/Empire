@@ -8,12 +8,12 @@ description: |
   credentials or key-based authentication. This module allows operators to run
   arbitrary commands or Empire stagers on SSH-enabled hosts, making it especially
   useful for lateral movement in mixed Windows/Linux environments.
-  
+
   The module
   supports both password-based and key-based authentication methods and can execute
   either single commands or transfer and execute more complex scripts. It operates
   over standard SSH ports (typically 22/TCP) and handles command output retrieval.
-  
+
   SSH
   command execution is generally less suspicious than many Windows lateral movement
   techniques as it uses legitimate administrative channels. However, SSH access

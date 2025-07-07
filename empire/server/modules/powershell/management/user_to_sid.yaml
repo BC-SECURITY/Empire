@@ -8,12 +8,12 @@ description: |
   Identifier (SID). This module performs user account enumeration and identity
   resolution by translating human-readable usernames into their unique Windows
   security identifiers.
-  
+
   SIDs are fundamental to Windows security architecture
   and are used throughout the operating system for access control, group membership,
   and security auditing. This conversion is essential for understanding user permissions,
   group memberships, and security relationships within Active Directory environments.
-  
+
   The module supports both local and domain user accounts, providing operators with
   the ability to map user identities to their underlying security principals for
   reconnaissance and privilege escalation activities.
