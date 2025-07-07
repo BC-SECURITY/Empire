@@ -100,7 +100,7 @@ function install_python() {
   echo -e "\x1b[1;34m[*] Installing Python\x1b[0m"
 
   sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC \
-  apt-get -y install build-essential gdb lcov pkg-config \
+  apt-get install -y build-essential gdb lcov pkg-config \
     libbz2-dev libffi-dev libgdbm-dev libgdbm-compat-dev liblzma-dev \
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
     lzma tk-dev uuid-dev zlib1g-dev
@@ -123,7 +123,7 @@ function install_powershell() {
   # To deal with the following error:
   # Couldn't find a valid ICU package installed on the system.
   # Please install libicu (or icu-libs) using your package manager and try again.
-  sudo apt-get install libicu-dev
+  sudo apt-get install -y libicu-dev
 
   # https://learn.microsoft.com/en-us/powershell/scripting/install/install-other-linux?view=powershell-7.4#binary-archives
   ARCH=$(uname -m)
