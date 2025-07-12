@@ -244,50 +244,42 @@ class ListenerService:
             value = option_meta["Value"]
             # parse and auto-set some host parameters
             if option_name == "Host":
-                if not value.startswith("http"):
-                    parts = value.split(":")
-                    # if there's a current ssl cert path set, assume this is https
-                    if ("CertPath" in instance.options) and (
-                        instance.options["CertPath"]["Value"] != ""
-                    ):
-                        protocol = "https"
-                        default_port = 443
-                    else:
-                        protocol = "http"
-                        default_port = 80
-
-                elif value.startswith("https"):
-                    value = value.split("//")[1]
-                    parts = value.split(":")
+                protocol = host = port = default_port = None
+                try:
+                  protocol, host_port = value.split('//')
+                  protocol = protocol[:-1]
+                except ValueError:
+                  host_port = value
+                  if ("CertPath" in instance.options and
+                      instance.options["CertPath"]["Value"] != ""):
                     protocol = "https"
-                    default_port = 443
-
-                elif value.startswith("http"):
-                    value = value.split("//")[1]
-                    parts = value.split(":")
+                  else:
                     protocol = "http"
+                try:
+                  host, port = host_port.split(':')
+                except ValueError:
+                  host = host_port
+                  if protocol == "https":
+                    default_port = 443
+                  else:
                     default_port = 80
-
-                ##################################################################################################################################
-                # Added functionality to Port
-                # Unsure if this section is needed
-                if len(parts) != 1 and parts[-1].isdigit():
-                    # if a port is specified with http://host:port
-                    instance.options["Host"]["Value"] = f"{protocol}://{value}"
-                    if instance.options["Port"]["Value"] == "":
-                        instance.options["Port"]["Value"] = parts[-1]
-                elif instance.options["Port"]["Value"] != "":
-                    # otherwise, check if the port value was manually set
-                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
-                        protocol,
-                        value,
-                        instance.options["Port"]["Value"],
-                    )
+                try:
+                  int(instance.options["Port"]["Value"])
+                except ValueError:
+                  if port:
+                    instance.options["Port"]["Value"] = port
+                  else:
+                    instance.options["Port"]["Value"] = default_port
+                if port:
+                  instance.options["Host"]["Value"] = "{}://{}:{}".format(
+                      protocol,
+                      host,
+                      port)
                 else:
-                    # otherwise use default port
-                    instance.options["Host"]["Value"] = f"{protocol}://{value}"
-                    if instance.options["Port"]["Value"] == "":
-                        instance.options["Port"]["Value"] = default_port
+                  instance.options["Host"]["Value"] = "{}://{}".format(
+                      protocol,
+                      host)
+
 
             elif option_name == "CertPath" and value != "":
                 instance.options[option_name]["Value"] = value
@@ -301,25 +293,12 @@ class ListenerService:
             elif option_name == "Port":
                 instance.options[option_name]["Value"] = value
                 # Check if Port is set and add it to host
-                parts = instance.options["Host"]["Value"]
-                if parts.startswith("https"):
-                    address = parts[8:]
-                    address = "".join(address.split(":")[0])
-                    protocol = "https"
-                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
-                        protocol,
-                        address,
-                        instance.options["Port"]["Value"],
-                    )
-                elif parts.startswith("http"):
-                    address = parts[7:]
-                    address = "".join(address.split(":")[0])
-                    protocol = "http"
-                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
-                        protocol,
-                        address,
-                        instance.options["Port"]["Value"],
-                    )
+                try:
+                  protocol, host, port = instance.options["Host"]["Value"].split(':')
+                except ValueError:
+                  instance.options["Host"]["Value"] = "{}:{}".format(
+                      instance.options["Host"]["Value"],
+                      instance.options["Port"]["Value"])
 
             elif option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
