@@ -122,7 +122,9 @@ def test_create_listener_template_not_found(client, admin_auth_header):
     assert response.json()["detail"] == "Listener Template qwerty not found"
 
 
-def test_create_listener_normalization_adds_protocol_and_default_port(client, admin_auth_header):
+def test_create_listener_normalization_adds_protocol_and_default_port(
+    client, admin_auth_header
+):
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
     base_listener["options"]["Host"] = "localhost"
@@ -133,8 +135,8 @@ def test_create_listener_normalization_adds_protocol_and_default_port(client, ad
     )
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"]["Host"] == "http://localhost:80"
-    assert response.json()["options"]["Port"] == '80'
-    
+    assert response.json()["options"]["Port"] == "80"
+
     client.delete(
         f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
     )
@@ -144,39 +146,43 @@ def test_create_listener_normalization_adds_port_to_host(client, admin_auth_head
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
     base_listener["options"]["Host"] = "http://localhost"
-    base_listener["options"]["Port"] = '1234'
+    base_listener["options"]["Port"] = "1234"
 
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"]["Host"] == "http://localhost:1234"
-    assert response.json()["options"]["Port"] == '1234'
-    
+    assert response.json()["options"]["Port"] == "1234"
+
     client.delete(
         f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
     )
 
 
-def test_create_listener_normalization_preserves_user_defined_ports(client, admin_auth_header):
+def test_create_listener_normalization_preserves_user_defined_ports(
+    client, admin_auth_header
+):
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
     base_listener["options"]["Host"] = "http://localhost:443"
-    base_listener["options"]["Port"] = '1234'
+    base_listener["options"]["Port"] = "1234"
 
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"]["Host"] == "http://localhost:443"
-    assert response.json()["options"]["Port"] == '1234'
-    
+    assert response.json()["options"]["Port"] == "1234"
+
     client.delete(
         f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
     )
 
 
-def test_create_listener_normalization_sets_host_port_as_bind_port(client, admin_auth_header):
+def test_create_listener_normalization_sets_host_port_as_bind_port(
+    client, admin_auth_header
+):
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
     base_listener["options"]["Host"] = "http://localhost:443"
@@ -187,8 +193,8 @@ def test_create_listener_normalization_sets_host_port_as_bind_port(client, admin
     )
     assert response.status_code == status.HTTP_201_CREATED
     assert response.json()["options"]["Host"] == "http://localhost:443"
-    assert response.json()["options"]["Port"] == '443'
-    
+    assert response.json()["options"]["Port"] == "443"
+
     client.delete(
         f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
     )

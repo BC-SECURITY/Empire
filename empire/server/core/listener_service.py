@@ -245,7 +245,7 @@ class ListenerService:
             value = option_meta["Value"]
             # parse and auto-set some host parameters
             if option_name == "Host":
-                host_rexp = r'^(https?)?:?/?/?([^:]+):?(\d+)?$'
+                host_rexp = r"^(https?)?:?/?/?([^:]+):?(\d+)?$"
                 matches = re.match(host_rexp, value)
                 try:
                     protocol, host, port = matches.groups()
@@ -255,12 +255,14 @@ class ListenerService:
                     host = value
                     port = None
                 if not protocol:
-                    if ("CertPath" in instance.options and
-                          instance.options["CertPath"]["Value"] != ""):
+                    if (
+                        "CertPath" in instance.options
+                        and instance.options["CertPath"]["Value"] != ""
+                    ):
                         protocol = "https"
                     else:
                         protocol = "http"
-                if protocol == "https"
+                if protocol == "https":
                     default_port = 443
                 else:
                     default_port = 80
@@ -272,14 +274,9 @@ class ListenerService:
                     else:
                         instance.options["Port"]["Value"] = default_port
                 if port:
-                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
-                        protocol,
-                        host,
-                        port)
+                    instance.options["Host"]["Value"] = f"{protocol}://{host}:{port}"
                 else:
-                    instance.options["Host"]["Value"] = "{}://{}".format(
-                        protocol,
-                        host)
+                    instance.options["Host"]["Value"] = f"{protocol}://{host}"
 
             elif option_name == "CertPath" and value != "":
                 instance.options[option_name]["Value"] = value
@@ -294,11 +291,12 @@ class ListenerService:
                 instance.options[option_name]["Value"] = value
                 # Check if Port is set and add it to host
                 try:
-                  protocol, host, port = instance.options["Host"]["Value"].split(':')
+                    protocol, host, port = instance.options["Host"]["Value"].split(":")
                 except ValueError:
-                  instance.options["Host"]["Value"] = "{}:{}".format(
-                      instance.options["Host"]["Value"],
-                      instance.options["Port"]["Value"])
+                    instance.options["Host"]["Value"] = "{}:{}".format(
+                        instance.options["Host"]["Value"],
+                        instance.options["Port"]["Value"],
+                    )
 
             elif option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
