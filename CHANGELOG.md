@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Fixed port normalization to allow host port and bind port to be different.
+
 ## [6.1.3] - 2025-07-11
 
 -   Updated Starkiller to v3.0.1
