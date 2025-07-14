@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import logging
+import re
 import typing
 from typing import Any
 
@@ -244,42 +245,41 @@ class ListenerService:
             value = option_meta["Value"]
             # parse and auto-set some host parameters
             if option_name == "Host":
-                protocol = host = port = default_port = None
+                host_rexp = r'^(https?)?:?/?/?([^:]+):?(\d+)?$'
+                matches = re.match(host_rexp, value)
                 try:
-                  protocol, host_port = value.split('//')
-                  protocol = protocol[:-1]
-                except ValueError:
-                  host_port = value
-                  if ("CertPath" in instance.options and
-                      instance.options["CertPath"]["Value"] != ""):
-                    protocol = "https"
-                  else:
-                    protocol = "http"
-                try:
-                  host, port = host_port.split(':')
-                except ValueError:
-                  host = host_port
-                  if protocol == "https":
+                    protocol, host, port = matches.groups()
+                except AttributeError:
+                    log.error(f"Unable to parse Host value: {value}")
+                    protocol = None
+                    host = value
+                    port = None
+                if not protocol:
+                    if ("CertPath" in instance.options and
+                          instance.options["CertPath"]["Value"] != ""):
+                        protocol = "https"
+                    else:
+                        protocol = "http"
+                if protocol == "https"
                     default_port = 443
-                  else:
+                else:
                     default_port = 80
                 try:
-                  int(instance.options["Port"]["Value"])
+                    int(instance.options["Port"]["Value"])
                 except ValueError:
-                  if port:
-                    instance.options["Port"]["Value"] = port
-                  else:
-                    instance.options["Port"]["Value"] = default_port
+                    if port:
+                        instance.options["Port"]["Value"] = port
+                    else:
+                        instance.options["Port"]["Value"] = default_port
                 if port:
-                  instance.options["Host"]["Value"] = "{}://{}:{}".format(
-                      protocol,
-                      host,
-                      port)
+                    instance.options["Host"]["Value"] = "{}://{}:{}".format(
+                        protocol,
+                        host,
+                        port)
                 else:
-                  instance.options["Host"]["Value"] = "{}://{}".format(
-                      protocol,
-                      host)
-
+                    instance.options["Host"]["Value"] = "{}://{}".format(
+                        protocol,
+                        host)
 
             elif option_name == "CertPath" and value != "":
                 instance.options[option_name]["Value"] = value
