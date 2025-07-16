@@ -262,10 +262,7 @@ class ListenerService:
                         protocol = "https"
                     else:
                         protocol = "http"
-                if protocol == "https":
-                    default_port = 443
-                else:
-                    default_port = 80
+                default_port = 443 if protocol == "https" else 80
                 try:
                     int(instance.options["Port"]["Value"])
                 except ValueError:
