@@ -237,7 +237,7 @@ class ListenerService:
         return template_instance, None
 
     @staticmethod
-    def _normalize_listener_options(instance) -> None:  # noqa: PLR0912 PLR0915
+    def _normalize_listener_options(instance) -> None:  # noqa: PLR0912
         """
         This is adapted from the old set_listener_option which does some coercions on the http fields.
         """
