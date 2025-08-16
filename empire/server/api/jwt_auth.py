@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Annotated
 
+import bcrypt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette import status
@@ -30,17 +30,18 @@ class TokenData(BaseModel):
     username: str | None = None
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    password_byte_enc = plain_password.encode("utf-8")
+    return bcrypt.checkpw(password_byte_enc, hashed_password.encode("utf-8"))
 
 
-def get_password_hash(password):
-    return pwd_context.hash(password)
+def get_password_hash(plain_password: str) -> str:
+    pwd_bytes = plain_password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def get_user(db, username: str) -> models.User:

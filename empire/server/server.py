@@ -131,7 +131,7 @@ def run(args):
     sys.exit()
 
 
-def main():
+def entry():
     """Backward-compatible entry point.
 
     Left in place for environments still pointing to

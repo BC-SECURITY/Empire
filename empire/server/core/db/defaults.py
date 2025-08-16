@@ -1,24 +1,23 @@
 import logging
 import os
 import random
+import secrets
 import string
 
-from passlib import pwd
-from passlib.context import CryptContext
+import bcrypt
 
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 
 database_config = empire_config.database.defaults
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 log = logging.getLogger(__name__)
 
 
 def get_default_hashed_password():
-    password = database_config.password
-    return pwd_context.hash(password)
+    pwd_bytes = database_config.password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def get_default_user():
@@ -33,7 +32,7 @@ def get_default_user():
 def get_default_config():
     return models.Config(
         staging_key=get_staging_key(),
-        jwt_secret_key=pwd.genword(length=32, charset="hex"),
+        jwt_secret_key=secrets.token_hex(16),
         ip_filtering=True,
     )
 
