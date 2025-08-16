@@ -164,3 +164,6 @@ omit = [
     ]
 
 ignore_errors = true
+
+[tool.poetry.scripts]
+empire-server = "empire.server.server:main"

@@ -129,3 +129,11 @@ def run(args):
         app.initialize(cert_path=cert_path)
 
     sys.exit()
+
+
+def main():
+    from empire import arguments
+    parser = arguments.parent_parser
+    # Always use the 'server' subparser
+    args = parser.parse_args(["server"] + sys.argv[1:])
+    run(args)
