@@ -9,7 +9,7 @@ repository = "https://github.com/BC-SECURITY/Empire.git"
 packages = [
     { include = "empire.py" },
     { include = "empire/arguments.py" },
-    { include = "empire/__init__.py },
+    { include = "empire/__init__.py" },
     { include = "empire/server/**/*.py" },
 ]
 
