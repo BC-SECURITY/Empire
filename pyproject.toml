@@ -10,7 +10,7 @@ packages = [
     { include = "empire.py" },
     { include = "empire/arguments.py" },
     { include = "empire/__init__.py" },
-    { include = "empire/server/**/*.py" },
+    { include = "empire/server/**/*" },
 ]
 
 [tool.poetry.dependencies]
