@@ -7,7 +7,7 @@ from empire.server.core.config import config_manager
 from empire.server.core.config.data_manager import sync_empire_compiler, sync_starkiller
 
 if __name__ == "__main__":
-    args = arguments.args
+    args = arguments.parse_args()
 
     if args.subparser_name == "server":
         from empire.server import server

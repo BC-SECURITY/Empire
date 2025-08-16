@@ -7,10 +7,7 @@ readme = "README.md"
 homepage = "https://github.com/BC-SECURITY/Empire"
 repository = "https://github.com/BC-SECURITY/Empire.git"
 packages = [
-    { include = "empire.py" },
-    { include = "empire/arguments.py" },
-    { include = "empire/__init__.py" },
-    { include = "empire/server/**/*" },
+    { include = "empire" },
 ]
 include = [
   "empire/server/**"

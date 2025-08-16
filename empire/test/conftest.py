@@ -43,7 +43,7 @@ def client(_example_2_plugin):
 
     from empire import arguments
 
-    args = arguments.parent_parser.parse_args()
+    args = arguments.parse_args()
 
     import empire.server.server
     from empire.server.api.app import initialize

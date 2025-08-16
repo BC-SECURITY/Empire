@@ -18,7 +18,7 @@ def test_simple_log_format(monkeypatch):
         setup_logging,
     )
 
-    args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
+    args = arguments.parse_args()  # Force reparse of args between runs
     setup_logging(args)
 
     stream_handler = next(
@@ -44,7 +44,7 @@ def test_extended_log_format(monkeypatch):
     test_config["logging"]["simple_console"] = False
     modified_config = EmpireConfig(test_config)
 
-    args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
+    args = arguments.parse_args()  # Force reparse of args between runs
     setup_logging(args, override_config=modified_config)
 
     stream_handler = next(
@@ -70,7 +70,7 @@ def test_log_level_by_config(monkeypatch):
     test_config["logging"]["level"] = "WaRNiNG"  # case-insensitive
     modified_config = EmpireConfig(test_config)
 
-    args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
+    args = arguments.parse_args()  # Force reparse of args between runs
     setup_logging(args, override_config=modified_config)
 
     stream_handler = next(
@@ -102,7 +102,7 @@ def test_log_level_by_arg():
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
 
-    args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
+    args = arguments.parse_args()  # Force reparse of args between runs
     setup_logging(args)
 
     stream_handler = next(
@@ -127,7 +127,7 @@ def test_log_level_by_debug_arg():
     test_config["logging"]["level"] = "WaRNiNG"  # Should be overwritten by arg
     config_mock.yaml = test_config
 
-    args = arguments.parent_parser.parse_args()  # Force reparse of args between runs
+    args = arguments.parse_args()  # Force reparse of args between runs
     setup_logging(args)
 
     assert logging.getLogger().level == logging.DEBUG

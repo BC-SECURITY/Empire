@@ -132,8 +132,54 @@ def run(args):
 
 
 def main():
-    from empire import arguments
-    parser = arguments.parent_parser
-    # Always use the 'server' subparser
-    args = parser.parse_args(["server"] + sys.argv[1:])
+    """Backward-compatible entry point.
+
+    Left in place for environments still pointing to
+    `empire.server.server:main`. It builds a minimal parser for the
+    server-only CLI to avoid importing global-parse side effects.
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Launch Empire Server")
+    general_group = parser.add_argument_group("General Options")
+    general_group.add_argument(
+        "-l",
+        "--log-level",
+        dest="log_level",
+        type=str.upper,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level",
+    )
+    general_group.add_argument(
+        "-d",
+        "--debug",
+        help="Set the logging level to DEBUG",
+        action="store_const",
+        dest="log_level",
+        const="DEBUG",
+        default=None,
+    )
+    general_group.add_argument(
+        "--reset",
+        action="store_true",
+        help=(
+            "Resets Empire's database and deletes any app data accumulated over previous runs."
+        ),
+    )
+    general_group.add_argument(
+        "-v",
+        "--version",
+        action="store_true",
+        help="Display current Empire version.",
+    )
+    general_group.add_argument(
+        "--config",
+        type=str,
+        nargs=1,
+        help=(
+            "Specify a config.yaml different from the config.yaml in the empire/server directory."
+        ),
+    )
+
+    args = parser.parse_args()
     run(args)
