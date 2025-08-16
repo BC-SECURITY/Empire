@@ -12,6 +12,10 @@ packages = [
     { include = "empire/__init__.py" },
     { include = "empire/server/**/*" },
 ]
+include = [
+  "empire/server/**"
+]
+
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.14"
