@@ -220,7 +220,7 @@ sudo -v
 PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; cd .. ; pwd -P )
 OS_NAME=
 VERSION_ID=
-if VERSION_ID=$(grep -oP '^(11|12)' /etc/debian_version 2>/dev/null); then
+if VERSION_ID=$(grep -oP '^(11|12|13)' /etc/debian_version 2>/dev/null); then
   echo -e "\x1b[1;34m[*] Detected Debian $VERSION_ID\x1b[0m"
   OS_NAME="DEBIAN"
 elif grep -i "NAME=\"Ubuntu\"" /etc/os-release 2>/dev/null; then
