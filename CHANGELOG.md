@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+-   Added Debian 13 support
+-   Added error message if running `ps-empire server` under root without `-f`
+
 ## [6.2.1] - 2025-09-05
 
 -   Fix bug where websocket connection would fail because the jwt_auth method arguments changed
