@@ -30,6 +30,7 @@ if [ $INSTALL -eq 1 ]; then
 fi
 
 if [ "$EUID" -eq 0 ] && [ -z "$FORCE_OPTION" ]; then
+    echo -e "\x1b[1;31m[!] This script should not be run as root. Use the -f option to force run as root (not recommended).\x1b[0m"
     exit 1
 fi
 
