@@ -8,7 +8,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pre-commit/action@v3.0.1
   matrix-prep-config:
     runs-on: ubuntu-latest
@@ -35,13 +35,13 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.matrix-prep-config.outputs.config) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ endsWith(github.repository, 'Empire') }}
         with:
           submodules: 'recursive'
       # token is only needed in sponsors repo because of private submodules
       # don't use token in public repo because prs from forks cannot access secrets
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ endsWith(github.repository, 'Empire-Sponsors') }}
         with:
           submodules: 'recursive'
@@ -56,7 +56,7 @@ jobs:
       # Poetry cache depends on OS, Python version and Poetry version.
       # https://gist.github.com/gh640/233a6daf68e9e937115371c0ecd39c61
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'poetry'
@@ -70,6 +70,7 @@ jobs:
         run: |
           poetry env use ${{ matrix.python-version }}
           poetry install
+          sudo apt install -y mono-runtime
       - name: Run test suite - mysql
         run: |
           set -o pipefail
@@ -85,7 +86,7 @@ jobs:
           DATABASE_USE=sqlite poetry run pytest . -v --runslow
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.13' }}
-        uses: MishaKav/pytest-coverage-comment@v1.1.54
+        uses: MishaKav/pytest-coverage-comment@v1.2.0
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
@@ -97,20 +98,25 @@ jobs:
     runs-on: ubuntu-latest
     name: Test Docker Image
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      # For the sponsors repo, this is a sort of hack to get around the fact that
-      # the docker image fails on ./ps-empire setup because the repo is private.
-      - name: Rewrite Starkiller
+      - name: Set up SSH (sponsors only)
+        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
         run: |
-          if [ ${{ endswith(github.repository, 'Empire-Sponsors') }} ]; then
-              sed -i 's|git@github.com:BC-SECURITY/Starkiller-Sponsors.git|https://github.com/BC-SECURITY/Starkiller.git|g' empire/server/config.yaml
-              sed -i 's|ref: sponsors-main|ref: main|g' empire/server/config.yaml
-          fi
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AUTH_PID=$SSH_AUTH_PID" >> $GITHUB_ENV
+          if [ -n "$CI_SSH_KEY_BOT" ]; then echo "$CI_SSH_KEY_BOT" | tr -d '\r' | ssh-add -; fi
+          mkdir -p ~/.ssh
+          ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          CI_SSH_KEY_BOT: ${{ secrets.CI_SSH_KEY_BOT }}
       - name: Build docker image
-        run: docker compose -f .github/docker-compose.yml build
+        run: DOCKER_BUILDKIT=1 docker compose -f .github/docker-compose.yml build
       - name: Run tests on docker image
         run: docker compose -f .github/docker-compose.yml run test
       - name: run structure tests docker
@@ -128,26 +134,41 @@ jobs:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
           - ['debian11', 'debian12']
-          - ['ubuntu2004', 'ubuntu2204', 'ubuntu2404']
+          - ['ubuntu2204', 'ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           depth: 0
+      - name: Set up SSH (sponsors only)
+        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+        run: |
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AUTH_PID=$SSH_AUTH_PID" >> $GITHUB_ENV
+          if [ -n "$CI_SSH_KEY_BOT" ]; then echo "$CI_SSH_KEY_BOT" | tr -d '\r' | ssh-add -; fi
+          mkdir -p ~/.ssh
+          ssh-keyscan -t rsa,ecdsa,ed25519 github.com >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+          chmod 600 ~/.ssh/known_hosts
+        env:
+          CI_SSH_KEY_BOT: ${{ secrets.CI_SSH_KEY_BOT }}
       # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
         id: changed-files
-        uses: tj-actions/changed-files@v46.0.5
+        uses: tj-actions/changed-files@v47.0.0
       - name: Build images
         if: ${{ contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
           || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')
           || contains(steps.changed-files.outputs.modified_files, '.github/install_tests')
           || startsWith(github.head_ref, 'release/') }}
-        run: docker compose -f .github/install_tests/docker-compose-install-tests.yml
-          build --parallel ${{ join(matrix.images, ' ') }}
+        run: |
+          DOCKER_BUILDKIT=1 docker compose \
+            -f .github/install_tests/docker-compose-install-tests.yml \
+            build --ssh default --parallel ${{ join(matrix.images, ' ') }}
       - name: run install tests
         if: ${{ contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
           || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')

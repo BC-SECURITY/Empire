@@ -61,7 +61,7 @@ class ExtendedPacketHandler(PacketHandler):
             #   meta TASKING_REQUEST = 4
             routingPacket = self.build_routing_packet(self.staging_key, self.session_id, meta=4)
             b64routingPacket = base64.b64encode(routingPacket).decode('UTF-8')
-            self.headers['Cookie'] = "{{ session_cookie }}session=%s" % (b64routingPacket)
+            self.headers['Cookie'] = "{{ session_cookie }}=%s" % (b64routingPacket)
         taskURI = random.sample(self.taskURIs, 1)[0]
         requestUri = self.server + taskURI
 
@@ -82,4 +82,3 @@ class ExtendedPacketHandler(PacketHandler):
             # if the server cannot be reached
             self.missedCheckins += 1
             return (URLerror.reason, '')
-        return ('', '')

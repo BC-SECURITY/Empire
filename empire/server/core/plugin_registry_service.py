@@ -1,16 +1,16 @@
 import logging
 import typing
+from pathlib import Path
 
-import requests
 import yaml
 from pydantic import BaseModel, ValidationError, model_validator
 
 from empire.server.core.config.config_manager import empire_config
+from empire.server.core.config.data_manager import sync_plugin_registry
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.core.exceptions import PluginValidationException
 from empire.server.core.module_models import EmpireAuthor
-from empire.server.utils.git_util import clone_git_repo
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -70,18 +70,12 @@ class PluginRegistryService:
 
             log.info(f"Loading plugin registry: {r.name}")
 
-            if r.location:
-                registry_yaml = r.location.read_text()
-            elif r.git_url:
-                tmp_dir = clone_git_repo(r.git_url, r.ref)
-                registry_yaml = (tmp_dir / r.file).read_text()
+            synced_path = sync_plugin_registry(r)
+            if synced_path and Path(str(synced_path)).exists():
+                registry_yaml = Path(str(synced_path)).read_text()
             else:
-                resp = requests.get(r.url)
-                if not resp.ok:
-                    log.error(f"Failed to load plugin registry {r.name} from {r.url}")
-                    continue
-
-                registry_yaml = resp.text
+                log.error(f"Failed to load plugin registry {r.name}")
+                continue
 
             registry_data = yaml.safe_load(registry_yaml)
             try:

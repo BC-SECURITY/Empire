@@ -136,6 +136,8 @@ for a language. Modules can be pre-obfuscated by using the `/preobfuscate` endpo
 Bypasses support basic CRUD operations via the API.
 Once created, these can be passed into the `Bypasses` field of a stager.
 
+The `/api/v2/bypasses/default` endpoint returns the default bypasses configured in `config.yaml` under `database.defaults.bypasses`. These default bypasses are automatically applied to stagers and modules when they are generated.
+
 ### Malleable Profiles
 */api/v2/malleable-profiles*
 Malleable Profiles support basic CRUD operations via the API.

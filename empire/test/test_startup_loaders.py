@@ -1,6 +1,10 @@
 import sys
 from unittest.mock import MagicMock, Mock
 
+from empire.server.core.bypass_service import BypassService
+from empire.server.core.listener_template_service import ListenerTemplateService
+from empire.server.core.profile_service import ProfileService
+from empire.server.core.stager_template_service import StagerTemplateService
 from empire.test.conftest import SERVER_CONFIG_LOC
 
 
@@ -12,8 +16,6 @@ def test_bypass_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
     session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
-
-    from empire.server.core.bypass_service import BypassService
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
@@ -36,8 +38,6 @@ def test_listener_template_loader(monkeypatch):
 
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
-    from empire.server.core.listener_template_service import ListenerTemplateService
-
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
@@ -56,8 +56,6 @@ def test_stager_template_loader(monkeypatch):
 
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
-    from empire.server.core.stager_template_service import StagerTemplateService
-
     main_menu = Mock()
     main_menu.installPath = "empire/server"
 
@@ -75,8 +73,6 @@ def test_profile_loader(monkeypatch):
     session_mock.begin.return_value.__enter__.return_value.query.return_value.first.return_value.install_path = "empire/server"
 
     session_mock.begin.return_value.__enter__.return_value.query.return_value.filter.return_value.first.return_value = None
-
-    from empire.server.core.profile_service import ProfileService
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"

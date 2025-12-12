@@ -47,8 +47,21 @@ options:
     depends_on:
       - name: Payload
         values: ['Empire']
+  - name: Language
+    description: The language the agent will be deployed with
+    required: true
+    value: 'powershell'
+    strict: true
+    suggested_values:
+      - powershell
+      - csharp
+      - ironpython
+      - go
+    depends_on:
+      - name: Payload
+        values: ['Empire']
   - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
+    description: Obfuscate the launcher powershell code, uses the ObfuscateCommand
       for obfuscation types. For powershell only.
     required: false
     value: 'False'
@@ -67,7 +80,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: ComputerName
     description: Host to execute the stager on.
     required: true

@@ -99,7 +99,7 @@ def patch_install_plugin_from_git(plugin_service):
     plugin_service.install_plugin_from_git = original
 
 
-class IsDict:
+class IsDict:  # noqa: PLW1641
     def __eq__(self, other):
         return isinstance(other, dict)
 

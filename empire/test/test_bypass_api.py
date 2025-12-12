@@ -139,3 +139,15 @@ def test_reload_bypasses(client, admin_auth_header):
 
     assert len(initial_bypasses) == len(final_bypasses)
     assert any(bypass["id"] == new_bypass_id for bypass in final_bypasses)
+
+
+def test_bypass_defaults(client, admin_auth_header):
+    r = client.get("/api/v2/bypasses", headers=admin_auth_header)
+    assert r.status_code == status.HTTP_200_OK
+    records = r.json()["records"]
+
+    default_names = sorted([b["name"] for b in records if b["is_default"]])
+    assert set(default_names) == {"etw", "mattifestation"}
+    assert all(
+        (b["name"] in {"etw", "mattifestation"}) == b["is_default"] for b in records
+    )

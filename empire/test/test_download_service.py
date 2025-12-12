@@ -1,13 +1,9 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from empire.server.core.download_service import DownloadService
+from empire.server.core.download_service import DownloadService
 
 
 def test__increment_filename(tmp_path):
-    from empire.server.core.download_service import DownloadService
-
     path = tmp_path / "test.txt"
 
     filename, location = DownloadService._increment_filename(path)

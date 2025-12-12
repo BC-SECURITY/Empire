@@ -1,0 +1,19 @@
+<project baseDir="{confuser_base_dir}" outputDir="{confuser_output_dir}" xmlns="http://confuser.codeplex.com">
+      <rule pattern="true" preset="none" inherit="false">
+        <protection id="rename" />
+        <protection id="anti ildasm" />
+        <protection id="ctrl flow" />
+      </rule>
+      <rule pattern="namespace('Program')" preset="none" inherit="false">
+        <protection id="rename" action="remove"/>
+        <protection id="anti ildasm" action="remove" />
+        <protection id="ctrl flow" action="remove" />
+      </rule>
+      <rule preset="none" pattern="match-type-name('^Program$')">
+        <protection id="rename" action="remove" />
+      </rule>
+      <module path="{confuser_module_path}" />
+      <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net35/</probePath>
+      <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net40/</probePath>
+      <probePath>{confuser_proj_dir}/Data/AssemblyReferences/net45/</probePath>
+</project>

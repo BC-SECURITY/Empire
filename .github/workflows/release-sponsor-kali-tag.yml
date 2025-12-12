@@ -15,7 +15,7 @@ jobs:
         run: |
           echo "TAG_NAME=$(echo ${{ github.head_ref }} | sed 's/release\///')" >> $GITHUB_ENV
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}

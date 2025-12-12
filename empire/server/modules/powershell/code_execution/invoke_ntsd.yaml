@@ -70,7 +70,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
 script_path: code_execution/Invoke-Ntsd.ps1
 advanced:
   custom_generate: true

@@ -93,7 +93,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: Language
     description: Language of the stager to generate.
     required: true

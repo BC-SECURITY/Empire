@@ -59,7 +59,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: TargetBinary
     description: Target binary to set the debugger for (sethc.exe, Utilman.exe, osk.exe,
       Narrator.exe, or Magnify.exe)

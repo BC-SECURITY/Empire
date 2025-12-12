@@ -12,6 +12,7 @@ def domain_to_dto_bypass(bypass):
         authors=bypass.authors or [],
         language=bypass.language,
         code=bypass.code,
+        is_default=bypass.is_default,
         created_at=bypass.created_at,
         updated_at=bypass.updated_at,
     )
@@ -23,6 +24,7 @@ class Bypass(BaseModel):
     authors: list[Author]
     language: str
     code: str
+    is_default: bool
     created_at: datetime
     updated_at: datetime
 

@@ -110,7 +110,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: OutputFunction
     description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
       "ConvertTo-Csv", "ConvertTo-Ht>

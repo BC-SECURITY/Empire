@@ -113,11 +113,9 @@ class DiffieHellman(object):
         Check to make sure the public key is valid, then combine it with the
         private key to generate a shared secret.
         """
-        if(self.checkPublicKey(otherKey) is True):
-            sharedSecret = pow(otherKey, privateKey, self.prime)
-            return sharedSecret
-        else:
-            raise Exception("Invalid public key.")
+        if self.checkPublicKey(otherKey) is True:
+            return pow(otherKey, privateKey, self.prime)
+        raise Exception("Invalid public key.")
 
     def genKey(self, otherKey):
         """
@@ -128,13 +126,14 @@ class DiffieHellman(object):
         # Convert the shared secret (int) to an array of bytes in network order
         # Otherwise hashlib can't hash it.
         try:
-            _sharedSecretBytes = self.sharedSecret.to_bytes(
-                len(bin(self.sharedSecret))-2 // 8 + 1, byteorder="big")
+            bin_str = bin(self.sharedSecret)[2:].zfill(6147)
+            _sharedSecretBytes = int(bin_str, 2).to_bytes(len(bin_str), "big")
         except AttributeError:
             _sharedSecretBytes = str(self.sharedSecret)
 
         s = hashlib.sha256()
         s.update(bytes(_sharedSecretBytes))
+
         self.key = s.digest()
 
     def getKey(self):

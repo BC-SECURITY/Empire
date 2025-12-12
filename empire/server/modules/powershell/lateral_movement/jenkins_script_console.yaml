@@ -61,7 +61,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: Rhost
     description: Specify the remote jenkins server to exploit.
     required: true

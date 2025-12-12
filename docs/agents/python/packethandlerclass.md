@@ -15,9 +15,10 @@ The `PacketHandler` class is responsible for creating, parsing, and processing p
 
 ## Methods
 
-### `rc4(key, data)`
 
-Encrypts or decrypts the input `data` with the given `key` using the RC4 algorithm.
+### `ChaCha20Poly1305`
+
+ChaCha20Poly1305 class that seals/unseals the input `data` with the given `key` and `nonce`.
 
 ### `parse_routing_packet(staging_key, data)`
 

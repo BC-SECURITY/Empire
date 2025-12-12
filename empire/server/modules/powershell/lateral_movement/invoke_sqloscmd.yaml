@@ -82,7 +82,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
 script_path: lateral_movement/Invoke-SQLOSCmd.ps
 advanced:
   custom_generate: true

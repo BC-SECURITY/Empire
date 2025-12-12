@@ -66,8 +66,6 @@ csharp:
     - Name: SharpSploit
       Description: SharpSploit is a library for C# post-exploitation modules.
       Location: SharpSploit\SharpSploit\
-      Language: CSharp
-      CompatibleDotNetVersions: ''
       ReferenceAssemblies:
         - Name: System.Management.Automation.dll
           Location: net35\System.Management.Automation.dll

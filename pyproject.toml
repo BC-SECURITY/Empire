@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "6.2.1"
+version = "6.3.0"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -13,28 +13,28 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.13,<3.14"
-urllib3 = "^2.4.0"
-requests = "^2.32.3"
+urllib3 = "^2.5.0"
+requests = "^2.32.5"
 macholib = "^1.16.3"
 pyOpenSSL = "^25.1.0"
 zlib_wrapper = "^0.1.3"
 jinja2 = "^3.1.6"
 pyparsing = "^3.2.3"
-PyMySQL = "^1.1.1"
-SQLAlchemy = "^2.0.41"
+PyMySQL = "^1.1.2"
+SQLAlchemy = "^2.0.43"
 PyYAML = "^6.0.2"
 SQLAlchemy-Utc = "^0.14.0"
 terminaltables = "^3.1.10"
 pycryptodome = "^3.23.0"
-cryptography = "^44.0.3"
-fastapi = "^0.115.12"
-uvicorn = "^0.34.2"
-jq = "^1.8.0"
+cryptography = "^45.0.7"
+fastapi = "^0.116.1"
+uvicorn = "^0.35.0"
+jq = "^1.10.0"
 aiofiles = "^24.1.0"
 python-multipart = "^0.0.20"
 python-jose = {version = "^3.5.0", extras = ["cryptography"]}
 python-socketio = "^5.13.0"
-Flask = "^3.1.1"
+Flask = "^3.1.2"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
 # The official donut-shellcode release doesn't support arm64
 # and on newer linux kernels, it's starting to fail due to
@@ -42,20 +42,21 @@ pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev =
 # https://github.com/TheWover/donut/issues/139
 donut-shellcode = { git = "https://github.com/BC-SECURITY/donut.git", rev = "b361c0d3" }
 python-obfuscator = "^0.0.2"
-pyinstaller = "^6.13.0"
-packaging = "^24.2"
+pyinstaller = "^6.15.0"
+packaging = "^25.0"
 netaddr = "^1.3.0"
 bcrypt = "^4.3.0"
 requests-file = "^2.1.0"
+pydantic-settings = "^2.10.1"
 
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.28.1" # For starlette TestClient
-pytest = "^8.3.5"
+pytest = "^8.4.2"
 pytest-timeout = "^2.4.0"
-ruff = "^0.11.10"
-pytest-cov = "^6.1.1"
-coverage = {version = "^7.8.0", extras = ["toml"]}
+ruff = "^0.12.12"
+pytest-cov = "^6.3.0"
+coverage = {version = "^7.10.6", extras = ["toml"]}
 pytest-env = "^1.1.5"
 
 [build-system]
@@ -134,6 +135,18 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 "empire/server/modules/powershell/persistence/elevated/schtasks.py" = ["PLR2004"]
 "empire/server/modules/powershell/persistence/elevated/wmi.py" = ["PLR2004"]
 "empire/server/modules/powershell/persistence/elevated/wmi_updater.py" = ["PLR2004"]
+
+# A bunch of imports of the app and MainMenu object would break the behavior
+# if moved to the top of the file. This could be addressed by restructuring
+# the code base.
+"empire/server/api/app.py" = ["PLC0415"]
+"empire/server/api/v2/shared_dependencies.py" = ["PLC0415"]
+"empire/server/server.py" = ["PLC0415"]
+
+# A few imports should be local because they need to be reset between tests.
+"empire/test/conftest.py" = ["PLC0415"]
+"empire/test/test_logs.py" = ["PLC0415"]
+"empire/test/test_listener_generate_launcher.py" = ["PLC0415"]
 
 [tool.coverage.run]
 omit = [

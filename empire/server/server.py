@@ -21,7 +21,7 @@ main = None
 
 
 # Disable http warnings
-if empire_config.supress_self_cert_warning:
+if empire_config.suppress_self_cert_warning:
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 

@@ -34,15 +34,20 @@ database:
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
+    bypasses:
+      - mattifestation
+      - etw
     ip_allow_list: []
     ip_deny_list: []
 empire_compiler:
-  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.3.3/EmpireCompiler-{{platform}}-v0.3.3.tgz
+  archive: https://github.com/BC-SECURITY/Empire-Compiler/releases/download/v0.4.2/EmpireCompiler-{{platform}}-v0.4.2.tgz
+  # Path to the confuser xml project file you want to use
+  confuser_proj: empire/server/data/confuser.crproj
 starkiller:
   enabled: true
   repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: v3.1.0
+  ref: v3.2.0
 submodules:
   auto_update: true
 plugin_marketplace:

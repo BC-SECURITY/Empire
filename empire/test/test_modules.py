@@ -11,6 +11,7 @@ from _pytest.logging import LogCaptureHandler
 from empire.server.core.exceptions import (
     ModuleValidationException,
 )
+from empire.server.core.module_service import ModuleService
 
 
 def convert_options_to_params(options):
@@ -71,8 +72,6 @@ def main_menu_mock(models, install_path):
 
 @pytest.fixture
 def module_service(main_menu_mock):
-    from empire.server.core.module_service import ModuleService
-
     module_service = ModuleService(main_menu_mock)
     main_menu_mock.modulesv2 = module_service
 
@@ -88,8 +87,6 @@ def test_load_modules(main_menu_mock, models, session_local):
     """
     # https://github.com/pytest-dev/pytest/issues/3697
     # caplog not working for some reason.
-    from empire.server.core.module_service import ModuleService
-
     with catch_logs(
         level=logging.INFO, logger=logging.getLogger(ModuleService.__module__)
     ) as handler:

@@ -58,6 +58,7 @@ def domain_to_dto_listener(listener):
         name=listener.name,
         template=listener.module,
         enabled=listener.enabled,
+        host_address=listener.host_address,
         options=options,
         created_at=listener.created_at,
         tags=[domain_to_dto_tag(x) for x in listener.tags],
@@ -282,6 +283,7 @@ class Listener(BaseModel):
     template: str
     options: coerced_dict
     created_at: datetime
+    host_address: str
     tags: list[Tag]
 
 
@@ -307,7 +309,7 @@ class ListenerPostRequest(BaseModel):
                 "software": "",
                 "options": {
                     "Name": "MyListener",  # TODO VR Name should not be an option
-                    "Host": "http://localhost:1336",
+                    "Host": "http://localhost",
                     "BindIP": "0.0.0.0",
                     "Port": "1336",
                     "Launcher": "powershell -noP -sta -w 1 -enc ",

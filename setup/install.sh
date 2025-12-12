@@ -30,44 +30,61 @@ function command_exists() {
   command -v "$1" >/dev/null 2>&1;
 }
 
+function install_mono(){
+  if [ "$ASSUME_YES" == "1" ] ;then
+    answer="Y"
+  else
+    echo -n -e "\x1b[1;33m[>] Do you want to install Mono? It is required for C# obfuscation (y/N)? \x1b[0m"
+    read -r answer
+  fi
+  if [ "$answer" != "${answer#[Yy]}" ] ;then
+    echo -e "\x1b[1;34m[*] Installing mono\x1b[0m"
+    sudo DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get install -y mono-runtime
+  else
+    echo -e "\x1b[1;34m[*] Skipping Mono\x1b[0m"
+  fi
+}
+
 function install_goenv() {
-    echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
+  echo -e "\x1b[1;34m[*] Installing goenv\x1b[0m"
 
-    if [ -d "$HOME/.goenv" ]; then
-        echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
-    else
-        git clone https://github.com/go-nv/goenv.git ~/.goenv
-    fi
+  if [ -d "$HOME/.goenv" ]; then
+    echo -e "\x1b[1;32m[+] goenv is already installed in $HOME/.goenv, skipping clone\x1b[0m"
+  else
+    git clone https://github.com/go-nv/goenv.git ~/.goenv
+  fi
 
-    export GOENV_ROOT="$HOME/.goenv"
-    export PATH="$GOENV_ROOT/bin:$PATH"
-    eval "$(goenv init -)"
+  export GOENV_ROOT="$HOME/.goenv"
+  export PATH="$GOENV_ROOT/bin:$PATH"
+  eval "$(goenv init -)"
 
-    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.bashrc
-    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.bashrc
-    echo 'eval "$(goenv init -)"' >> ~/.bashrc
+  echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.bashrc
+  echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.bashrc
+  echo 'eval "$(goenv init -)"' >> ~/.bashrc
 
-    echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.zshrc
-    echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.zshrc
-    echo 'eval "$(goenv init -)"' >> ~/.zshrc
+  echo 'export GOENV_ROOT="$HOME/.goenv"' >> ~/.zshrc
+  echo 'export PATH="$GOENV_ROOT/bin:$PATH"' >> ~/.zshrc
+  echo 'eval "$(goenv init -)"' >> ~/.zshrc
 
-    # These are for the Docker builds since
-    # the bashrc and zshrc files are not sourced
-    sudo ln -s $HOME/.goenv/shims/go /usr/bin/go || true
-    sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt || true
-    sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv || true
+  # These are for the Docker builds since
+  # the bashrc and zshrc files are not sourced
+  sudo ln -s $HOME/.goenv/shims/go /usr/bin/go || true
+  sudo ln -s $HOME/.goenv/shims/gofmt /usr/bin/gofmt || true
+  sudo ln -s $HOME/.goenv/bin/goenv /usr/bin/goenv || true
 }
 
 function update_goenv() {
   echo -e "\x1b[1;34m[*] Updating goenv\x1b[0m"
+  export GOENV_ROOT="${GOENV_ROOT:-$HOME/.goenv}"
 
-  cd $GOENV_ROOT && git fetch --all && git pull && cd -
+  [ -d "$GOENV_ROOT/.git" ] || echo "$GOENV_ROOT not found" && return 0
+  git -C "$GOENV_ROOT" fetch --all && git -C "$GOENV_ROOT" pull
 }
 
 function install_go() {
   echo -e "\x1b[1;34m[*] Installing Go\x1b[0m"
 
-  goenv install $(cat .go-version) -s
+  goenv install "$(cat .go-version)" -s
 }
 
 function install_pyenv() {
@@ -92,8 +109,10 @@ function install_pyenv() {
 
 function update_pyenv() {
   echo -e "\x1b[1;34m[*] Updating pyenv\x1b[0m"
+  export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
+  [ -d "$PYENV_ROOT/.git" ] || echo "$PYENV_ROOT not found" && return 0
 
-  cd $PYENV_ROOT && git fetch --all && git pull && cd -
+  git -C "$PYENV_ROOT" fetch --all && git -C "$PYENV_ROOT" pull
 }
 
 function install_python() {
@@ -105,7 +124,7 @@ function install_python() {
     libncurses5-dev libreadline6-dev libsqlite3-dev libssl-dev \
     lzma tk-dev uuid-dev zlib1g-dev
 
-  pyenv install $(cat .python-version) -s
+  pyenv install "$(cat .python-version)" -s
 }
 
 function install_poetry() {
@@ -261,6 +280,7 @@ else
 fi
 
 install_go
+install_mono
 
 if ! command_exists mysql; then
   install_mysql
@@ -303,6 +323,9 @@ fi
 echo -e "\x1b[1;34m[*] Installing Packages\x1b[0m"
 poetry config virtualenvs.in-project true
 poetry install
+
+echo -e "\x1b[1;34m[*] Downloading compiler and starkiller \x1b[0m"
+./ps-empire setup
 
 echo -e '\x1b[1;32m[+] Install Complete!\x1b[0m'
 echo -e ''

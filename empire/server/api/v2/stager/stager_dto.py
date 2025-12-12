@@ -179,7 +179,7 @@ class StagerTemplate(BaseModel):
                     "Bypasses": {
                         "description": "Bypasses as a space separated list to be prepended to the launcher",
                         "required": False,
-                        "value": "mattifestation etw",
+                        "value": "",
                         "suggested_values": [],
                         "strict": False,
                         "depends_on:": [],
@@ -233,7 +233,7 @@ class StagerPostRequest(BaseModel):
                     "UserAgent": "default",
                     "Proxy": "default",
                     "ProxyCreds": "default",
-                    "Bypasses": "mattifestation etw",
+                    "Bypasses": "",
                 },
             }
         }

@@ -89,3 +89,48 @@ def test_staging_key_validation(monkeypatch):
         f"Generated key contains invalid characters: {random_key}"
     )
     assert len(random_key) == expected_length
+
+
+def test_env_overrides_database_use_nested(monkeypatch):
+    server_config_dict = load_test_config()
+    # YAML says mysql in test_server_config.yaml; override to sqlite via env
+    monkeypatch.setenv("EMPIRE_DATABASE__USE", "sqlite")
+    config = EmpireConfig(server_config_dict)
+    assert config.database.use.lower() == "sqlite"
+
+
+def test_env_overrides_database_use_legacy(monkeypatch):
+    server_config_dict = load_test_config()
+    # YAML says mysql in test_server_config.yaml; legacy var overrides to sqlite
+    monkeypatch.setenv("DATABASE_USE", "sqlite")
+    config = EmpireConfig(server_config_dict)
+    assert config.database.use.lower() == "sqlite"
+
+
+def test_env_overrides_mysql_credentials(monkeypatch):
+    server_config_dict = load_test_config()
+    monkeypatch.setenv("EMPIRE_DATABASE__MYSQL__USERNAME", "env_user")
+    monkeypatch.setenv("EMPIRE_DATABASE__MYSQL__PASSWORD", "env_pass")
+    monkeypatch.setenv("EMPIRE_DATABASE__MYSQL__DATABASE_NAME", "env_db")
+    config = EmpireConfig(server_config_dict)
+    assert config.database.mysql.username == "env_user"
+    assert config.database.mysql.password == "env_pass"
+    assert config.database.mysql.database_name == "env_db"
+
+
+def test_config_accepts_unknown_default_bypass_name():
+    """
+    EmpireConfig should not raise if the defaults.bypasses list contains a name
+    that doesn't correspond to any YAML/DB bypass (e.g., 'fake_bypass').
+    Validation of existence happens later in the load phase, not at config parse.
+    """
+    server_config_dict = load_test_config()
+    server_config_dict["database"]["defaults"]["bypasses"] = [
+        "mattifestation",
+        "etw",
+        "fake_bypass",
+    ]
+    cfg = EmpireConfig(server_config_dict)
+
+    assert "fake_bypass" in cfg.database.defaults.bypasses
+    assert set(cfg.database.defaults.bypasses) >= {"mattifestation", "etw"}

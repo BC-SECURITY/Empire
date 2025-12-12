@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from empire.server.core.exceptions import ModuleValidationException
+from empire.server.core.module_service import ModuleService
 
 
 @pytest.fixture(scope="module")
@@ -26,8 +27,6 @@ def main_menu_mock(models, install_path):
 
 @pytest.fixture(scope="module")
 def module_service(main_menu_mock):
-    from empire.server.core.module_service import ModuleService
-
     module_service = ModuleService(main_menu=main_menu_mock)
 
     module_service.dotnet_compiler.compile_task = Mock(

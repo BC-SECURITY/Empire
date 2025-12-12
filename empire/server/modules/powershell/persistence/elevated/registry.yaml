@@ -57,7 +57,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: KeyName
     description: Name for the registry key that will trigger execution.
     required: true

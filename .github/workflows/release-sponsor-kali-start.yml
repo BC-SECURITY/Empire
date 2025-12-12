@@ -17,7 +17,7 @@ jobs:
           echo "TARGET_BRANCH=sponsors-main" >> $GITHUB_ENV
           echo "STARKILLER_TAG=${{ github.event.inputs.starkillerVersion }}-sponsors" >> $GITHUB_ENV
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: sponsors-main
           submodules: 'recursive'

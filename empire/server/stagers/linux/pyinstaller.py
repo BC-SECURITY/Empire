@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import time
 
 """
@@ -84,8 +85,6 @@ class Stager:
         safe_checks = self.options["SafeChecks"]["Value"]
         binary_file_str = self.options["BinaryFile"]["Value"]
         encode = False
-
-        import subprocess
 
         output_str = subprocess.check_output(["which", "pyinstaller"])
         if output_str == "":

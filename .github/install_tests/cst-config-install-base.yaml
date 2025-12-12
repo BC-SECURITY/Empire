@@ -8,7 +8,7 @@ commandTests:
   - name: "pyenv version"
     command: "pyenv"
     args: ["--version"]
-    expectedOutput: ["pyenv 2.*"]
+    expectedOutput: ["pyenv"]
   # poetry
   - name: "poetry python"
     command: "poetry"
@@ -49,6 +49,11 @@ commandTests:
     command: "go"
     args: ["version"]
     expectedOutput: ["go version go1.23.* linux/*"]
+  # mono
+  - name: "mono version"
+    command: "which"
+    args: ["mono"]
+    expectedOutput: ["/usr/bin/mono"]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"
@@ -61,4 +66,13 @@ commandTests:
 fileExistenceTests:
   - name: 'profiles'
     path: '/empire/empire/server/data/profiles/'
+    shouldExist: true
+  - name: 'starkiller'
+    path: '/home/empire/.local/share/empire/starkiller/'
+    shouldExist: true
+  - name: 'empire-compiler'
+    path: '/home/empire/.local/share/empire/empire-compiler/'
+    shouldExist: true
+  - name: 'plugin-registries'
+    path: '/home/empire/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
     shouldExist: true

@@ -5,7 +5,7 @@ Alternatively, you can install Empire via [Kali](https://www.kali.org/downloads/
 
 The following operating systems have been tested for Empire compatibility.
 
-* Ubuntu 20.04 / 22.04
+* 22.04 / 24.04
 * Debian 11 / 12
 * Kali Linux
 * ParrotOS
@@ -44,6 +44,13 @@ cd Empire-Sponsors
 
 If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.
 Because these are private repositories, you need to have ssh credentials configured for GitHub. Instructions can be found [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+
+### CI: Private dependencies (bot user SSH key)
+
+When building Docker images in CI that need to clone private repos (e.g., sponsors-only Starkiller and the private plugin registry), the most reliable setup is a single bot user with read access to all required repos.
+
+1. Create a bot user and add it to an org team (e.g., `bots`) with read access to `Starkiller-Sponsors` and `Empire-Plugin-Registry-Sponsors`.
+2. Generate an SSH keypair for the bot, add the public key to the bot’s GitHub account (Settings → SSH and GPG keys), and store the private key in CI secrets as `CI_SSH_KEY_BOT`.
 
 ## Kali
 
@@ -92,7 +99,7 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 
 ## Community-Supported Operating Systems
 
-At this time, we are choosing to only support Kali, ParrotOS, Debian 10/11/12, and Ubuntu 20.04/22.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
+At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
 
 ## Common Issues
 

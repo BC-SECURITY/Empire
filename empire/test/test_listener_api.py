@@ -7,7 +7,7 @@ def get_base_listener():
         "template": "http",
         "options": {
             "Name": "new-listener-1",
-            "Host": "http://localhost:1336",
+            "Host": "http://localhost",
             "BindIP": "0.0.0.0",
             "Port": "1336",
             "Launcher": "powershell -noP -sta -w 1 -enc ",
@@ -20,7 +20,7 @@ def get_base_listener():
             "KillDate": "",
             "WorkingHours": "",
             "Headers": "Server:Microsoft-IIS/7.5",
-            "Cookie": "",
+            "Cookie": "session",
             "StagerURI": "",
             "UserAgent": "default",
             "Proxy": "default",
@@ -100,14 +100,17 @@ def test_create_listener_validation_fails_required_field(client, admin_auth_head
 
 
 def test_create_listener_custom_validation_fails(client, admin_auth_header):
-    base_listener = get_base_listener()
+    base_listener = get_base_malleable_listener()
     base_listener["name"] = "temp123"
-    base_listener["options"]["Host"] = "https://securedomain.com"
+    base_listener["options"]["Profile"] = "nonexistent.profile"
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "[!] HTTPS selected but no CertPath specified."
+    assert (
+        response.json()["detail"]
+        == "[!] Malleable profile not found: nonexistent.profile"
+    )
 
 
 def test_create_listener_template_not_found(client, admin_auth_header):
@@ -128,13 +131,13 @@ def test_create_listener_normalization_adds_protocol_and_default_port(
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
     base_listener["options"]["Host"] = "localhost"
-    base_listener["options"]["Port"] = None
+    base_listener["options"]["Port"] = "80"
 
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["options"]["Host"] == "http://localhost:80"
+    assert response.json()["host_address"] == "http://localhost/"
     assert response.json()["options"]["Port"] == "80"
 
     client.delete(
@@ -152,7 +155,7 @@ def test_create_listener_normalization_adds_port_to_host(client, admin_auth_head
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["options"]["Host"] == "http://localhost:1234"
+    assert response.json()["host_address"] == "http://localhost:1234/"
     assert response.json()["options"]["Port"] == "1234"
 
     client.delete(
@@ -171,13 +174,8 @@ def test_create_listener_normalization_preserves_user_defined_ports(
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
-    assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["options"]["Host"] == "http://localhost:443"
-    assert response.json()["options"]["Port"] == "1234"
-
-    client.delete(
-        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
-    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Port cannot be provided in a host name"
 
 
 def test_create_listener_normalization_sets_host_port_as_bind_port(
@@ -185,15 +183,35 @@ def test_create_listener_normalization_sets_host_port_as_bind_port(
 ):
     base_listener = get_base_listener()
     base_listener["name"] = "temp123"
-    base_listener["options"]["Host"] = "http://localhost:443"
-    base_listener["options"]["Port"] = None
+    base_listener["options"]["Host"] = "http://localhost"
+    base_listener["options"]["Port"] = "443"
 
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
     assert response.status_code == status.HTTP_201_CREATED
-    assert response.json()["options"]["Host"] == "http://localhost:443"
-    assert response.json()["options"]["Port"] == "443"
+    assert response.json()["host_address"] == "http://localhost:443/"
+
+    client.delete(
+        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+    )
+
+
+def test_create_listener_with_https_host_no_cert_path(client, admin_auth_header):
+    # A listener should be able to have a host with https even if the cert path is blank.
+    # because the listener might be behind a reverse proxy that handles TLS.
+    base_listener = get_base_listener()
+    base_listener["name"] = "temp123"
+    base_listener["options"]["Host"] = "https://localhost"
+    base_listener["options"]["Port"] = "443"
+    base_listener["options"]["CertPath"] = ""
+    response = client.post(
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["host_address"] == "https://localhost/"
+    assert response.json()["options"]["CertPath"] == ""
 
     client.delete(
         f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
@@ -406,30 +424,51 @@ def test_update_listener_reverts_if_validation_fails(
 
 
 def test_update_listener_reverts_if_custom_validation_fails(
-    client, admin_auth_header, listener
+    client, admin_auth_header, listener_malleable
 ):
+    listener_malleable["enabled"] = False
+    response = client.put(
+        f"/api/v2/listeners/{listener_malleable['id']}",
+        headers=admin_auth_header,
+        json=listener_malleable,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["enabled"] is False
+
     response = client.get(
-        f"/api/v2/listeners/{listener['id']}",
+        f"/api/v2/listeners/{listener_malleable['id']}",
         headers=admin_auth_header,
     )
     assert response.json()["enabled"] is False
 
-    listener = response.json()
-    listener["options"]["Host"] = "https://securesite.com"
-    listener["options"]["BindIP"] = "1.1.1.1"
+    listener_malleable = response.json()
+    listener_malleable["options"]["Profile"] = "nonexistent.profile"
     response = client.put(
-        f"/api/v2/listeners/{listener['id']}",
+        f"/api/v2/listeners/{listener_malleable['id']}",
         headers=admin_auth_header,
-        json=listener,
+        json=listener_malleable,
     )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "[!] HTTPS selected but no CertPath specified."
+    assert (
+        response.json()["detail"]
+        == "[!] Malleable profile not found: nonexistent.profile"
+    )
 
     response = client.get(
-        f"/api/v2/listeners/{listener['id']}",
+        f"/api/v2/listeners/{listener_malleable['id']}",
         headers=admin_auth_header,
     )
-    assert response.json()["options"]["BindIP"] == "0.0.0.0"
+    assert response.json()["options"]["Profile"] == "amazon.profile"
+
+    listener_malleable["options"]["Profile"] = "amazon.profile"
+    listener_malleable["enabled"] = True
+    response = client.put(
+        f"/api/v2/listeners/{listener_malleable['id']}",
+        headers=admin_auth_header,
+        json=listener_malleable,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_update_listener_allows_and_enables_while_disabled(

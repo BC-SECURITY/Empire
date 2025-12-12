@@ -25,7 +25,12 @@ def run_as_user(  # noqa: PLR0913
         if user is None:
             user = os.getenv("SUDO_USER")
 
-        command_with_user = ["sudo", "-u", user, *command] if user else command
+        # Avoid sudo if target user is root or empty (typical in containers)
+        if user in (None, "", "root"):
+            command_with_user = command
+        else:
+            # Preserve env (-E) so SSH_AUTH_SOCK / GIT_SSH_COMMAND are available
+            command_with_user = ["sudo", "-E", "-u", user, *command]
 
         result = subprocess.run(
             command_with_user,

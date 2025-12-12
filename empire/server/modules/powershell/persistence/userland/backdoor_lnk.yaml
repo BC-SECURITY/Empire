@@ -57,7 +57,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: LNKPath
     description: Full path to the .LNK to backdoor.
     required: true

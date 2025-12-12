@@ -1,41 +1,30 @@
-"""
-
-Empire encryption functions.
-
-Includes:
-
-    pad()                       -   performs PKCS#7 padding
-    depad()                     -   Performs PKCS#7 depadding
-    rsa_xml_to_key()            -   parses a PowerShell RSA xml import and builds a key object
-    rsa_encrypt()               -   encrypts data using the key object
-    aes_encrypt()               -   encrypts data using a Cryptography AES object
-    aes_encrypt_then_hmac()     -   encrypts and SHA256 HMACs data using a Cryptography AES object
-    aes_decrypt()               -   decrypts data using a Cryptography AES object
-    verify_hmac()               -   verifies a SHA256 HMAC for a data blob
-    aes_decrypt_and_verify()    -   AES decrypts data if the HMAC is validated
-    generate_aes_key()          -   generates a ranodm AES key using the OS' Random functionality
-    rc4()                       -   encrypt/decrypt a data blob using an RC4 key
-    DiffieHellman()             -   Mark Loiseau's DiffieHellman implementation, see ./data/licenses/ for license info
-
-"""
-
-import base64
 import hashlib
 import hmac
 import logging
 import os
 import random
+import ssl
 import string
-import sys
-from xml.dom import minidom
+import struct
 
-from Crypto.Cipher import PKCS1_v1_5
-from Crypto.PublicKey import RSA
-from Crypto.Util import number
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey as _Ed25519PrivateKey,
+)
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PublicKey as _Ed25519PublicKey,
+)
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import (
+    ChaCha20Poly1305 as LibChaCha20Poly1305,
+)
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 log = logging.getLogger(__name__)
+
+random_function = ssl.RAND_bytes
+random_provider = "Python SSL"
+ct_compare_digest = hmac.compare_digest
 
 
 def to_bufferable(binary):
@@ -48,199 +37,92 @@ def _get_byte(c):
     return c
 
 
-# If a secure random number generator is unavailable, exit with an error.
-try:
-    import ssl
-
-    random_function = ssl.RAND_bytes
-    random_provider = "Python SSL"
-except Exception:
-    random_function = os.urandom
-    random_provider = "os.urandom"
-
-
-def pad(data):
+class AESCipher:
     """
-    Performs PKCS#7 padding for 128 bit block size.
+    Cohesive namespace for AES/HMAC utilities.
+    Prefer using these class methods over the legacy module-level functions
+    which are kept for backward compatibility.
     """
 
-    pad = 16 - (len(data) % 16)
-    return data + to_bufferable(chr(pad).encode("UTF-8") * pad)
+    @staticmethod
+    def pad(data):
+        """Performs PKCS#7 padding for 128 bit block size."""
+        pad = 16 - (len(data) % 16)
+        return b"".join([data, to_bufferable(chr(pad).encode("UTF-8") * pad)])
 
-    # return str(s) + chr(16 - len(str(s)) % 16) * (16 - len(str(s)) % 16)
+    @staticmethod
+    def depad(data):
+        """Performs PKCS#7 depadding for 128 bit block size."""
+        if len(data) % 16 != 0:
+            raise ValueError("invalid length")
 
+        pad = _get_byte(data[-1])
+        return data[:-pad]
 
-def depad(data):
-    """
-    Performs PKCS#7 depadding for 128 bit block size.
-    """
-    if len(data) % 16 != 0:
-        raise ValueError("invalid length")
-
-    pad = _get_byte(data[-1])
-    return data[:-pad]
-
-    # return s[:-(ord(s[-1]))]
-
-
-def rsa_xml_to_key(xml):
-    """
-    Parse powershell RSA.ToXmlString() public key string and
-    return a key object.
-
-    Used during PowerShell RSA-EKE key exchange in agents.py.
-
-    Reference- http://stackoverflow.com/questions/10367072/m2crypto-import-keys-from-non-standard-file
-    https://stackoverflow.com/questions/45575959/rsa-encrypting-password-with-a-public-modulus-and-exponent-in-python
-    """
-    try:
-        # parse the xml DOM and extract the exponent/modulus
-        rsa_key_value = minidom.parseString(xml)
-        modulus = get_long(rsa_key_value.getElementsByTagName("Modulus")[0].childNodes)
-        exponent = get_long(
-            rsa_key_value.getElementsByTagName("Exponent")[0].childNodes
-        )
-
-        return RSA.construct((modulus, exponent))
-
-    # if there's an XML parsing error, return None
-    except Exception:
-        return None
-
-
-def get_long(nodelist):
-    rc = []
-    for node in nodelist:
-        if node.nodeType == node.TEXT_NODE:
-            rc.append(node.data)
-    node_string = "".join(rc)
-    return number.bytes_to_long(base64.b64decode(node_string))
-
-
-def rsa_encrypt(key, data):
-    """
-    Take a key object and use it to encrypt the passed data.
-    """
-    pubkey = PKCS1_v1_5.new(key)
-    return pubkey.encrypt(data)
-
-
-def aes_encrypt(key, data):
-    """
-    Generate a random IV and new AES cipher object with the given
-    key, and return IV + encryptedData.
-    """
-    if isinstance(key, str):
-        key = bytes(key, "UTF-8")
-    if isinstance(data, str):
-        data = bytes(data, "UTF-8")
-    backend = default_backend()
-    IV = os.urandom(16)
-    cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
-    encryptor = cipher.encryptor()
-    ct = encryptor.update(pad(data)) + encryptor.finalize()
-    return IV + ct
-
-
-def aes_encrypt_then_hmac(key, data):
-    """
-    Encrypt the data then calculate HMAC over the ciphertext.
-    """
-    if isinstance(key, str):
-        key = bytes(key, "UTF-8")
-    if isinstance(data, str):
-        data = bytes(data, "UTF-8")
-
-    data = aes_encrypt(key, data)
-    mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
-    return data + mac[0:10]
-
-
-def aes_decrypt(key, data):
-    """
-    Generate an AES cipher object, pull out the IV from the data
-    and return the unencrypted data.
-    """
-    if len(data) > 16:  # noqa: PLR2004
+    @staticmethod
+    def encrypt(key, data):
+        """Encrypt with random IV (CBC) and return IV+ciphertext."""
         backend = default_backend()
-        IV = data[0:16]
+        IV = os.urandom(16)
         cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
-        decryptor = cipher.decryptor()
-        return depad(decryptor.update(data[16:]) + decryptor.finalize())
-    return None
+        encryptor = cipher.encryptor()
+        ct = encryptor.update(AESCipher.pad(data)) + encryptor.finalize()
+        return IV + ct
 
+    @staticmethod
+    def encrypt_then_hmac(key, data):
+        """Encrypt the data then calculate HMAC over the ciphertext."""
 
-def verify_hmac(key, data):
-    """
-    Verify the HMAC supplied in the data with the given key.
-    """
-    if isinstance(key, str):
-        key = bytes(key, "latin-1")
+        data = AESCipher.encrypt(key, data)
+        mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
+        return data + mac[0:10]
 
-    if len(data) > 20:  # noqa: PLR2004
-        mac = data[-10:]
-        data = data[:-10]
-        expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:10]
-        # Double HMAC to prevent timing attacks. hmac.compare_digest() is
-        # preferable, but only available since Python 2.7.7.
-        return (
-            hmac.new(key, expected, digestmod=hashlib.sha256).digest()
-            == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
+    @staticmethod
+    def decrypt(key, data):
+        """Decrypt IV+ciphertext (CBC) and depad."""
+        if len(data) > 16:  # noqa: PLR2004
+            backend = default_backend()
+            IV = data[0:16]
+            cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
+            decryptor = cipher.decryptor()
+            return AESCipher.depad(decryptor.update(data[16:]) + decryptor.finalize())
+        raise ValueError("Data length must be larger then 16")
+
+    @staticmethod
+    def verify_hmac(key, data):
+        """Verify the truncated (10-byte) SHA-256 HMAC.
+        Returns True/False.
+        """
+
+        if len(data) > 20:  # noqa: PLR2004
+            mac = data[-10:]
+            data_ = data[:-10]
+            expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:10]
+            return (
+                hmac.new(key, expected, digestmod=hashlib.sha256).digest()
+                == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
+            )
+        return False
+
+    @staticmethod
+    def decrypt_and_verify(key, data):
+        """Decrypt the data, but only if it has a valid MAC."""
+        if len(data) > 32 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
+            return AESCipher.decrypt(key, data[:-10])
+        raise Exception("Invalid ciphertext received.")
+
+    @staticmethod
+    def generate_key():
+        """Generate a random new 128-bit AES key using OS RNG."""
+        rng = random.SystemRandom()
+        return "".join(
+            rng.sample(
+                string.ascii_letters
+                + string.digits
+                + r"!#$%&()*+,-./:;<=>?@[\]^_`{|}~",
+                32,
+            )
         )
-
-    return False
-
-
-def aes_decrypt_and_verify(key, data):
-    """
-    Decrypt the data, but only if it has a valid MAC.
-    """
-    if len(data) > 32 and verify_hmac(key, data):  # noqa: PLR2004
-        if isinstance(key, str):
-            key = bytes(key, "latin-1")
-        return aes_decrypt(key, data[:-10])
-    raise Exception("Invalid ciphertext received.")
-
-
-def generate_aes_key():
-    """
-    Generate a random new 128-bit AES key using OS' secure Random functions.
-    """
-    rng = random.SystemRandom()
-    return "".join(
-        rng.sample(
-            string.ascii_letters + string.digits + r"!#$%&()*+,-./:;<=>?@[\]^_`{|}~", 32
-        )
-    )
-
-
-def rc4(key, data):
-    """
-    RC4 encrypt/decrypt the given data input with the specified key.
-
-    From: http://stackoverflow.com/questions/29607753/how-to-decrypt-a-file-that-encrypted-with-rc4-using-python
-    """
-    S, j, out = list(range(256)), 0, []
-    # This might break python 2.7
-    key = bytearray(key)
-    # KSA Phase
-    for i in range(256):
-        j = (j + S[i] + key[i % len(key)]) % 256
-        S[i], S[j] = S[j], S[i]
-    # this might also break python 2.7
-    # data = bytearray(data)
-    # PRGA Phase
-    i = j = 0
-
-    for char in data:
-        i = (i + 1) % 256
-        j = (j + S[i]) % 256
-        S[i], S[j] = S[j], S[i]
-        if sys.version[0] == "2":
-            char = ord(char)  # noqa: PLW2901
-        out.append(chr(char ^ S[(S[i] + S[j]) % 256]).encode("latin-1"))
-    # out = str(out)
-    return b"".join(out)
 
 
 class DiffieHellman:
@@ -266,7 +148,6 @@ class DiffieHellman:
         default_generator = 2
         valid_generators = [2, 3, 5, 7]
 
-        # Sanity check fors generator and keyLength
         if generator not in valid_generators:
             log.error("Error: Invalid generator. Using default.")
             self.generator = default_generator
@@ -279,12 +160,12 @@ class DiffieHellman:
         else:
             self.keyLength = keyLength
 
-        self.prime = self.getPrime(group)
+        self.prime = self.get_prime(group)
 
-        self.privateKey = self.genPrivateKey(keyLength)
-        self.publicKey = self.genPublicKey()
+        self.privateKey = self.gen_private_key(keyLength)
+        self.publicKey = self.gen_public_key()
 
-    def getPrime(self, group=17):
+    def get_prime(self, group=17):
         """
         Given a group number, return a prime.
         """
@@ -305,7 +186,7 @@ class DiffieHellman:
         log.error(f"Error: No prime with group {group:d}. Using default.")
         return primes[default_group]
 
-    def genRandom(self, bits):
+    def gen_random(self, bits):
         """
         Generate a random number with the specified number of bits
         """
@@ -322,19 +203,19 @@ class DiffieHellman:
 
         return _rand
 
-    def genPrivateKey(self, bits):
+    def gen_private_key(self, bits):
         """
         Generate a private key using a secure random number generator.
         """
-        return self.genRandom(bits)
+        return self.gen_random(bits)
 
-    def genPublicKey(self):
+    def gen_public_key(self):
         """
         Generate a public key X with g**x % p.
         """
         return pow(self.generator, self.privateKey, self.prime)
 
-    def checkPublicKey(self, otherKey):
+    def check_public_key(self, otherKey):
         """
         Check the other party's public key to make sure it's valid.
         Since a safe prime is used, verify that the Legendre symbol == 1
@@ -345,27 +226,26 @@ class DiffieHellman:
             and pow(otherKey, (self.prime - 1) // 2, self.prime) == 1
         )
 
-    def genSecret(self, privateKey, otherKey):
+    def gen_secret(self, privateKey, otherKey):
         """
         Check to make sure the public key is valid, then combine it with the
         private key to generate a shared secret.
         """
-        if self.checkPublicKey(otherKey) is True:
+        if self.check_public_key(otherKey) is True:
             return pow(otherKey, privateKey, self.prime)
         raise Exception("Invalid public key.")
 
-    def genKey(self, otherKey):
+    def gen_key(self, otherKey):
         """
         Derive the shared secret, then hash it to obtain the shared key.
         """
-        self.sharedSecret = self.genSecret(self.privateKey, otherKey)
+        self.sharedSecret = self.gen_secret(self.privateKey, otherKey)
 
         # Convert the shared secret (int) to an array of bytes in network order
         # Otherwise hashlib can't hash it.
         try:
-            _sharedSecretBytes = self.sharedSecret.to_bytes(
-                len(bin(self.sharedSecret)) - 2 // 8 + 1, byteorder="big"
-            )
+            bin_str = bin(self.sharedSecret)[2:].zfill(6147)
+            _sharedSecretBytes = int(bin_str, 2).to_bytes(len(bin_str), "big")
         except AttributeError:
             _sharedSecretBytes = str(self.sharedSecret)
 
@@ -379,3 +259,205 @@ class DiffieHellman:
         Return the shared secret key
         """
         return self.key
+
+
+def divceil(divident, divisor):
+    """Integer division with rounding up"""
+    quot, r = divmod(divident, divisor)
+    return quot + int(bool(r))
+
+
+class Poly1305:
+    """Poly1305 authenticator
+
+    Authored by Dušan Klinec's implementation at https://github.com/ph4r05/py-chacha20poly1305
+    """
+
+    P = 0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB  # 2^130-5
+
+    @staticmethod
+    def le_bytes_to_num(data):
+        """Convert a number from little endian byte format"""
+        ret = 0
+        for i in range(len(data) - 1, -1, -1):
+            ret <<= 8
+            ret += data[i]
+        return ret
+
+    @staticmethod
+    def num_to_16_le_bytes(num):
+        """Convert number to 16 bytes in little endian format"""
+        ret = [0] * 16
+        for i, _ in enumerate(ret):
+            ret[i] = num & 0xFF
+            num >>= 8
+        return bytearray(ret)
+
+    def __init__(self, key):
+        """Set the authenticator key"""
+        key_byte_length = 32  # 32 bytes
+        if len(key) != key_byte_length:
+            raise ValueError("Key must be 256 bit long")
+        self.acc = 0
+        self.r = self.le_bytes_to_num(key[0:16])
+        self.r &= 0x0FFFFFFC0FFFFFFC0FFFFFFC0FFFFFFF
+        self.s = self.le_bytes_to_num(key[16:32])
+
+    def create_tag(self, data):
+        """Calculate authentication tag for data deterministically for the given key and data.
+        This method must not mutate internal accumulator state so repeated calls with the same
+        inputs return the same tag.
+        """
+        acc = 0
+        for i in range(0, divceil(len(data), 16)):
+            n = self.le_bytes_to_num(data[i * 16 : (i + 1) * 16] + b"\x01")
+            acc += n
+            acc = (self.r * acc) % self.P
+        acc += self.s
+        return self.num_to_16_le_bytes(acc)
+
+
+class ChaCha:
+    """Wrapper around cryptography's ChaCha20 stream cipher.
+    Preserves existing API (key, nonce, counter=0, rounds=20) but ignores rounds.
+    Nonce must be 12 bytes; we combine with 4-byte little-endian counter to form
+    the 16-byte nonce required by cryptography's ChaCha20 implementation.
+    """
+
+    def __init__(self, key, nonce, counter=0, rounds=20):
+        key_byte_length = 32
+        if len(key) != key_byte_length:
+            raise ValueError("Key must be 256 bit long")
+
+        nonce_byte_length = 12
+        if len(nonce) != nonce_byte_length:
+            raise ValueError("Nonce must be 96 bit long")
+
+        self.key = key
+        self.nonce = nonce
+        self.counter = counter & 0xFFFFFFFF
+        self.rounds = rounds
+
+    def _construct_nonce16(self, block_counter=0):
+        ctr = (self.counter + block_counter) & 0xFFFFFFFF
+        return struct.pack("<I", ctr) + self.nonce
+
+    def _cipher(self, nonce16):
+        algorithm = algorithms.ChaCha20(self.key, nonce16)
+        return Cipher(algorithm, mode=None, backend=default_backend())
+
+    def encrypt(self, plaintext):
+        nonce16 = self._construct_nonce16(0)
+        encryptor = self._cipher(nonce16).encryptor()
+        return encryptor.update(plaintext) + encryptor.finalize()
+
+    def key_stream(self, counter):
+        # Generate 64 bytes of keystream for the given block index for compatibility
+        nonce16 = self._construct_nonce16(counter)
+        encryptor = self._cipher(nonce16).encryptor()
+        return bytearray(encryptor.update(b"\x00" * 64) + encryptor.finalize())
+
+    def decrypt(self, ciphertext):
+        nonce16 = self._construct_nonce16(0)
+        decryptor = self._cipher(nonce16).decryptor()
+        return decryptor.update(ciphertext) + decryptor.finalize()
+
+
+class TagInvalidException(Exception):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class ChaCha20Poly1305:
+    """Wrapper around cryptography's ChaCha20Poly1305 AEAD cipher.
+
+    Replaces the previous pure-Python implementation with the standard library
+    from cryptography.hazmat.primitives.ciphers.aead.
+    Preserves the existing API: encrypt/decrypt and seal/open.
+    """
+
+    def __init__(self, key, implementation="python"):
+        key_byte_length = 32
+        if len(key) != key_byte_length:
+            raise ValueError("Key must be 256 bit long")
+
+        self.isBlockCipher = False
+        self.isAEAD = True
+        self.nonceLength = 12
+        self.tagLength = 16
+        self.implementation = implementation
+        self.name = "chacha20-poly1305"
+        self.key = key
+        self._aead = LibChaCha20Poly1305(key)
+
+    def _to_bytes(self, associated_data):
+        if associated_data is None:
+            return None
+        if isinstance(associated_data, str):
+            return associated_data.encode("utf-8")
+        return associated_data
+
+    def encrypt(self, nonce, plaintext, associated_data=None):
+        ad = self._to_bytes(associated_data)
+        return self._aead.encrypt(nonce, plaintext, ad)
+
+    def decrypt(self, nonce, ciphertext, associated_data=None):
+        ad = self._to_bytes(associated_data)
+        try:
+            return self._aead.decrypt(nonce, ciphertext, ad)
+        except Exception as err:
+            raise TagInvalidException from err
+
+    def seal(self, nonce, plaintext, data):
+        ad = self._to_bytes(data)
+        return self._aead.encrypt(nonce, plaintext, ad)
+
+    def open(self, nonce, ciphertext, data):
+        ad = self._to_bytes(data)
+        try:
+            return self._aead.decrypt(nonce, ciphertext, ad)
+        except Exception as err:
+            raise TagInvalidException from err
+
+
+class SignatureMismatch(Exception):
+    pass
+
+
+def publickey_unsafe(sk: bytes) -> bytes:
+    """Derive a public key from a 32-byte Ed25519 seed using cryptography.
+
+    Parameters:
+        sk (bytes): 32-byte private key seed (raw). Use .private_bytes_raw() to obtain.
+    Returns:
+        bytes: 32-byte public key in raw format.
+    """
+    priv = _Ed25519PrivateKey.from_private_bytes(bytes(sk))
+    pub = priv.public_key()
+    return pub.public_bytes(Encoding.Raw, PublicFormat.Raw)
+
+
+def signature_unsafe(m: bytes, sk: bytes, pk: bytes) -> bytes:
+    """Create a detached Ed25519 signature using cryptography.
+
+    Parameters:
+        m (bytes): Message to sign.
+        sk (bytes): 32-byte private key seed.
+        pk (bytes): Public key (ignored, kept for API compatibility).
+    Returns:
+        bytes: 64-byte signature.
+    """
+    priv = _Ed25519PrivateKey.from_private_bytes(bytes(sk))
+    return priv.sign(bytes(m))
+
+
+def checkvalid(s: bytes, m: bytes, pk: bytes) -> bool:
+    """Verify an Ed25519 signature using cryptography.
+
+    Returns True if valid, False otherwise.
+    """
+    try:
+        _Ed25519PublicKey.from_public_bytes(bytes(pk)).verify(bytes(s), bytes(m))
+        return True
+    except Exception:
+        return False

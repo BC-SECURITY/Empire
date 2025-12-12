@@ -21,14 +21,14 @@ The agent incorporates multiple external Python functionalities, sourced via Jin
 
 ```python
 {% include 'common/aes.py' %}
-{% include 'common/rc4.py' %}
+{% include 'common/chacha.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
 {% include 'http/comms.py' %}
 ```
 
 These functionalities provide:
-- AES & RC4 Encryption: For encrypted communications.
+- AES & ChaCha20poly1305 Encryption: For encrypted communications.
 - Diffie-Hellman Key Exchange: Secure establishment of a shared secret key.
 - System Information: Gather details about the host system.
 - HTTP Communication Methods: Communication methods tailored for HTTP. (Can be customized with other listener options)

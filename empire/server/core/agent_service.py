@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from empire.server.api.v2.agent.agent_dto import AggregateBucket
 from empire.server.api.v2.shared_dto import OrderDirection
-from empire.server.common import encryption, helpers
+from empire.server.common import helpers
+from empire.server.common.encryption import AESCipher
 from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.utils import datetime_util
@@ -83,9 +84,8 @@ class AgentService:
         """
         Add an agent to the internal cache and database.
         """
-        # generate a new key for this agent if one wasn't supplied
         if not session_key:
-            session_key = encryption.generate_aes_key()
+            session_key = AESCipher.generate_key()
 
         if not profile or profile == "":
             profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"

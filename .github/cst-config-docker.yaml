@@ -51,3 +51,9 @@ fileExistenceTests:
   - name: 'starkiller'
     path: '/root/.local/share/empire/starkiller/'
     shouldExist: true
+  - name: 'empire-compiler'
+    path: '/root/.local/share/empire/empire-compiler/'
+    shouldExist: true
+  - name: 'plugin-registries'
+    path: '/root/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
+    shouldExist: true

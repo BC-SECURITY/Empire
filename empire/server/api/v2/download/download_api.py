@@ -58,10 +58,7 @@ async def download_download(
     db: CurrentSession,
     db_download: models.Download = Depends(get_download),
 ):
-    if db_download.filename:
-        filename = db_download.filename
-    else:
-        filename = db_download.location.split("/")[-1]
+    filename = db_download.filename or db_download.location.split("/")[-1]
 
     return FileResponse(db_download.location, filename=filename)
 

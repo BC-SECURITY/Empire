@@ -7,8 +7,14 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 
 from empire.server.api.v2.plugin.plugin_dto import PluginExecutePostRequest
-from empire.server.core.config.config_manager import PluginAutoExecuteConfig
+from empire.server.core.config.config_manager import (
+    PluginAutoExecuteConfig,
+    PluginConfig,
+)
+from empire.server.core.db.models import PluginInfo
 from empire.server.core.exceptions import PluginValidationException
+from empire.server.core.plugin_service import PluginService
+from empire.server.core.plugins import BasePlugin
 
 if TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -51,8 +57,6 @@ def patch_plugin_class_on_load_on_unload(plugin_class, on_load=None, on_unload=N
 def test_auto_execute_plugins(caplog, monkeypatch, models, empire_config, install_path):
     caplog.set_level(logging.DEBUG)
 
-    from empire.server.core.plugin_service import PluginService
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = str(install_path)
     plugin_service = PluginService(main_menu_mock)
@@ -63,8 +67,6 @@ def test_auto_execute_plugins(caplog, monkeypatch, models, empire_config, instal
 
 
 def test_plugin_execute_with_kwargs(session_local, install_path):
-    from empire.server.core.plugin_service import PluginService
-
     def execute(options, **kwargs):
         return f"This function was called with options: {options} and kwargs: {kwargs}"
 
@@ -84,8 +86,6 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
 
 
 def test_execute_plugin_file_option_not_found(install_path, session_local):
-    from empire.server.core.plugin_service import PluginService
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
 
@@ -120,8 +120,6 @@ def test_execute_plugin_file_option_not_found(install_path, session_local):
 
 
 def test_execute_plugin_file_option(install_path, session_local, models):
-    from empire.server.core.plugin_service import PluginService
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
 
@@ -169,9 +167,6 @@ def test_execute_plugin_file_option(install_path, session_local, models):
 # Note this test is not great. If all plugins are overriding the on_start and on_stop
 # then it will fail.
 def test_on_start_on_stop_called(install_path):
-    from empire.server.core.plugin_service import PluginService
-    from empire.server.core.plugins import BasePlugin
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
 
@@ -196,9 +191,6 @@ def test_on_start_on_stop_called(install_path):
 # Note this test is not great. If all plugins are overriding the on_load and on_unload
 # then it will fail.
 def test_on_load_on_unload_called(install_path):
-    from empire.server.core.plugin_service import PluginService
-    from empire.server.core.plugins import BasePlugin
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
 
@@ -226,9 +218,6 @@ def plugin_service(main: "MainMenu"):
 
 
 def test__determine_auto_start(empire_config, plugin_service):
-    from empire.server.core.config.config_manager import PluginConfig
-    from empire.server.core.db.models import PluginInfo
-
     plugin_info = PluginInfo(
         id="test_auto_start", name="TestAutoStart", auto_start=False, main=""
     )
@@ -247,9 +236,6 @@ def test__determine_auto_start(empire_config, plugin_service):
 
 
 def test__determine_auto_execute(empire_config, plugin_service):
-    from empire.server.core.config.config_manager import PluginConfig
-    from empire.server.core.db.models import PluginInfo
-
     plugin_config = PluginInfo(
         id="test_auto_execute", name="TestAutoExecute", auto_execute=None, main=""
     )
@@ -279,8 +265,6 @@ def test__determine_auto_execute(empire_config, plugin_service):
 
 
 def test_plugin_load_exception(install_path, session_local):
-    from empire.server.core.plugin_service import PluginService
-
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
 

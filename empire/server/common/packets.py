@@ -6,24 +6,31 @@ Defines packet types, builds tasking packets and parses result packets.
 
 Packet format:
 
-RC4s = RC4 encrypted with the shared staging key
+ChaCha20+Poly1305 = ChaCha20Poly1305 encrypted with the shared staging key
 HMACs = SHA1 HMAC using the shared staging key
 AESc = AES encrypted using the client's session key
 HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
 
     Routing Packet:
-    +---------+-------------------+--------------------------+
-    | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
-    +---------+-------------------+--------------------------+
-    |    4    |         16        |        RC4 length        |
-    +---------+-------------------+--------------------------+
+    +---------+--------------------------------+--------------------------+
+    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+    +---------+--------------------------------+--------------------------+
+    |    12   |                32              |          length          |
+    +---------+--------------------------------+--------------------------+
 
-    RC4s(RoutingData):
-    +-----------+------+------+-------+--------+
-    | SessionID | Lang | Meta | Extra | Length |
-    +-----------+------+------+-------+--------+
-    |    8      |  1   |  1   |   2   |    4   |
-    +-----------+------+------+-------+--------+
+        ChaCha20+Poly1305(RoutingData):
+        +---------------------------+---------------------------+
+        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+        +---------------------------+---------------------------+
+        |           16              |            16             |
+        +---------------------------+---------------------------+
+
+            ChaCha20(RoutingData):
+            +-----------+------+------+-------+--------+
+            | SessionID | Lang | Meta | Extra | Length |
+            +-----------+------+------+-------+--------+
+            |    8      |  1   |  1   |   2   |    4   |
+            +-----------+------+------+-------+--------+
 
     SessionID = the sessionID that the packet is bound for
     Lang = indicates the language used
@@ -63,7 +70,6 @@ import base64
 import logging
 import os
 import struct
-import sys
 
 from . import encryption
 
@@ -290,27 +296,39 @@ def parse_result_packets(packets):
 
 def parse_routing_packet(stagingKey, data):
     """
-    Decodes the rc4 "routing packet" and parses raw agent data into:
+    Decodes the chacha20+poly1305 "routing packet" and parses raw agent data into:
 
         {sessionID : (language, meta, additional, [encData]), ...}
 
 
     Routing packet format:
 
-        +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
-        +---------+-------------------+--------------------------+
-        |    4    |         16        |        RC4 length        |
-        +---------+-------------------+--------------------------+
+        Routing Packet:
+        +---------+--------------------------------+--------------------------+
+        |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+        +---------+--------------------------------+--------------------------+
+        |    12   |                32              |          length          |
+        +---------+--------------------------------+--------------------------+
 
-        RC4s(RoutingData):
-        +-----------+------+------+-------+--------+
-        | SessionID | Lang | Meta | Extra | Length |
-        +-----------+------+------+-------+--------+
-        |    8      |  1   |  1   |   2   |    4   |
-        +-----------+------+------+-------+--------+
+            ChaCha20+Poly1305(RoutingData):
+            +---------------------------+---------------------------+
+            |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+            +---------------------------+---------------------------+
+            |           16              |            16             |
+            +---------------------------+---------------------------+
 
+                ChaCha20(RoutingData):
+                +-----------+------+------+-------+--------+
+                | SessionID | Lang | Meta | Extra | Length |
+                +-----------+------+------+-------+--------+
+                |    8      |  1   |  1   |   2   |    4   |
+                +-----------+------+------+-------+--------+
     """
+
+    nonce_length = 12
+    chacha_header_length = (
+        nonce_length + 32
+    )  # Header covers ChaCha20+Poly1305 (RoutingData)
 
     if not data:
         message = "parse_agent_data() data is None"
@@ -320,33 +338,42 @@ def parse_routing_packet(stagingKey, data):
     results = {}
     offset = 0
 
-    # ensure we have at least the 20 bytes for a routing packet
-    if len(data) < 20:  # noqa: PLR2004
+    # ensure we have at least the 40 bytes for a routing packet
+    if len(data) < chacha_header_length:
         message = f"parse_agent_data() data length incorrect: {len(data)}"
         log.warning(message)
         return None
 
     while True:
-        if len(data) - offset < 20:  # noqa: PLR2004
+        if len(data) - offset < chacha_header_length:
             break
 
-        RC4IV = data[0 + offset : 4 + offset]
-        RC4data = data[4 + offset : 20 + offset]
+        # 0-12
+        chacha_nonce = data[0 + offset : nonce_length + offset]
+        # routing data 13-35
+        chacha_data = data[nonce_length + offset : chacha_header_length + offset]
+        key = stagingKey.encode("UTF-8")
+        enc_handler = encryption.ChaCha20Poly1305(key)
+        routingPacket = enc_handler.open(
+            chacha_nonce, chacha_data, ""
+        )  # Data set to null as we don't need it
 
-        routingPacket = encryption.rc4(RC4IV + stagingKey.encode("UTF-8"), RC4data)
-        try:
-            sessionID = routingPacket[0:8].decode("UTF-8")
-        except Exception:
-            sessionID = routingPacket[0:8].decode("latin-1")
+        sessionID = routingPacket[0:8].decode("UTF-8")
 
         # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
         (language, meta, additional, length) = struct.unpack("=BBHL", routingPacket[8:])
         if length < 0:
-            message = "parse_agent_data(): length in decoded rc4 packet is < 0"
+            message = (
+                "parse_agent_data(): length in decoded chacha20poly1305 packet is < 0"
+            )
             log.warning(message)
             encData = None
         else:
-            encData = data[(20 + offset) : (20 + offset + length)]
+            encData = data[
+                (chacha_header_length + offset) : (
+                    chacha_header_length + offset + length
+                )
+            ]
 
         results[sessionID] = (
             LANGUAGE_IDS.get(language, "NONE"),
@@ -356,11 +383,13 @@ def parse_routing_packet(stagingKey, data):
         )
 
         # check if we're at the end of the packet processing
-        remainingData = data[20 + offset + length :]
+        remainingData = data[chacha_header_length + offset + length :]
         if not remainingData or remainingData == "":
             break
 
-        offset += 20 + length
+        offset += chacha_header_length + length
+
+    log.debug("successfully deconstructed a packet")
     return results
 
 
@@ -368,24 +397,31 @@ def build_routing_packet(  # noqa: PLR0913
     stagingKey, sessionID, language, meta="NONE", additional="NONE", encData=""
 ):
     """
-    Takes the specified parameters for an RC4 "routing packet" and builds/returns
-    an HMAC'ed RC4 "routing packet".
+    Takes the specified parameters for an "routing packet" and builds/returns
+    an HMAC'ed chacha20+poly1305'ed "routing packet".
 
     packet format:
 
         Routing Packet:
-        +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
-        +---------+-------------------+--------------------------+
-        |    4    |         16        |        RC4 length        |
-        +---------+-------------------+--------------------------+
+        +---------+--------------------------------+--------------------------+
+        |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+        +---------+--------------------------------+--------------------------+
+        |    12   |                32              |          length          |
+        +---------+--------------------------------+--------------------------+
 
-        RC4s(RoutingData):
-        +-----------+------+------+-------+--------+
-        | SessionID | Lang | Meta | Extra | Length |
-        +-----------+------+------+-------+--------+
-        |    8      |  1   |  1   |   2   |    4   |
-        +-----------+------+------+-------+--------+
+            ChaCha20+Poly1305(RoutingData):
+            +---------------------------+---------------------------+
+            |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+            +---------------------------+---------------------------+
+            |           16              |            16             |
+            +---------------------------+---------------------------+
+
+                ChaCha20(RoutingData):
+                +-----------+------+------+-------+--------+
+                | SessionID | Lang | Meta | Extra | Length |
+                +-----------+------+------+-------+--------+
+                |    8      |  1   |  1   |   2   |    4   |
+                +-----------+------+------+-------+--------+
 
     """
     # binary pack all of the pcassed config values as unsigned numbers
@@ -398,15 +434,21 @@ def build_routing_packet(  # noqa: PLR0913
         ADDITIONAL.get(additional.upper(), 0),
         len(encData),
     )
-    RC4IV = os.urandom(4)
+    ChaChaNonce = os.urandom(12)
+
+    # Staging key is in string, needs to be in bytes
     stagingKey = stagingKey.encode("UTF-8")
-    key = RC4IV + stagingKey
-    rc4EncData = encryption.rc4(key, data)
-    # return an rc4 encyption of the routing packet, append an HMAC of the packet, then the actual encrypted data
-    if isinstance(encData, str) and sys.version[0] != "2":
+    enc_handler = encryption.ChaCha20Poly1305(stagingKey)
+
+    # todo: remove in the future
+    if isinstance(encData, str):
         encData = encData.encode("Latin-1")
 
-    return RC4IV + rc4EncData + encData
+    # Data is null as we don't need it
+    ChaChaEncData = enc_handler.seal(ChaChaNonce, data, b"")
+
+    log.debug("successfully built a routing packet")
+    return ChaChaNonce + ChaChaEncData + encData
 
 
 def resolve_id(PacketID):

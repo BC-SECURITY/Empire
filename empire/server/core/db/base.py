@@ -2,8 +2,9 @@ import logging
 import sqlite3
 import sys
 from pathlib import Path
+from urllib.parse import quote_plus
 
-from sqlalchemy import UniqueConstraint, create_engine, event, text
+from sqlalchemy import Index, UniqueConstraint, create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import close_all_sessions, sessionmaker
@@ -63,10 +64,23 @@ def reset_db():
 
 if use == "mysql":
     url = database_config.url
-    username = database_config.username
-    password = database_config.password
     database_name = database_config.database_name
-    mysql_url = f"mysql+pymysql://{username}:{password}@{url}"
+    encoded_username = (
+        quote_plus(database_config.username) if database_config.username else ""
+    )
+    encoded_password = (
+        quote_plus(database_config.password) if database_config.password else ""
+    )
+
+    if encoded_username and encoded_password:
+        userinfo = f"{encoded_username}:{encoded_password}"
+    elif encoded_username:
+        userinfo = encoded_username
+    else:
+        userinfo = ""
+    auth = f"{userinfo}@" if userinfo else ""
+
+    mysql_url = f"mysql+pymysql://{auth}{url}"
     engine = try_create_engine(mysql_url, echo=False)
     with engine.connect() as connection:
         connection.execute(text(f"CREATE DATABASE IF NOT EXISTS {database_name}"))
@@ -119,8 +133,6 @@ def startup_db():
 
                     # index agent_id and checkin_time together
                     # won't work for sqlite.
-                    from sqlalchemy import Index
-
                     Index(
                         "agent_checkin_idx",
                         models.AgentCheckIn.agent_id,
@@ -167,6 +179,6 @@ def startup_db():
         log.error(e, exc_info=True)
         log.error("Failed to setup database.")
         log.error(
-            "If you have recently updated Empire, please run 'server --reset' to reset the database."
+            "If you have recently updated Empire, please run 'server --clean' to reset the database."
         )
         sys.exit(1)

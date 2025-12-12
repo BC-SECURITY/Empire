@@ -80,7 +80,7 @@ class Stager:
             "Bypasses": {
                 "Description": "Bypasses as a space separated list to be prepended to the launcher",
                 "Required": False,
-                "Value": "mattifestation etw",
+                "Value": "",
             },
         }
 

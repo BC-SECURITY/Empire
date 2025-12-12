@@ -14,8 +14,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
 -   Added Debian 13 support
 -   Added error message if running `ps-empire server` under root without `-f`
+
+## [6.3.0] - 2025-12-11
+-   Updated Starkiller to v3.2.0
+
+### Added
+
+-   Exposed all agent language options in PSexec so that C#, Ironpython, and Go can be selected for the Empire payload in addition to PowerShell
+-   Add support for overriding all config values with environment variables
+-   Updated Empire Compiler to v0.4.1
+-   Add customizable C# obfuscation to EmpireCompiler through confuser xml
+-   Added mTLS support to agents and listeners
+-   Added mono to install script for confuser obfuscation support on Linux
+
+### Changed
+
+-   Upgrade all dependencies to latest
+-   https `host` can be used on http and malleable listeners without a cert path
+-   Upgraded routing packets from RC4 to use ChaCha20-Poly1305 for encryption and authentication
+-   Changed key exchange for Powershell agent from RSA to Diffie-Hellman
+-   Updated server to use AESCipher class for encryption/decryption
+-   Updated multi-launcher launcher to use EntryPoint.Invoke for Powershell
+-   Moved default bypasses from stager and modules to config
+
+### Fixed
+
+-   Fix typo in variable name `suppress_self_cert_warning`
+-   Fixed all the new ruff linting issues after the upgrade
+-   URL encode database credentials in case they have special characters
+-   Fixed EmpireCompiler not obfuscating C# code properly
+-   Fixed issue where some C# modules would not run in Go agent
+-   Fixed SharpSploit/ShellCmd not running due to additional yaml argument
+-   Fixed install script failing on a subsequent run
+-   Fixed cookie naming for HTTP, foreign, and hop listeners
+-   Fixed port appending issues with listeners when not needed
+
+### Changed
+
+-   Install script invokes `setup` command to download starkiller, empire-compiler, and plugin registries
+
+### Removed
+
+-   Removed Ubuntu 20.04 from install tests
+-   Removed RC4 being used to deliver to agents
 
 ## [6.2.1] - 2025-09-05
 
@@ -1159,7 +1204,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.3.0...HEAD
+
+[6.3.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.1...v6.3.0
 
 [6.2.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.0...v6.2.1
 

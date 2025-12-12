@@ -112,6 +112,8 @@ class ListenerService:
         if err:
             return None, err
 
+        template_instance.host_address = db_listener.host_address
+
         hooks.run_hooks(hooks.AFTER_LISTENER_CREATED_HOOK, db, db_listener)
 
         return db_listener, None
@@ -177,12 +179,18 @@ class ListenerService:
             # in a breaking change we could just store a str,str dict for the options.
             # we don't add the listener to the db unless it successfully starts. Makes it a problem when trying
             # to split this out.
+            host_address, err = self.validate_listener_address(listener_options)
+            if err:
+                log.error(err)
+                return None, err
+
             db_listener = models.Listener(
                 name=name,
                 module=template_name,
                 listener_category=category,
                 enabled=True,
                 options=listener_options,
+                host_address=host_address,
             )
 
             db.add(db_listener)
@@ -197,6 +205,39 @@ class ListenerService:
             msg = f"Failed to start listener '{name}': {e}"
             log.error(msg)
             return None, msg
+
+    @staticmethod
+    def validate_listener_address(listener_options):
+        """
+        Take host and port and generate a host address string
+        """
+        host_rexp = r"^(https?)?:?/?/?([^:]+):?(\d+)?$"
+        matches = re.match(host_rexp, listener_options["Host"]["Value"])
+
+        try:
+            protocol, host, port = matches.groups()
+            if not protocol:
+                if (
+                    "CertPath" in listener_options
+                    and listener_options["CertPath"]["Value"] != ""
+                ):
+                    protocol = "https"
+                else:
+                    protocol = "http"
+            if port:
+                return None, "Port cannot be provided in a host name"
+            host_address = f"{protocol}://{host}"
+        except AttributeError:
+            return None, "Hostname error in parsing"
+
+        port = listener_options["Port"]["Value"]
+        if (protocol == "https" and port == "443") or (
+            protocol == "http" and port == "80"
+        ):
+            host_address += "/"
+            return host_address, None
+        host_address += f":{port}/"
+        return host_address, None
 
     def _validate_listener_options(
         self, db: Session, template: str, params: dict
@@ -237,65 +278,13 @@ class ListenerService:
         return template_instance, None
 
     @staticmethod
-    def _normalize_listener_options(instance) -> None:  # noqa: PLR0912
+    def _normalize_listener_options(instance) -> None:
         """
         This is adapted from the old set_listener_option which does some coercions on the http fields.
         """
         for option_name, option_meta in instance.options.items():
             value = option_meta["Value"]
-            # parse and auto-set some host parameters
-            if option_name == "Host":
-                host_rexp = r"^(https?)?:?/?/?([^:]+):?(\d+)?$"
-                matches = re.match(host_rexp, value)
-                try:
-                    protocol, host, port = matches.groups()
-                except AttributeError:
-                    log.error(f"Unable to parse Host value: {value}")
-                    protocol = None
-                    host = value
-                    port = None
-                if not protocol:
-                    if (
-                        "CertPath" in instance.options
-                        and instance.options["CertPath"]["Value"] != ""
-                    ):
-                        protocol = "https"
-                    else:
-                        protocol = "http"
-                default_port = 443 if protocol == "https" else 80
-                try:
-                    int(instance.options["Port"]["Value"])
-                except ValueError:
-                    if port:
-                        instance.options["Port"]["Value"] = port
-                    else:
-                        instance.options["Port"]["Value"] = default_port
-                if port:
-                    instance.options["Host"]["Value"] = f"{protocol}://{host}:{port}"
-                else:
-                    instance.options["Host"]["Value"] = f"{protocol}://{host}"
-
-            elif option_name == "CertPath" and value != "":
-                instance.options[option_name]["Value"] = value
-                host = instance.options["Host"]["Value"]
-                # if we're setting a SSL cert path, but the host is specific at http
-                if host.startswith("http:"):
-                    instance.options["Host"]["Value"] = instance.options["Host"][
-                        "Value"
-                    ].replace("http:", "https:")
-
-            elif option_name == "Port":
-                instance.options[option_name]["Value"] = value
-                # Check if Port is set and add it to host
-                try:
-                    protocol, host, port = instance.options["Host"]["Value"].split(":")
-                except ValueError:
-                    instance.options["Host"]["Value"] = "{}:{}".format(
-                        instance.options["Host"]["Value"],
-                        instance.options["Port"]["Value"],
-                    )
-
-            elif option_name == "StagingKey":
+            if option_name == "StagingKey":
                 # if the staging key isn't 32 characters, assume we're md5 hashing it
                 value = str(value).strip()
                 if len(value) != 32:  # noqa: PLR2004

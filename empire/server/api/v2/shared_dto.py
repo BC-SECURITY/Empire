@@ -72,10 +72,7 @@ class Author(BaseModel):
 
 
 def domain_to_dto_download_description(download: "models.Download"):
-    if download.filename:
-        filename = download.filename
-    else:
-        filename = download.location.split("/")[-1]
+    filename = download.filename or download.location.split("/")[-1]
 
     return DownloadDescription(
         id=download.id,

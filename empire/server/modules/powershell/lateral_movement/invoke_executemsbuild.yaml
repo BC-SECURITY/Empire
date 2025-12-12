@@ -79,7 +79,7 @@ options:
   - name: Bypasses
     description: Bypasses as a space separated list to be prepended to the launcher.
     required: false
-    value: mattifestation etw
+    value: ''
   - name: CredID
     description: CredID from the store to use.
     required: false

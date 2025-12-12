@@ -6,6 +6,7 @@ from pathlib import Path
 import yaml
 from sqlalchemy.orm import Session
 
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils.data_util import ps_convert_to_oneliner
@@ -27,6 +28,9 @@ class BypassService:
         root_path = Path(self.main_menu.installPath) / "bypasses"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
+        # Get the list of default bypass names from config
+        default_bypass_names = empire_config.database.defaults.bypasses
+
         for file_path in root_path.rglob("*.yaml"):
             filename = file_path.name
 
@@ -37,6 +41,9 @@ class BypassService:
             try:
                 yaml2 = yaml.safe_load(file_path.read_text())
                 yaml_bypass = {k: v for k, v in yaml2.items() if v is not None}
+
+                # Check if this bypass is marked as default in the config
+                is_default = yaml_bypass["name"] in default_bypass_names
 
                 if (
                     db.query(models.Bypass)
@@ -52,14 +59,28 @@ class BypassService:
                         authors=yaml_bypass["authors"],
                         code=yaml_bypass["script"],
                         language=yaml_bypass["language"],
+                        is_default=is_default,
                     )
                     db.add(my_model)
+                else:
+                    # Update existing bypass's is_default flag
+                    existing = (
+                        db.query(models.Bypass)
+                        .filter(models.Bypass.name == yaml_bypass["name"])
+                        .first()
+                    )
+                    existing.is_default = is_default
+                db.flush()
             except Exception as e:
                 log.error(e)
 
     @staticmethod
-    def get_all(db: Session):
-        return db.query(models.Bypass).all()
+    def get_all(db: Session, default: bool | None = None):
+        query = db.query(models.Bypass)
+        if default:
+            query = query.filter(models.Bypass.is_default)
+
+        return query.all()
 
     @staticmethod
     def get_by_id(db: Session, uid: int):

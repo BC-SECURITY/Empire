@@ -1,13 +1,81 @@
 package comms
 
+/*
+
+Packet handling functionality for Empire.
+
+Defines packet types, builds tasking packets and parses result packets.
+
+Packet format:
+
+ChaCha20 = encrypted with the shared staging key
+HMACs = SHA1 HMAC using the shared staging key
+AESc = AES encrypted using the client's session key
+HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
+
+    Routing Packet:
+    +---------+--------------------------------+--------------------------+
+    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+    +---------+--------------------------------+--------------------------+
+    |    12   |                32              |          length          |
+    +---------+--------------------------------+--------------------------+
+
+        ChaCha20+Poly1305(RoutingData):
+        +---------------------------+---------------------------+
+        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+        +---------------------------+---------------------------+
+        |           16              |            16             |
+        +---------------------------+---------------------------+
+
+            ChaCha20(RoutingData):
+            +-----------+------+------+-------+--------+
+            | SessionID | Lang | Meta | Extra | Length |
+            +-----------+------+------+-------+--------+
+            |    8      |  1   |  1   |   2   |    4   |
+            +-----------+------+------+-------+--------+
+
+    SessionID = the sessionID that the packet is bound for
+    Lang = indicates the language used
+    Meta = indicates staging req/tasking req/result post/etc.
+    Extra = reserved for future expansion
+
+
+    AESc(client data)
+    +--------+-----------------+-------+
+    | AES IV | Enc Packet Data | HMACc |
+    +--------+-----------------+-------+
+    |   16   |   % 16 bytes    |  10   |
+    +--------+-----------------+-------+
+
+    Client data decrypted:
+    +------+--------+--------------------+----------+---------+-----------+
+    | Type | Length | total # of packets | packet # | task ID | task data |
+    +------+--------+--------------------+--------------------+-----------+
+    |  2   |   4    |         2          |    2     |    2    | <Length>  |
+    +------+--------+--------------------+----------+---------+-----------+
+
+    type = packet type
+    total # of packets = number of total packets in the transmission
+    Packet # = where the packet fits in the transmission
+    Task ID = links the tasking to results for deconflict on server side
+
+
+    Client *_SAVE packets have the sub format:
+
+            [15 chars] - save prefix
+            [5 chars]  - extension
+            [X...]     - tasking data
+
+*/
+
 import (
 	"bytes"
 	"crypto/rand"
-	"crypto/rc4"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"golang.org/x/crypto/chacha20poly1305"
 )
 
 type PacketHandler struct {
@@ -37,68 +105,126 @@ func (ph PacketHandler) BuildResponsePacket(taskingID int, packetData string, re
 	return buf.Bytes()
 }
 
+/*
+"""
+
+	Takes the specified parameters for an "routing packet" and builds/returns
+	an HMAC'ed chacha20+poly1305'ed "routing packet".
+
+	packet format:
+
+	    Routing Packet:
+	    +---------+--------------------------------+--------------------------+
+	    |  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+	    +---------+--------------------------------+--------------------------+
+	    |    12   |                32              |          length          |
+	    +---------+--------------------------------+--------------------------+
+
+	        ChaCha20+Poly1305(RoutingData):
+	        +---------------------------+---------------------------+
+	        |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+	        +---------------------------+---------------------------+
+	        |           16              |            16             |
+	        +---------------------------+---------------------------+
+
+	            ChaCha20(RoutingData):
+	            +-----------+------+------+-------+--------+
+	            | SessionID | Lang | Meta | Extra | Length |
+	            +-----------+------+------+-------+--------+
+	            |    8      |  1   |  1   |   2   |    4   |
+	            +-----------+------+------+-------+--------+
+*/
 func (ph PacketHandler) BuildRoutingPacket(stagingKey []byte, sessionID string, meta int, encData []byte) []byte {
 	buf := new(bytes.Buffer)
-	buf.WriteString(sessionID)
-	binary.Write(buf, binary.LittleEndian, uint8(4))
-	binary.Write(buf, binary.LittleEndian, uint8(meta))
-	binary.Write(buf, binary.LittleEndian, uint16(0))
-	binary.Write(buf, binary.LittleEndian, uint32(len(encData)))
+	buf.WriteString(sessionID)                                   // 8 bytes - SessionID
+	binary.Write(buf, binary.LittleEndian, uint8(4))             // 1 byte - Lang
+	binary.Write(buf, binary.LittleEndian, uint8(meta))          // 1 byte - Meta
+	binary.Write(buf, binary.LittleEndian, uint16(0))            // 2 bytes - Extra
+	binary.Write(buf, binary.LittleEndian, uint32(len(encData))) // 4 bytes - Length
 	data := buf.Bytes()
 
-	rc4IV := make([]byte, 4)
-	if _, err := io.ReadFull(rand.Reader, rc4IV); err != nil {
-		// fmt.Println("Error generating RC4 IV:", err)
+	ChaChaNonce := make([]byte, 12)
+	if _, err := io.ReadFull(rand.Reader, ChaChaNonce); err != nil {
+		fmt.Println("Error generating Chacha20Poly1305 nonce:", err)
 		return nil
 	}
 
-	key := append(rc4IV, stagingKey...)
-	cipher, err := rc4.NewCipher(key)
+	cipher, err := chacha20poly1305.New(stagingKey)
 	if err != nil {
-		// fmt.Println("Error creating RC4 cipher:", err)
+		fmt.Println("Error creating ChaCha20Poly1305 cipher:", err)
 		return nil
 	}
 
-	rc4EncData := make([]byte, len(data))
-	cipher.XORKeyStream(rc4EncData, data)
+	ChaCha20EncData := cipher.Seal(nil, ChaChaNonce, data, []byte{})
 
-	packet := append(rc4IV, rc4EncData...)
+	packet := append(ChaChaNonce, ChaCha20EncData...)
 	packet = append(packet, encData...)
 
 	return packet
 }
 
+/*
+Decodes the chacha20+poly1305 "routing packet" and parses raw agent data into:
+
+	{sessionID : (language, meta, additional, [encData]), ...}
+
+Routing packet format:
+
+	Routing Packet:
+	+---------+--------------------------------+--------------------------+
+	|  Nonce  | ChaCha20+Poly1305(RoutingData) | AESc(client packet data) | ...
+	+---------+--------------------------------+--------------------------+
+	|    12   |                32              |          length          |
+	+---------+--------------------------------+--------------------------+
+
+	    ChaCha20+Poly1305(RoutingData):
+	    +---------------------------+---------------------------+
+	    |   ChaCha20(RoutingData)   |   Poly1305(RoutingData)   |
+	    +---------------------------+---------------------------+
+	    |           16              |            16             |
+	    +---------------------------+---------------------------+
+
+	        ChaCha20(RoutingData):
+	        +-----------+------+------+-------+--------+
+	        | SessionID | Lang | Meta | Extra | Length |
+	        +-----------+------+------+-------+--------+
+	        |    8      |  1   |  1   |   2   |    4   |
+	        +-----------+------+------+-------+--------+
+*/
 func (ph PacketHandler) ParseRoutingPacket(stagingKey []byte, data []byte) (map[string][]interface{}, error) {
 	results := make(map[string][]interface{})
 	offset := 0
+	nonce_length := 12
+	chacha_header_length := nonce_length + 32
 
-	for len(data)-offset >= 20 {
-		RC4IV := binary.BigEndian.Uint32(data[:4])
-		RC4IVBytes := make([]byte, 4)
-		binary.BigEndian.PutUint32(RC4IVBytes, RC4IV)
-
-		routingKey := append(RC4IVBytes, stagingKey...)
-		routingPacket, err := ph.rc4(routingKey, data[4:20])
+	for len(data)-offset >= chacha_header_length {
+		ChaChaNonce := data[:nonce_length]
+		cipher, err := chacha20poly1305.New(stagingKey)
 		if err != nil {
 			return nil, err
 		}
 
-		sessionID := string(routingPacket[:8])
-		language := routingPacket[8]
-		meta := routingPacket[9]
-		additional := binary.LittleEndian.Uint16(routingPacket[10:12])
-		length := binary.LittleEndian.Uint32(routingPacket[12:16])
+		routing_packet, err := cipher.Open(nil, ChaChaNonce, data[nonce_length:chacha_header_length], []byte{}) // Unseals routing data
+		if err != nil {
+			return nil, err
+		}
+
+		sessionID := string(routing_packet[:8])
+		language := routing_packet[8]
+		meta := routing_packet[9]
+		additional := binary.LittleEndian.Uint16(routing_packet[10:12])
+		length := binary.LittleEndian.Uint32(routing_packet[12:16])
 
 		var encData []byte
 		if length > 0 {
-			encData = data[offset+20 : offset+20+int(length)]
+			encData = data[offset+chacha_header_length : offset+chacha_header_length+int(length)] // Fetches encrypted data (not header!)
 		} else {
 			encData = nil
 		}
 
 		results[sessionID] = []interface{}{language, meta, additional, encData}
 
-		offset += 20 + int(length)
+		offset += chacha_header_length + int(length)
 		if offset >= len(data) {
 			break
 		}
@@ -109,16 +235,6 @@ func (ph PacketHandler) ParseRoutingPacket(stagingKey []byte, data []byte) (map[
 	}
 
 	return results, nil
-}
-
-func (ph PacketHandler) rc4(key []byte, data []byte) ([]byte, error) {
-	cipher, err := rc4.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	decrypted := make([]byte, len(data))
-	cipher.XORKeyStream(decrypted, data)
-	return decrypted, nil
 }
 
 func (ph PacketHandler) ParseTaskPacket(data []byte, offset int) (uint16, uint16, uint16, uint16, uint32, []byte, []byte, error) {

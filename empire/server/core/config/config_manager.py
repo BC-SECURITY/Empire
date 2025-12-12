@@ -11,10 +11,14 @@ from netaddr.core import AddrFormatError
 from pydantic import (
     AfterValidator,
     BaseModel,
-    ConfigDict,
     Field,
     field_validator,
     model_validator,
+)
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
 )
 
 log = logging.getLogger(__name__)
@@ -49,6 +53,7 @@ class StarkillerConfig(EmpireBaseModel):
 
 class EmpireCompilerConfig(EmpireBaseModel):
     archive: str = ""
+    confuser_proj: str = ""
     # This is only used if you are using a self-compiled
     # version that is not already tarred and published.
     directory: str | None = None
@@ -85,6 +90,7 @@ class DatabaseDefaultsConfig(EmpireBaseModel):
     password: str = "password123"
     obfuscation: list[DatabaseDefaultObfuscationConfig] = []
     keyword_obfuscation: list[str] = []
+    bypasses: list[str] = []
     ip_allow_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
     ip_deny_list: list[Annotated[str, AfterValidator(valid_ip)]] = []
 
@@ -101,7 +107,8 @@ class MySQLDatabaseConfig(EmpireBaseModel):
 
 
 class DatabaseConfig(EmpireBaseModel):
-    use: str = "sqlite"
+    # Support legacy DATABASE_USE env in addition to nested EMPIRE_DATABASE__USE
+    use: str = Field(default="sqlite", env=["DATABASE_USE"])
     sqlite: SQLiteDatabaseConfig
     mysql: MySQLDatabaseConfig
     defaults: DatabaseDefaultsConfig
@@ -158,8 +165,8 @@ class PluginMarketplaceConfig(EmpireBaseModel):
     registries: list[PluginRegistryConfig] = []
 
 
-class EmpireConfig(EmpireBaseModel):
-    supress_self_cert_warning: bool = Field(default=True)
+class EmpireConfig(BaseSettings):
+    suppress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig = ApiConfig()
     empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
@@ -175,20 +182,64 @@ class EmpireConfig(EmpireBaseModel):
     logging: LoggingConfig = LoggingConfig()
     debug: DebugConfig = DebugConfig(last_task=LastTaskConfig())
 
-    model_config = ConfigDict(extra="allow")
+    # Settings configuration: allow extras (for backward compat),
+    # and enable environment variable support with nested delimiter.
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__",
+        env_prefix="EMPIRE_",
+        case_sensitive=False,
+        extra="allow",
+        nested_model_default_partial_update=True,
+    )
 
-    def __init__(self, config_dict: dict | None = None):
-        if config_dict is None:
-            config_dict = {}
-        if not isinstance(config_dict, dict):
-            raise ValueError("config_dict must be a dictionary")
+    @model_validator(mode="before")
+    @classmethod
+    def map_legacy_database_use_env(cls, values):
+        # If the new nested env is provided, it should take precedence over legacy
+        if os.environ.get("EMPIRE_DATABASE__USE") or os.environ.get(
+            "EMPIRE__DATABASE__USE"
+        ):
+            return values
+        legacy = os.environ.get("DATABASE_USE")
+        if legacy:
+            if not isinstance(values, dict):
+                values = {}
+            db = values.get("database") or {}
+            if not isinstance(db, dict):
+                db = {}
+            db["use"] = legacy
+            values["database"] = db
+        return values
 
-        super().__init__(**config_dict)
-        # For backwards compatibility
-        self.yaml = config_dict
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # Precedence: nested env > .env > YAML/init; legacy handled in validator above
+        return (
+            env_settings,
+            dotenv_settings,
+            init_settings,
+        )
 
     def __getitem__(self, key):
         return getattr(self, key)
+
+    # Backwards-compatible initialization from a single dict positional arg
+    # to support existing tests/usages like EmpireConfig(test_config_dict).
+    def __init__(self, config_dict: dict | None = None, **values):  # type: ignore[override]
+        if config_dict is not None:
+            if not isinstance(config_dict, dict):
+                raise ValueError("config_dict must be a dictionary")
+            values = {**config_dict, **values}
+            # Preserve raw YAML dict for compatibility
+            object.__setattr__(self, "yaml", config_dict)
+        super().__init__(**values)
 
 
 def set_yaml(location: str):
@@ -241,4 +292,4 @@ elif CONFIG_PATH.exists():
     if loaded_config:
         config_dict = loaded_config
 
-empire_config = EmpireConfig(config_dict)
+empire_config = EmpireConfig(**config_dict)

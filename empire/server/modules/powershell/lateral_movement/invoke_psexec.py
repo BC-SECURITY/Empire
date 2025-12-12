@@ -14,6 +14,7 @@ class Module:
     ):
         # staging options
         listener_name = params["Listener"]
+        agent_language = params["Language"]
         computer_name = params["ComputerName"]
         service_name = params["ServiceName"]
         user_agent = params["UserAgent"]
@@ -50,17 +51,54 @@ class Module:
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = main_menu.stagergenv2.generate_launcher(
-                listener_name=listener_name,
-                language="powershell",
-                encode=True,
-                obfuscate=launcher_obfuscate,
-                obfuscation_command=launcher_obfuscate_command,
-                user_agent=user_agent,
-                proxy=proxy,
-                proxy_creds=proxy_creds,
-                bypasses=params["Bypasses"],
-            )
+
+            if agent_language in ["csharp", "ironpython"]:
+                if main_menu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+                    return handle_error_message(
+                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                    )
+
+                launcher = main_menu.stagergenv2.generate_exe_oneliner(
+                    language=agent_language,
+                    obfuscate=launcher_obfuscate,
+                    obfuscation_command=launcher_obfuscate_command,
+                    encode=True,
+                    listener_name=listener_name,
+                )
+            elif agent_language == "go":
+                if main_menu.listenersv2.get_active_listener_by_name(
+                    listener_name
+                ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
+                    return handle_error_message(
+                        "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                    )
+
+                launcher = main_menu.stagergenv2.generate_go_exe_oneliner(
+                    language=agent_language,
+                    listener_name=listener_name,
+                    encode=True,
+                    obfuscate=launcher_obfuscate,
+                    obfuscation_command=launcher_obfuscate_command,
+                )
+            elif agent_language == "powershell":
+                launcher = main_menu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
+                    language=agent_language,
+                    encode=True,
+                    obfuscate=launcher_obfuscate,
+                    obfuscation_command=launcher_obfuscate_command,
+                    user_agent=user_agent,
+                    proxy=proxy,
+                    proxy_creds=proxy_creds,
+                    bypasses=params["Bypasses"],
+                )
+            else:
+                # with strict options this shouldn't be reached but ensures no silent failures
+                return handle_error_message(
+                    "Invalid language for Empire Agent Selected"
+                )
 
             if launcher == "":
                 return handle_error_message("[!] Error in launcher generation.")

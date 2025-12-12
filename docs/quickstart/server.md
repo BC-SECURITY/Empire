@@ -46,7 +46,7 @@ database:
 
 
 
-The defaults block defines the properties that are initially loaded into the database when it is first created. These include the staging key, default user and password and obfuscation settings.
+The defaults block defines the properties that are initially loaded into the database when it is first created. These include the staging key, default user and password, obfuscation settings, and default bypasses.
 
 ```yaml
 database:
@@ -68,11 +68,14 @@ database:
         command: ""
         module: "confuser"
         preobfuscatable: false
-    ip_allow_list: []
-    ip_deny_list: []
     keyword_obfuscation:
       - Invoke-Empire
       - Invoke-Mimikatz
+    bypasses:
+      - mattifestation
+      - etw
+    ip_allow_list: []
+    ip_deny_list: []
 ```
 
 * **empire_compiler** - Configure the Empire Compiler module. This block manages settings for the Empire Compiler, which is responsible for handling C# compilation tasks.

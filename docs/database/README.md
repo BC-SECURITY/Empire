@@ -7,7 +7,8 @@ For database configuration see the [Configuration](../quickstart/server.md) sect
 ## Setup
 The install script will install MySQL if you install on one of the supported operating systems. If you want to switch between MySQL and SQLite, change the `use` property in the `database` section of the configuration file.
 
-There is an environment variable `DATABASE_USE` that can be used to overwrite the `database.use` property in `config.yaml`.
+Config values can also be set via environment variables. The convention is to use `EMPIRE_TOPLEVEL__NEXT_SETTING` for each setting in `config.yaml`.
+For example: `EMPIRE_DATABASE__USE='mysql'` will override the `database.use` setting in `config.yaml`.
 
 # Docker
 The Docker image still defaults to SQLite. To use MySQL, you can change `config.yaml` or utilize the `DATABASE_USE` enviornment variable. For example `docker run -p 3306:3306 -p 1337:1337 -e DATABASE_USE='mysql' -it bcsecurity/empire:latest`.

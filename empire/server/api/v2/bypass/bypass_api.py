@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, HTTPException
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -15,6 +17,8 @@ from empire.server.api.v2.shared_dependencies import AppCtx, CurrentSession
 from empire.server.api.v2.shared_dto import BadRequestResponse, NotFoundResponse
 from empire.server.core.bypass_service import BypassService
 from empire.server.core.db import models
+
+log = logging.getLogger(__name__)
 
 
 def get_bypass_service(main: AppCtx) -> BypassService:
@@ -52,10 +56,13 @@ async def read_bypass(uid: int, db_bypass: models.Bypass = Depends(get_bypass)):
 
 @router.get("/", response_model=Bypasses)
 async def read_bypasses(
-    db: CurrentSession, bypass_service: BypassService = Depends(get_bypass_service)
+    db: CurrentSession,
+    bypass_service: BypassService = Depends(get_bypass_service),
+    default: bool | None = None,
 ):
-    bypasses = [domain_to_dto_bypass(x) for x in bypass_service.get_all(db)]
-
+    bypasses = [
+        domain_to_dto_bypass(x) for x in bypass_service.get_all(db, default=default)
+    ]
     return {"records": bypasses}
 
 

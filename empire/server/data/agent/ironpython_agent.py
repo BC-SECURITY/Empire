@@ -25,6 +25,7 @@ import zlib
 from io import StringIO
 from os.path import expanduser
 from threading import Thread
+import hmac
 
 import clr
 import secretsocks
