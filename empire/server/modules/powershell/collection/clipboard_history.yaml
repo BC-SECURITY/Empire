@@ -1,12 +1,8 @@
 name: Invoke-ClipboardHistory
 authors:
-  - name: e1ks@protonmail.com
-    handle: 'blabla'
+  - name: ''
+    handle: '@e1k'
     link: ''
-  - name: e1k
-    handle: ''
-    link: ''
-#
 description: |
   Retrieves Windows clipboard history via WinRT APIs and returns the text items
   currently stored in history. Useful for quickly enumerating recently copied
