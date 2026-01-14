@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Added Debian 13 support
 -   Added error message if running `ps-empire server` under root without `-f`
+-   Added Get-ClipboardHistory PowerShell module to enumerate Windows clipboard history (Windows 10/11) via WinRT APIs
 
 ## [6.3.0] - 2025-12-11
 -   Updated Starkiller to v3.2.0
