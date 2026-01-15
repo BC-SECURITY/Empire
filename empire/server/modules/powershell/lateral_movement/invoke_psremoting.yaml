@@ -40,6 +40,7 @@ options:
     suggested_values:
       - Manual
       - CredID
+      - Local ticket
   - name: Payload
     description: Manually build command or use Empire.
     required: true
