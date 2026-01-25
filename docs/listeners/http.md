@@ -9,7 +9,7 @@ By default, the HTTP listener runs on:
 
 ## Key Configuration Options
 
-<div align="center"><img src="../.gitbook/assets/http_listener_required.png" alt="" width="40%"> <img src="../.gitbook/assets/http_listener_optional.png" alt="" width="40%"></div>
+<div align="center"><img src="../.gitbook/assets/http_listener_required.png" alt=""> <img src="../.gitbook/assets/http_listener_optional.png" alt=""></div>
 
 ### **Staging Key**
 

@@ -1,10 +1,11 @@
-# Empire Modules
+# Module Development
 
 Modules are driven by a yaml configuration per module. In most cases, only a yaml is needed to create a module.
 
 {% embed url="https://youtu.be/ZS3Rdld_Ebo" %}
 
 ## Basic Structure
+
 Each module is defined by a set of metadata (like authors, description, and tactics) and options. These options define what values can be set when the module is executed.
 
 ```yaml
@@ -32,10 +33,45 @@ options:
 ```
 
 ## Advanced Options
+
 Empire modules support advanced configuration for dynamic dependencies between options. For example, one option may depend on the value of another option. This is handled using the `depends_on` field.
 
 ### Dynamic Option Dependencies
+
 The `depends_on` field allows an option to be displayed or required based on the value of another option. In this example, the `CredID` option only appears if the `Credentials` option is set to `CredID`.
+
+**Example: Switching Between URL and File Inputs**
+
+The PowerShell `Invoke-Script` module uses an internal selector to choose between a URL-based script or a file upload. When `ScriptType` is set to `URL`, the UI presents `ScriptUrl`. When set to `File`, it presents the `File` option instead.
+
+```yaml
+  - name: ScriptType
+    description: Type of script you want to execute.
+    required: true
+    value: 'URL'
+    internal: true
+    strict: true
+    suggested_values:
+      - URL
+      - File
+  - name: File
+    description: PowerShell script to load and run from memory.
+    required: false
+    value: ''
+    type: file
+    depends_on:
+      - name: ScriptType
+        values: ['File']
+  - name: ScriptUrl
+    description: URL to download a PowerShell script from.
+    required: false
+    value: 'https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-Information.ps1'
+    depends_on:
+      - name: ScriptType
+        values: ['URL']
+```
+
+In this pattern, `depends_on` hides or reveals fields depending on the `ScriptType` selection. The `internal: true` flag keeps the selector out of the final module execution input while still influencing the UI logic.
 
 ```yaml
 options:
@@ -58,6 +94,7 @@ options:
 ```
 
 ## Internal Options
+
 The internal field is used to manage dynamic options in Empire modules, such as top-tier switches that control which options are displayed to the user. These options are internal to Empire’s logic and are not used during the execution of the module itself. Instead, they help control the visibility and behavior of other options.
 
 For example, an internal option can act as a switch to determine whether certain options appear based on the user’s selection.
@@ -102,3 +139,40 @@ options:
       - name: Credentials
         values: ['Manual']
 ```
+
+Modules like `Invoke-RunAs` use a top-level selector to switch between manual credentials and a stored credential ID. This keeps the UI focused on only the fields you need.
+
+```yaml
+  - name: Credentials
+    description: Manually enter credentials or credential ID.
+    required: true
+    value: 'Manual'
+    strict: true
+    internal: true
+    suggested_values:
+      - Manual
+      - CredID
+  - name: CredID
+    description: CredID from the store to use.
+    required: false
+    value: ''
+    depends_on:
+      - name: Credentials
+        values: ['CredID']
+  - name: UserName
+    description: Username to run the command as.
+    required: false
+    value: ''
+    depends_on:
+      - name: Credentials
+        values: ['Manual']
+  - name: Password
+    description: Password for the specified username.
+    required: false
+    value: ''
+    depends_on:
+      - name: Credentials
+        values: ['Manual']
+```
+
+Here, `suggested_values` drives the UI dropdown, and `depends_on` ensures that either the `CredID` field or the manual `UserName`/`Password` fields are presented, but not both.

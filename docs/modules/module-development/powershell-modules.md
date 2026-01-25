@@ -1,6 +1,6 @@
 # PowerShell Modules
 
-The [powershell\_template.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell\_template.py) will help guide through the fields needed for writing a simple module. Of course, not every module will fit the simplest case. There are advanced options that we will discuss below.
+The [powershell\_template.yaml](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell_template.py) will help guide through the fields needed for writing a simple module. Of course, not every module will fit the simplest case. There are advanced options that we will discuss below.
 
 The property `options` is a list of the options that can be set for the module at execution time. All modules must contain an option called **Agent**. Additional options go in the options list after the **Agent** argument. If the argument is required for execution, set `required: true`, and if a default value is warranted, set `value`. The [prompt module](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/collection/prompt.yaml) has an example of this.
 
@@ -31,7 +31,7 @@ The above example comes from the [logonpasswords module.](https://github.com/BC-
 script_end: Invoke-Function {{ PARAMS }}
 ```
 
-There are functions that require the script\_end to be customized a bit further. For example: the one found in [Invoke-Kerberoast](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/invoke\_kerberoast.yaml)
+There are functions that require the script\_end to be customized a bit further. For example: the one found in [Invoke-Kerberoast](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/invoke_kerberoast.yaml)
 
 ```yaml
 script_end: Invoke-Kerberoast {{ PARAMS }} | fl | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};"`nInvoke-Kerberoast completed!
@@ -74,31 +74,26 @@ class Module(object):
 
 Examples of modules that use this custom generate function:
 
-* [bypassuac\_eventvwr](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/privesc/bypassuac\_eventvwr.py)
-* [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code\_execution/invoke\_assembly.py)
-* [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational\_awareness/host/seatbelt.py)
+* [bypassuac\_eventvwr](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/privesc/bypassuac_eventvwr.py)
+* [invoke\_assembly](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/code_execution/invoke_assembly.py)
+* [seatbelt](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/situational_awareness/host/seatbelt.py)
 
 #### Error Handling
 
-If an error occurs during the execution of the generate function and it goes unchecked,
-the client will receive a 500 error.
+If an error occurs during the execution of the generate function and it goes unchecked, the client will receive a 500 error.
 
-There are two Exceptions that can be raised by the generate function:
-**ModuleValidationException**: This exception should be raised if the module fails validation. This will return a 400 error to the client with the error message.
-**ModuleExecutionException**: This exception should be raised if the module fails execution. This will return a 500 error to the client with the error message.
+There are two Exceptions that can be raised by the generate function: **ModuleValidationException**: This exception should be raised if the module fails validation. This will return a 400 error to the client with the error message. **ModuleExecutionException**: This exception should be raised if the module fails execution. This will return a 500 error to the client with the error message.
 
 ```python
 raise ModuleValidationException("Error Message")
 raise ModuleExecutionException("Error Message")
 ```
 
-##### Deprecated
+**Deprecated**
 
-Previously, it was recommended that the generate function return a tuple of the script and the error.
-`handle_error_message` was provided as a helper function to handle this tuple.
+Previously, it was recommended that the generate function return a tuple of the script and the error. `handle_error_message` was provided as a helper function to handle this tuple.
 
-This is no longer recommended, but is still supported. Please migrate away from the tuple return type
-to raising exceptions. The tuple return type will be removed in a future major release.
+This is no longer recommended, but is still supported. Please migrate away from the tuple return type to raising exceptions. The tuple return type will be removed in a future major release.
 
 #### Functions
 
@@ -106,11 +101,9 @@ to raising exceptions. The tuple return type will be removed in a future major r
 
 `finialize_module` will combine the `script` and `script_end` into a single script and then will apply obfuscation, if it is enabled.
 
-
 #### Decorators
 
-`@auto_get_source` is a decorator that will automatically call `get_module_source` and pass the script to the decorated function.
-To use this decorator, the function must have a `script` kwarg and the `script_path` must be set in the yaml config.
+`@auto_get_source` is a decorator that will automatically call `get_module_source` and pass the script to the decorated function. To use this decorator, the function must have a `script` kwarg and the `script_path` must be set in the yaml config.
 
 ```python
 @staticmethod
@@ -151,8 +144,7 @@ def generate(
 
 `@auto_finalize` is a decorator that will automatically call `finalize_module` on the returned script from the decorated function.
 
-To use this decorator, the function must not utilize the deprecated tuple return type or the
-`handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
+To use this decorator, the function must not utilize the deprecated tuple return type or the `handle_error_message` function. First migrate the function to raise exceptions before using this decorator.
 
 ```python
 @staticmethod
@@ -189,8 +181,6 @@ def generate(
     return script
 ```
 
-
-
 ### String Formatting
 
 **option\_format\_string:** This tells Empire how to format all of the options before injecting them into the `script_end`. In most cases, the default option format string will be fine: `-{{ KEY }} "{{ VALUE }}"`.
@@ -216,7 +206,7 @@ advanced:
   option_format_string_boolean: ""
 ```
 
-**name\_in\_code**: There may be times when you want the display name for an option in Starkiller/CLI to be different from how it looks in the module's code. For this, you can use `name_in_code` such as in the [sharpsecdump module](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/sharpsecdump.yaml)
+**name\_in\_code**: There may be times when you want the display name for an option in Starkiller to be different from how it looks in the module's code. For this, you can use `name_in_code` such as in the [sharpsecdump module](https://github.com/BC-SECURITY/Empire/blob/master/empire/server/modules/powershell/credentials/sharpsecdump.yaml)
 
 ```yaml
   - name: Username
@@ -233,11 +223,12 @@ advanced:
     value: ''
 ```
 
-**suggested\_values**: A list of suggested values can be provided for an option. These values will be available in the CLI and Starkiller as autocomplete values.
+**suggested\_values**: A list of suggested values can be provided for an option. These values will be available in Starkiller as autocomplete values.
 
 **strict**: If true, the option validator will check that the value chosen matches a value from the suggested values list.
 
 **type**: If a type is defined, the API will automatically validate the option value against the type. The following types are supported:
+
 * bool
 * int
 * float
@@ -246,7 +237,9 @@ advanced:
 
 A 'file' option type should be an integer that corresponds to the `download` id of a file already on the empire server. The API will automatically validate that the file exists. If a `custom_generate` function is used, the whole database object for the file will be passed to the function.
 
-Note: Starkiller will automatically give file options with a dropdown or upload. File options have not yet been implemented in the client. It is recommended to use Starkiller.
+{% hint style="info" %}
+Note: Starkiller will automatically give file options with a dropdown or upload. If you are using the REST API directly, you will need to supply the file download ID.
+{% endhint %}
 
 **OUTPUT\_FUNCTION**: Some PowerShell modules have an option named `OutputFunction` that converts the output to json, xml, etc. The `OutputFunction` option can be inserted anywher in the `script` and `script_end` by using `{{ OUTPUT_FUNCTION }}`.
 

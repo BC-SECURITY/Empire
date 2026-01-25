@@ -1,7 +1,6 @@
 # Installation
 
-We recommend using the installation script or the Docker images to run Empire.
-Alternatively, you can install Empire via [Kali](https://www.kali.org/downloads/)'s package manager.
+We recommend using the installation script or the Docker images to run Empire. Alternatively, you can install Empire via [Kali](https://www.kali.org/downloads/)'s package manager.
 
 The following operating systems have been tested for Empire compatibility.
 
@@ -10,7 +9,7 @@ The following operating systems have been tested for Empire compatibility.
 * Kali Linux
 * ParrotOS
 
-As of Empire 6.0, Python 3.13 is the minimum Python version required.
+As of Empire 6.0, Python 3.13 is the minimum required Python version.
 
 ## Github
 
@@ -24,11 +23,13 @@ cd Empire
 ```
 
 ### Installation Script Options
+
 When running the ps-empire installation script, you can use the following optional flags to customize the installation process:
 
-- `-y`: Automatically answer 'Yes' to all prompts during installation. This is useful if you want to install all optional dependencies without being prompted for confirmation.
-- `-f`: Force the installation as root. Normally, Empire does not recommend installing as the root user for security reasons. However, if you need to bypass this restriction, you can use this flag. **Note: Using this option is not recommended unless absolutely necessary.**
-- `-h`: Displays the help text.
+* `-y`: Automatically answer 'Yes' to all prompts during installation. This is useful if you want to install all optional dependencies without being prompted for confirmation.
+* `-f`: Force the installation as root. Normally, Empire does not recommend installing as the root user for security reasons. However, if you need to bypass this restriction, you can use this flag. **Note: Using this option is not recommended unless absolutely necessary.**
+* `-h`: Displays the help text.
+
 ```
 ./ps-empire install -y -f
 ```
@@ -42,8 +43,11 @@ cd Empire-Sponsors
 ./ps-empire install -y
 ```
 
-If you are using the sponsors version of Empire, it will pull the sponsors version of Starkiller.
-Because these are private repositories, you need to have ssh credentials configured for GitHub. Instructions can be found [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+If you are using the sponsor's version of Empire, it will pull the sponsor's version of Starkiller. Because these are private repositories, you need to configure SSH credentials for GitHub.&#x20;
+
+{% hint style="info" %}
+Instructions can be found [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh).
+{% endhint %}
 
 ### CI: Private dependencies (bot user SSH key)
 
@@ -54,14 +58,11 @@ When building Docker images in CI that need to clone private repos (e.g., sponso
 
 ## Kali
 
-You can install Empire on Kali by running the following:
-**Kali's version may be a few versions behind the latest release.**
-**Note:** Kali requires you to run Empire with `sudo`.
+You can install Empire on Kali by running the following: **Kali's version may be a few versions behind the latest release.** **Note:** Kali requires you to run Empire with `sudo`.
 
 ```bash
 sudo apt install powershell-empire
 ```
-
 
 ## Docker
 
@@ -100,32 +101,3 @@ All image versions can be found at: [https://hub.docker.com/r/bcsecurity/empire/
 ## Community-Supported Operating Systems
 
 At this time, we are choosing to only support Kali, ParrotOS, Debian 11/12, and Ubuntu 22.04/24.04 installations, however, we will accept pull requests that fix issues or provide installation scripts specific to other operating systems to this wiki.
-
-## Common Issues
-
-
-### Issue
-
-```
-Current Python version (3.12.2) is not allowed by the project (>=3.13,<3.14).
-Please change python executable via the "env use" command.
-```
-
-#### Solution
-
-```
-sudo rm -rf .venv
-poetry install
-```
-
-
-### Issue
-
-```
-[*] Updating goenv
-fatal: not a git repository (or any of the parent directories): git
-```
-
-#### Solution
-
-Open a new terminal, the install script should have set `$GOENV_ROOT` in your bashrc or zshrc file.

@@ -2,7 +2,8 @@
 
 * [Empire](README.md)
 * [Quickstart](quickstart/README.md)
-  * [Installation](quickstart/installation.md)
+  * [Installation](quickstart/installation/README.md)
+    * [Common Issues](quickstart/installation/common-issues.md)
   * [Server](quickstart/server.md)
   * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
@@ -27,6 +28,7 @@
     * [Settings](plugins/development/settings.md)
     * [Migration](plugins/development/migration.md)
 * [Modules](modules/README.md)
+  * [Module Configuration](modules/module-configuration.md)
   * [Autorun Modules](modules/autorun_modules.md)
   * [Module Development](modules/module-development/README.md)
     * [PowerShell Modules](modules/module-development/powershell-modules.md)
