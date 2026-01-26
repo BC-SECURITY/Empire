@@ -31,4 +31,3 @@ Agent tasks in Empire are managed through a series of status updates that reflec
 * **Description**: A special class for modules like keylogging, since they are handled differently on the server due to their continuous nature. These tasks do not have a definite end and run continuously until stopped.
 
 <figure><img src="../.gitbook/assets/continious.svg" alt="" width="128"><figcaption></figcaption></figure>
-
