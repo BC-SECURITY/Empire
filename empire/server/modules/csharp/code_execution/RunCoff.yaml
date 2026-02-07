@@ -38,6 +38,15 @@ options:
       [arg2]
     required: false
     value: ''
+  - name: Background
+    description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job endpoint.
+    required: false
+    value: 'true'
+    type: bool
+    suggested_values:
+      - 'true'
+      - 'false'
+    strict: true
 csharp:
   UnsafeCompile: true
   CompatibleDotNetVersions:
