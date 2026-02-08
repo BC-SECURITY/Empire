@@ -168,6 +168,15 @@ class ModuleService:
             # Was changed in 4.3 to print a warning.
             log.warning(f"Module source for {module_id} contains non-ascii characters")
 
+        # Check if runtime Background option overrides YAML background flag
+        background_param = params.get("Background", "").lower()
+        if background_param == "false":
+            effective_background = False
+        elif background_param == "true":
+            effective_background = True
+        else:
+            effective_background = module.background
+
         if module.language == LanguageEnum.powershell:
             module_data.data = helpers.strip_powershell_comments(module_data.data)
 
@@ -178,7 +187,7 @@ class ModuleService:
 
         if agent.language in ("ironpython", "python"):
             if module.language == "python":
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_PYTHON_CMD_JOB"
                 else:
                     command, data = self._handle_save_file_command(
@@ -187,7 +196,7 @@ class ModuleService:
                     module_data.command = command
                     module_data.data = data
             elif module.language == "powershell":
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
                     command, data = self._handle_save_file_command(
@@ -196,7 +205,7 @@ class ModuleService:
                     module_data.command = command
                     module_data.data = data
             elif module.language in ("csharp", "bof"):
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
                     module_data.command = "TASK_CSHARP_CMD_WAIT"
@@ -207,7 +216,7 @@ class ModuleService:
 
         elif agent.language == "csharp":
             if module.language in ("csharp", "bof"):
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
                     module_data.command = "TASK_CSHARP_CMD_WAIT"
@@ -220,7 +229,7 @@ class ModuleService:
 
         elif agent.language == "powershell":
             if module.language == "powershell":
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
                     command, data = self._handle_save_file_command(
@@ -229,7 +238,7 @@ class ModuleService:
                     module_data.command = command
                     module_data.data = data
             elif module.language in ("csharp", "bof"):
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
                     module_data.command = "TASK_CSHARP_CMD_WAIT"
@@ -239,7 +248,7 @@ class ModuleService:
                 )
         elif agent.language == "go":
             if module.language == "powershell":
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_POWERSHELL_CMD_JOB"
                 else:
                     command, data = self._handle_save_file_command(
@@ -248,7 +257,7 @@ class ModuleService:
                     module_data.command = command
                     module_data.data = data
             elif module.language == "csharp":
-                if module.background:
+                if effective_background:
                     module_data.command = "TASK_CSHARP_CMD_JOB"
                 else:
                     module_data.command = "TASK_CSHARP_CMD_WAIT"

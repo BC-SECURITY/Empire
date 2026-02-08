@@ -1173,17 +1173,23 @@ function Invoke-Empire {
                 $JobResultID = $ResultIDs[$JobName];
 
                 try {
-                    $Results = Stop-AgentJob -JobName $JobName | fl | Out-String;
-                    # send result data if there is any
-                    if($Results -and $($Results.trim() -ne '')) {
-                        Encode-Packet -type $type -data $($Results) -ResultID $JobResultID;
+                    # Check if the job exists
+                    if ($script:tasks.ContainsKey($JobName)) {
+                        $Results = Stop-AgentJob -JobName $JobName | fl | Out-String;
+                        # send result data if there is any
+                        if($Results -and $($Results.trim() -ne '')) {
+                            Encode-Packet -type $type -data $($Results) -ResultID $JobResultID;
+                        }
+                        Encode-Packet -type 51 -data "[+] Job $JobName killed successfully." -ResultID $ResultID;
+                    } else {
+                        # Job doesn't exist - send error message
+                        Encode-Packet -type 0 -data "[!] Job $JobName not found. Available jobs: $($script:tasks.Keys -join ', ')" -ResultID $ResultID;
                     }
-                    Encode-Packet -type 51 -data "Job $JobName killed." -ResultID $JobResultID;
-                    $script:tasks[$ResultID]['status'] = 'completed'
+                    # Note: STOPJOB tasks are not background jobs, so we don't track them in $script:tasks
                 }
                 catch {
-                    Encode-Packet -type 0 -data "[!] Error in stopping job: $JobName" -ResultID $JobResultID;
-                    $script:tasks[$ResultID]['status'] = 'error'
+                    Encode-Packet -type 0 -data "[!] Error in stopping job $JobName : $_" -ResultID $ResultID;
+                    # Note: STOPJOB tasks are not background jobs, so we don't track them in $script:tasks
                 }
             }
 

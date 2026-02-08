@@ -74,7 +74,7 @@ class Listener:
             "DefaultDelay": {
                 "Description": "Agent delay/reach back interval (in seconds).",
                 "Required": True,
-                "Value": 5,
+                "Value": 0,
             },
             "DefaultJitter": {
                 "Description": "Jitter in agent reachback interval (0.0-1.0).",
