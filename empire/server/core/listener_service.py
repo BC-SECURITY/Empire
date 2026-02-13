@@ -224,15 +224,15 @@ class ListenerService:
                     protocol = "https"
                 else:
                     protocol = "http"
-            if port:
-                if (port == "443" and protocol == "https") or (
-                    port == "80" and protocol == "http"
-                ):
-                    host_address = f"{protocol}://{host}/"
-                else:
-                    host_address = f"{protocol}://{host}:{port}/"
-            else:
+            if not port:
+                port = listener_options["Port"]["Value"]
+
+            if (port == "443" and protocol == "https") or (
+                port == "80" and protocol == "http"
+            ):
                 host_address = f"{protocol}://{host}/"
+            else:
+                host_address = f"{protocol}://{host}:{port}/"
         except AttributeError:
             return None, "Hostname error in parsing"
 
