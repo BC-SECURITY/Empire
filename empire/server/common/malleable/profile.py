@@ -128,6 +128,7 @@ class Profile(MalleableObject):
             data: pyparsing data
         """
         if data:
+            http_stager_found = False
             for group in [d for d in data if d]:
                 for i in range(0, len(group), 2):
                     item = group[i]
@@ -143,7 +144,9 @@ class Profile(MalleableObject):
                             self.post._parse(arg)
                         elif item.lower() == "http-stager":
                             self.stager._parse(arg)
-
+                            http_stager_found = True
+            if not http_stager_found:
+                self.stager.add_default_uri()
     @property
     def useragent(self):
         """Get the profile useragent.

@@ -396,8 +396,7 @@ class Stager(Transaction):
         self.server.output = Container()
         self.client.verb = "GET"
 
-        # Having a missing http-stager and '/' in http-get or http-post throws an error
-        # Use a fixed default uri to avoid collision while remaining consistent across restarts
+    def add_default_uri(self):
         if not self.client.uris:
             self.client.uris = ["/init/"]
 
