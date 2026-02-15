@@ -17,12 +17,6 @@ log = logging.getLogger(__name__)
 
 
 def sync_starkiller(starkiller_config: StarkillerConfig):
-    # TEMPORARY: Use local Starkiller for testing
-    local_starkiller = Path("/home/jenkins/Desktop/Empire/Starkiller")
-    if local_starkiller.exists() and (local_starkiller / "dist").exists():
-        log.info("Starkiller: Using local development build")
-        return local_starkiller
-
     starkiller_dir = config_manager.DATA_DIR / "starkiller" / starkiller_config.ref
 
     if not Path(starkiller_dir).exists():

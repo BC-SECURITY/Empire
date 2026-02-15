@@ -31,6 +31,34 @@ options:
     strict: true
 ```
 
+## Special Options
+
+Empire reserves certain option names that receive special handling during module execution. These are filtered out of the parameters passed to the module's script and instead control how the task is dispatched or processed.
+
+### Agent
+**Required on all modules.** Identifies which agent should execute the module. This is automatically populated by Empire and should not be included in the module's script logic.
+
+### Background
+Allows the operator to override the module-level `background` field at runtime. When a module defines `background: true` in its YAML metadata, it will run as a background job by default. Adding a `Background` option lets operators choose per-execution whether to run in the foreground or background.
+
+```yaml
+options:
+  - name: Background
+    description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job endpoint.
+    required: false
+    value: 'true'
+    type: bool
+    suggested_values:
+      - 'true'
+      - 'false'
+    strict: true
+```
+
+If the `Background` option is not defined on the module, the module-level `background` field is used as-is.
+
+### OutputFunction
+PowerShell-specific. Controls how module output is formatted. Substituted into the script via the `{{ OUTPUT_FUNCTION }}` placeholder. Defaults to `Out-String`. See [PowerShell Modules](powershell-modules.md) for details.
+
 ## Advanced Options
 Empire modules support advanced configuration for dynamic dependencies between options. For example, one option may depend on the value of another option. This is handled using the `depends_on` field.
 

@@ -168,15 +168,6 @@ class ModuleService:
             # Was changed in 4.3 to print a warning.
             log.warning(f"Module source for {module_id} contains non-ascii characters")
 
-        # Check if runtime Background option overrides YAML background flag
-        background_param = params.get("Background", "").lower()
-        if background_param == "false":
-            effective_background = False
-        elif background_param == "true":
-            effective_background = True
-        else:
-            effective_background = module.background
-
         if module.language == LanguageEnum.powershell:
             module_data.data = helpers.strip_powershell_comments(module_data.data)
 
@@ -184,6 +175,8 @@ class ModuleService:
             module_data.data = helpers.strip_python_comments(module_data.data)
 
         extension = module.output_extension.rjust(5) if module.output_extension else ""
+
+        effective_background = cleaned_options.pop("Background", module.background)
 
         if agent.language in ("ironpython", "python"):
             if module.language == "python":
