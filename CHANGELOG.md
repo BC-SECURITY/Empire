@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [6.4.1] - 2026-02-15
+-   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
 -   Updated Starkiller to v3.3.0
 
 ### Added
