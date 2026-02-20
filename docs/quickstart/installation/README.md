@@ -4,7 +4,7 @@ We recommend using the installation script or the Docker images to run Empire. A
 
 The following operating systems have been tested for Empire compatibility.
 
-* 22.04 / 24.04
+* Ubuntu 22.04 / 24.04
 * Debian 11 / 12 / 13
 * Kali Linux
 * ParrotOS
