@@ -3,7 +3,7 @@ import logging
 from json.decoder import JSONDecodeError
 
 import jq
-import terminaltables
+from terminaltables3 import AsciiTable
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
@@ -136,7 +136,7 @@ def ps_filter(db: Session, task: models.AgentTask):
 
     output_list.insert(0, ["PID", "ProcessName", "Arch", "UserName", "MemUsage"])
 
-    table = terminaltables.AsciiTable(output_list)
+    table = AsciiTable(output_list)
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
@@ -181,7 +181,7 @@ def ls_filter(db: Session, task: models.AgentTask):
 
     output_list.insert(0, ["Mode", "Owner", "LastWriteTime", "Length", "Name"])
 
-    table = terminaltables.AsciiTable(output_list)
+    table = AsciiTable(output_list)
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
@@ -212,7 +212,7 @@ def ipconfig_filter(db: Session, task: models.AgentTask):
             output_list.append([key, f": {value}"])
         output_list.append([])
 
-    table = terminaltables.AsciiTable(output_list)
+    table = AsciiTable(output_list)
     table.inner_heading_row_border = False
     table.inner_row_border = False
     table.outer_border = False
@@ -247,7 +247,7 @@ def route_filter(db: Session, task: models.AgentTask):
 
     output_list.insert(0, ["Destination", "Netmask", "NextHop", "Interface", "Metric"])
 
-    table = terminaltables.AsciiTable(output_list)
+    table = AsciiTable(output_list)
     table.inner_row_border = False
     table.outer_border = False
     table.inner_column_border = False
