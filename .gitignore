@@ -1,2 +1,59 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-*
+# server
+*.db
+*.db-wal
+*.db-shm
+empire/server/data/empire-chain.pem
+empire/server/data/empire-priv.key
+empire/server/data/credentials.csv
+empire/server/data/master.log
+empire/server/data/sessions.csv
+empire/server/data/obfuscated_module_source/*.ps1
+empire/server/data/misc/ToObfuscate.ps1
+empire/server/data/misc/Obfuscated.ps1
+empire/server/data/generated-stagers/*
+empire/server/data/cti**
+empire/server/data/agent/gopire/*.go
+
+empire/server/downloads/*
+empire/server/api/static/*
+empire/server/api/v2/starkiller-temp
+empire/server/api/v2/starkiller
+empire/server/Empire-Compiler
+
+# client
+empire/client/generated-stagers/*
+empire/client/downloads/*
+
+# csharp
+**/bin/Debug/
+**/obj/Debug/
+**/Covenant/obj/
+**/Sharpire/bin/
+**/Sharpire/obj/
+
+# test
+empire/test/downloads
+empire/test/data/obfuscated_module_source
+.coverage
+htmlcov/
+empire/server/plugins/example_2/
+
+# misc
+*.log
+*.debug
+*.pyc
+.vscode/*
+.idea/*
+*.txt
+LastTask*
+xar**
+bomutils**
+packages-microsoft-prod.deb*
+.venv
+.DS_Store
+venv/
+.venv/
+addons/
+__pycache__/
+workspace.xml
+starkiller-dist.tar.gz
