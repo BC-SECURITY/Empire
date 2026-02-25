@@ -14,6 +14,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+-   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
+
+### Fixed
+
+-   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist
+
 ## [6.4.1] - 2026-02-15
 -   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
 -   Updated Starkiller to v3.3.0
