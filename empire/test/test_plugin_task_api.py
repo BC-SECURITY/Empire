@@ -12,6 +12,7 @@ def plugin_task(main, session_local, models):
             input="This is the trimmed input for the task.",
             input_full="This is the full input for the task.",
             user_id=1,
+            plugin_options={"report": "all"},
         )
         db.add(task)
         db.flush()
@@ -74,3 +75,4 @@ def test_get_task_for_plugin(client, admin_auth_header, plugin_task):
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["id"] == plugin_task
     assert response.json()["plugin_id"] == PLUGIN_ID
+    assert response.json()["plugin_options"] == {"report": "all"}

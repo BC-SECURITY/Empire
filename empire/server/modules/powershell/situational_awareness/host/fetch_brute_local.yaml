@@ -1,0 +1,77 @@
+name: Fetch local accounts on a member server and perform an online brute force attack
+authors:
+  - name: Maarten Hartsuijker
+    handle: ''
+    link: ''
+  - name: ''
+    handle: '@classityinfosec'
+    link: ''
+description: |
+  A reconnaissance module that performs local account enumeration and
+  network-based brute force attacks on Windows member servers. This
+  module leverages the agent's current credentials or provided
+  credentials to query local user accounts and then attempts to
+  authenticate against discovered accounts using a specified password list.
+
+  The module first enumerates local user accounts on target servers
+  using Windows Management Instrumentation (WMI) or Active Directory
+  queries. It then performs online brute force attacks against each
+  discovered account using the provided password list. This technique
+  is particularly effective on older Windows Server versions (2003/2008)
+  where domain accounts may have broader enumeration permissions.
+
+  This approach is inspired by the Xfocus X-Scan methodology and
+  provides a systematic way to identify weak local account credentials
+  across multiple servers. The module includes options for verbose
+  output to track failed login attempts and discovered users, making
+  it useful for security assessments and penetration testing scenarios
+  where credential harvesting is a priority.
+software: ''
+tactics: [TA0006, TA0007]
+techniques: [T1087.001, T1110.001]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - Inspired by Xfocus X-Scan. Recent Windows versions won't allow you to query userinfo
+    using regular domain accounts, but on 2003/2008 member servers, the module might
+    prove to be useful.
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: Loginacc
+    description: Allows you to query the servers using credentials other than the
+      credentials the agent is running as
+    required: false
+    value: ''
+  - name: Loginpass
+    description: The password that comes with Loginacc
+    required: false
+    value: ''
+  - name: ServerType
+    description: Allows you to narrow down the scope. It defaults to all windows
+      servers.
+    required: false
+    value: Window*Server*
+  - name: Passlist
+    description: Comma seperated password list that should be tested against each
+      account found
+    required: true
+    value: Welcome123,Password01,Test123!,Welcome2018
+  - name: Verbose
+    description: Want to see failed logon attempts? And found users? Set this to
+      any value.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+script_path: recon/Fetch-And-Brute-Local-Accounts.ps1
+advanced:
+  custom_generate: true

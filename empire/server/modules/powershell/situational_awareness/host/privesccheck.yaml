@@ -1,0 +1,63 @@
+name: Invoke-PrivescCheck
+authors:
+  - name: ''
+    handle: '@itm4n'
+    link: ''
+description: |
+  Performs comprehensive Windows privilege escalation vulnerability assessment by
+  scanning for misconfigurations, weak permissions, and security weaknesses.
+  Includes checks for service misconfigurations, registry vulnerabilities, file
+  system permissions, scheduled tasks, and other potential privilege escalation
+  vectors. Provides detailed analysis of identified vulnerabilities with risk
+  assessments and exploitation guidance. Supports multiple output formats for
+  reporting and can perform extended checks for deeper analysis. Essential for
+  systematic privilege escalation assessment and identifying the most effective
+  attack vectors in Windows environments.
+software: ''
+tactics: [TA0007]
+techniques: [T1012, T1518, T1082]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/itm4n/PrivescCheck
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Extended
+    description: Set this flag to enable extended checks.
+    required: true
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Format
+    description: 'Select the format of the output file (e.g.: TXT, HTML or CSV).'
+    required: true
+    value: 'TXT'
+    strict: true
+    suggested_values:
+      - TXT
+      - HTML
+      - CSV
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: privesc/PrivescCheck.ps1
+script_end: Invoke-PrivescCheck {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'PrivescCheck completed'

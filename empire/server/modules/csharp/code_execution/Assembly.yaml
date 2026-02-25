@@ -4,7 +4,7 @@ authors:
     handle: Cx01N
     link: https://twitter.com/Cx01N_
 description: |
-  Reflectively Loads the provided .NET assembly into memory and executes
+  Reflectively loads the provided .NET assembly into memory and executes
   the Assembly through it's EntryPoint. The user provides all command line values
   for the assembly. This module can only execute the EntryPoint of the assembly and
   no other Assembly methods. Assembly is executed fully in memory without touching
@@ -12,7 +12,7 @@ description: |
 software: ''
 tactics: [TA0002, TA0005]
 techniques: [T1620]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true
@@ -45,21 +45,21 @@ csharp:
     using System;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Collections.Generic;
-    using SharpSploit.Execution;
 
     public static class Program
     {
         public static void Main(string[] args)
         {
-            string assembly = args.Length > 0 ? args[0] : "";
+            string assemblyB64 = args.Length > 0 ? args[0] : "";
             string parameters = args.Length > 1 ? args[1] : "";
 
-            string result = ExecuteAssembly(assembly, parameters);
+            string result = ExecuteAssembly(assemblyB64, parameters);
             Console.WriteLine(result);
         }
 
-        public static string ExecuteAssembly(string assembly, string parameters = "")
+        public static string ExecuteAssembly(string assemblyB64, string parameters = "")
         {
             using (StringWriter stringWriter = new StringWriter())
             {
@@ -70,15 +70,49 @@ csharp:
 
                 try
                 {
-                    string[] args = SplitCommandLine(parameters).ToArray();
-                    Assembly.AssemblyExecute(assembly, new object[] { args });
+                    byte[] asmBytes = Convert.FromBase64String(assemblyB64);
+                    var loadedAsm = Assembly.Load(asmBytes);
+
+                    var entry = loadedAsm.EntryPoint;
+                    if (entry == null)
+                    {
+                        stringWriter.WriteLine("Error: Assembly EntryPoint was null.");
+                        return stringWriter.ToString();
+                    }
+
+                    string[] entryArgs = SplitCommandLine(parameters).ToArray();
+                    var entryParams = entry.GetParameters();
+
+                    object invokeResult;
+                    if (entryParams.Length == 0)
+                    {
+                        invokeResult = entry.Invoke(null, null);
+                    }
+                    else if (entryParams.Length == 1 && entryParams[0].ParameterType == typeof(string[]))
+                    {
+                        invokeResult = entry.Invoke(null, new object[] { entryArgs });
+                    }
+                    else
+                    {
+                        stringWriter.WriteLine(
+                            $"Error: Unsupported EntryPoint signature. Param count: {entryParams.Length}"
+                        );
+                        return stringWriter.ToString();
+                    }
+
+                    if (entry.ReturnType != typeof(void) && invokeResult != null)
+                    {
+                        stringWriter.WriteLine(invokeResult.ToString());
+                    }
                 }
                 catch (Exception ex)
                 {
                     stringWriter.WriteLine($"Error: {ex.Message}");
                     if (ex.InnerException != null)
                     {
-                        stringWriter.WriteLine($"Inner Exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}");
+                        stringWriter.WriteLine(
+                            $"Inner Exception: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}"
+                        );
                     }
                 }
                 finally

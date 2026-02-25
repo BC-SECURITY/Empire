@@ -1,8 +1,9 @@
-# Table of Contents
+# Table of contents
 
 * [Empire](README.md)
 * [Quickstart](quickstart/README.md)
-  * [Installation](quickstart/installation.md)
+  * [Installation](quickstart/installation/README.md)
+    * [Common Issues](quickstart/installation/common-issues.md)
   * [Server](quickstart/server.md)
   * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
@@ -14,7 +15,7 @@
   * [HTTP](listeners/http.md)
   * [Malleable C2](listeners/malleable-c2.md)
 * [Stagers](stagers/README.md)
-  * [multi_generate_agent](stagers/multi_generate_agent.md)
+  * [multi\_generate\_agent](stagers/multi_generate_agent.md)
 * [Plugins](plugins/README.md)
   * [Development](plugins/development/README.md)
     * [Imports](plugins/development/imports.md)
@@ -27,12 +28,13 @@
     * [Settings](plugins/development/settings.md)
     * [Migration](plugins/development/migration.md)
 * [Modules](modules/README.md)
-    * [Autorun Modules](modules/autorun_modules.md)
-    * [Module Development](modules/module-development/README.md)
-      * [PowerShell Modules](modules/module-development/powershell-modules.md)
-      * [Python Modules](modules/module-development/python-modules.md)
-      * [C# Modules](modules/module-development/c-modules.md)
-      * [BOF Modules](modules/module-development/bof-modules.md)
+  * [Module Configuration](modules/module-configuration.md)
+  * [Autorun Modules](modules/autorun_modules.md)
+  * [Module Development](modules/module-development/README.md)
+    * [PowerShell Modules](modules/module-development/powershell-modules.md)
+    * [Python Modules](modules/module-development/python-modules.md)
+    * [C# Modules](modules/module-development/c-modules.md)
+    * [BOF Modules](modules/module-development/bof-modules.md)
 * [Agents](agents/README.md)
   * [Python](agents/python/README.md)
     * [Main Agent Class](agents/python/mainagentclass.md)
@@ -45,6 +47,17 @@
     * [Main.go Template](agents/go/template.md)
   * [Staging](agents/staging.md)
 * [RESTful API](restful-api/README.md)
+  * ```yaml
+    type: builtin:openapi
+    props:
+      models: true
+      downloadLink: true
+    dependencies:
+      spec:
+        ref:
+          kind: openapi
+          spec: bc-security-api
+    ```
 * [Settings](settings/README.md)
   * [Logging](settings/logging.md)
   * [Bypasses](settings/bypasses.md)

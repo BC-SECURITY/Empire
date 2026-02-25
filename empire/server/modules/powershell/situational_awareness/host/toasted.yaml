@@ -1,0 +1,78 @@
+name: Invoke-CredentialPhisher
+authors:
+  - name: Powershell script by @foxit
+    handle: ''
+    link: ''
+  - name: Empire implementation by @Quickbreach
+    handle: ''
+    link: ''
+description: |
+  Displays a native-looking Windows toast notification that, when clicked by the user,
+  opens a credential prompt impersonating a system or application message.
+  The goal is to phish user credentials by mimicking legitimate Windows dialogs,
+  such as those related to system updates or restart prompts.
+  Captured credentials can be optionally verified, and the prompt may reappear until valid input is provided.
+  This module targets Windows systems (version 8.1 / Server 2012 or newer) and is useful in
+  social engineering or post-exploitation scenarios.
+software: ''
+tactics: [TA0006, TA0009]
+techniques: [T1056.002]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://www.fox-it.com/en/insights/blogs/blog/phishing-ask-and-ye-shall-receive/
+options:
+  - name: Agent
+    description: Agent to phish credentials from
+    required: true
+    value: ''
+  - name: ToastTitle
+    description: Title of toast notification box
+    required: true
+    value: Windows will restart in 5 minutes to finish installing updates
+  - name: ToastMessage
+    description: Message of toast notification box
+    required: true
+    value: Windows will soon restart to complete applying recently installed updates.
+      Use the drop down below to reschedule the restart for a later time.
+  - name: Application
+    description: Name of the application to claim launched the prompt (ie. "outlook",
+      "explorer")
+    required: true
+    value: System Configuration
+  - name: CredBoxTitle
+    description: Title on the box prompting for credentials
+    required: true
+    value: Are you sure you want to reschedule restarting your PC?
+  - name: CredBoxMessage
+    description: Message of the box prompting for credentials
+    required: true
+    value: Authentication is required to reschedule a system restart
+  - name: ToastType
+    description: Type of Toast notification ("System" or "Application")
+    required: true
+    value: System
+  - name: VerifyCreds
+    description: True/False to verify the creds a user provides, and prompt them
+      again until they either click cancel or enter valid creds (default = false)
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: HideProcess
+    description: True/False to hide the window of the process we claim launched the
+      prompt (default = false)
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+script_path: collection/Invoke-CredentialPhisher.ps1
+script_end: Invoke-CredentialPhisher {{ PARAMS }}

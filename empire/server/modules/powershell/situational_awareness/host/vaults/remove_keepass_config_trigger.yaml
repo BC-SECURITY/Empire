@@ -1,0 +1,59 @@
+name: Remove-KeePassConfigTrigger
+authors:
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A PowerShell module that removes all custom triggers from KeePass
+  configuration files to clean up evidence of compromise and prevent
+  detection. This module is part of the KeeThief toolkit designed
+  for stealthy credential harvesting operations.
+
+  The module first terminates any running KeePass processes to ensure
+  configuration files are not locked, then systematically removes
+  all custom triggers that may have been previously installed for
+  credential exfiltration. This cleanup process helps operators
+  maintain operational security by removing traces of the attack
+  and preventing security tools from detecting the compromise.
+
+  This defensive capability is essential for maintaining stealth
+  during credential harvesting operations and ensuring that
+  security monitoring systems do not detect the presence of
+  malicious triggers. The cleanup process helps operators
+  maintain long-term access while minimizing the risk of
+  discovery through configuration analysis.
+software: ''
+tactics: [TA0005]
+techniques: [T1070.009]
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/adaptivethreat/KeeThief
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/vaults/KeePassConfig.ps1
+script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Remove-KeePassConfigTrigger
+  | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Remove-KeePassConfigTrigger
+  completed'

@@ -1,0 +1,92 @@
+name: Find-InterestingFile
+authors:
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  PowerShell module that leverages PowerView's Find-InterestingFile function to search
+  for sensitive files on specified UNC or local paths. Recursively searches directories
+  for files matching predefined patterns including passwords, sensitive data, admin files,
+  login scripts, and configuration files. Supports filtering by file types (Office documents,
+  recent EXEs), access times, creation dates, and write permissions. Can exclude hidden
+  files and folders, and provides detailed file information including ownership, timestamps,
+  and file sizes for discovered sensitive data.
+software: ''
+tactics: [TA0007]
+techniques: [T1083, T1135, T1039]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Path
+    description: UNC/local path to recursively search.
+    required: true
+    value: ''
+  - name: Terms
+    description: Comma-separated terms to search for (overrides defaults).
+    required: false
+    value: ''
+  - name: OfficeDocs
+    description: Return only office documents.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: FreshEXES
+    description: Find .EXEs accessed in the last week.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: LastAccessTime
+    description: Only return files with a LastAccessTime greater than this date value.
+    required: false
+    value: ''
+  - name: CreationTime
+    description: Only return files with a CreationDate greater than this date value.
+    required: false
+    value: ''
+  - name: ExcludeHidden
+    description: Exclude hidden files and folders from the search results.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: CheckWriteAccess
+    description: Only returns files the current user has write access to.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: situational_awareness/network/powerview.ps1
+script_end: Find-InterestingFile {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Find-InterestingFile completed'

@@ -1,0 +1,223 @@
+name: Invoke-Inveigh
+authors:
+  - name: Kevin Robertson
+    handle: ''
+    link: ''
+description: |
+  PowerShell module that leverages Inveigh to perform LLMNR, mDNS, and NBNS spoofing
+  attacks for credential harvesting and man-in-the-middle operations. Captures NTLM
+  challenge/response hashes through SMB, HTTP, and proxy authentication mechanisms.
+  Supports selective spoofing with host/IP filtering, learning mode to avoid valid
+  hosts, and configurable authentication types. Provides real-time console output
+  and can serve custom HTTP responses or proxy traffic.
+software: ''
+tactics: [TA0006, TA0009]
+techniques: [T1040, T1557.001, T1557.003, T1119]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/Kevin-Robertson/Inveigh
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: ConsoleOutput
+    description: 'Enable/Disable real time console output. Options: Y (Full), Medium,
+      Low (reduced output).'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Low
+      - Medium
+      - Y
+  - name: ConsoleStatus
+    description: 'Interval in minutes for displaying unique captured hashes and credentials
+      in Empire console.'
+    required: false
+    value: '1'
+  - name: ConsoleUnique
+    description: 'Display only unique challenge/response hashes (unique IP, domain/hostname,
+      username combinations).'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Low
+      - Medium
+      - Y
+  - name: ElevatedPrivilege
+    description: 'Privilege mode. Auto detects elevated privileges, Y forces elevated
+      mode, N uses standard mode.'
+    required: false
+    value: 'Auto'
+    strict: true
+    suggested_values:
+      - Auto
+      - Y
+      - N
+  - name: HTTP
+    description: '(Y/N) Default = Y: Enable/Disable HTTP challenge/response capture.'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: HTTPAuth
+    description: 'HTTP listener authentication type. Options: Anonymous, Basic, NTLM,
+      NTLMNoESS. Does not apply to wpad.dat requests.'
+    required: false
+    value: ''
+    strict: false
+    suggested_values:
+      - Anonymous
+      - Basic
+      - NTLM
+      - NTLMNoESS
+  - name: HTTPContentType
+    description: 'Content type for HTTP/Proxy responses. Use "application/hta" for
+      HTA files. Does not apply to EXEs and wpad.dat.'
+    required: false
+    value: ''
+  - name: HTTPResponse
+    description: 'Default HTTP/Proxy response content. Use PowerShell escape characters
+      and newlines. Not used for wpad.dat requests.'
+    required: false
+    value: ''
+  - name: Inspect
+    description: 'Inspect LLMNR, mDNS, and NBNS traffic only (no spoofing).'
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: IP
+    description: 'Local IP address for listening and packet sniffing. Used for spoofing
+      if SpooferIP is not set.'
+    required: false
+    value: ''
+  - name: LLMNR
+    description: '(Y/N) Default = Y: Enable/Disable LLMNR spoofer.'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: mDNS
+    description: (Y/N) Enable/Disable mDNS spoofer.
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: mDNSTypes
+    description: 'mDNS types to spoof. Options: QU (unicast), QM (multicast to 224.0.0.251).'
+    required: false
+    value: 'QU'
+    strict: true
+    suggested_values:
+      - QU
+      - QM
+  - name: NBNS
+    description: (Y/N) Enable/Disable NBNS spoofer.
+    required: false
+    value: 'N'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: NBNSTypes
+    description: 'NBNS types to spoof. Default: 00,20 (Workstation/Server services).'
+    required: false
+    value: '00,20'
+  - name: Proxy
+    description: (Y/N) Enable/Disable Inveigh's proxy server authentication capture.
+    required: false
+    value: ''
+  - name: ProxyPort
+    description: 'TCP port for Inveigh proxy listener. Default: 8492.'
+    required: false
+    value: '8492'
+  - name: RunCount
+    description: Number of NTLMv1/NTLMv2 captures to perform before auto-exiting.
+    required: false
+    value: ''
+  - name: RunTime
+    description: Run time duration in minutes.
+    required: true
+    value: '1'
+  - name: SMB
+    description: '(Y/N) Default = Y: Enable/Disable SMB challenge/response capture.'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: SpooferIP
+    description: 'Response IP address for spoofing. Required when redirecting victims
+      to a system other than the Inveigh host.'
+    required: false
+    value: ''
+  - name: SpooferHostsIgnore
+    description: 'Comma-separated list of hostnames to ignore when spoofing.'
+    required: false
+    value: ''
+  - name: SpooferHostsReply
+    description: 'Comma-separated list of hostnames to respond to when spoofing.'
+    required: false
+    value: ''
+  - name: SpooferIPsIgnore
+    description: 'Comma-separated list of source IP addresses to ignore when spoofing.'
+    required: false
+    value: ''
+  - name: SpooferIPsReply
+    description: 'Comma-separated list of source IP addresses to respond to when
+      spoofing.'
+    required: false
+    value: ''
+  - name: SpooferLearning
+    description: 'Enable/Disable LLMNR/NBNS valid host learning to avoid spoofing
+      legitimate hosts.'
+    required: false
+    value: 'N'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: SpooferLearningDelay
+    description: 'Delay in minutes before spoofing while valid hosts are being blacklisted
+      through SpooferLearning.'
+    required: false
+    value: ''
+  - name: SpooferRepeat
+    description: 'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after
+      capturing one challenge/response.'
+    required: false
+    value: 'Y'
+    strict: true
+    suggested_values:
+      - Y
+      - N
+  - name: WPADAuth
+    description: 'HTTP listener authentication type for wpad.dat requests. Options:
+      Anonymous, Basic, NTLM, NTLMNoESS.'
+    required: false
+    value: ''
+    strict: false
+    suggested_values:
+      - Anonymous
+      - Basic
+      - NTLM
+      - NTLMNoESS
+script_path: collection/Invoke-Inveigh.ps1
+script_end: Invoke-Inveigh -Tool "2" -MachineAccounts Y {{ PARAMS }}

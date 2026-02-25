@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException, Query
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -23,6 +25,9 @@ def get_credential_service(main: AppCtx) -> CredentialService:
     return main.credentialsv2
 
 
+CredentialServiceDep = Annotated[CredentialService, Depends(get_credential_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/credentials",
     tags=["credentials"],
@@ -37,7 +42,7 @@ router = APIRouter(
 async def get_credential(
     uid: int,
     db: CurrentSession,
-    credential_service: CredentialService = Depends(get_credential_service),
+    credential_service: CredentialServiceDep,
 ):
     credential = credential_service.get_by_id(db, uid)
 
@@ -47,20 +52,21 @@ async def get_credential(
     raise HTTPException(404, f"Credential not found for id {uid}")
 
 
+CredentialDep = Annotated[models.Credential, Depends(get_credential)]
+
+
 tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_credential)
 
 
 @router.get("/{uid}", response_model=Credential)
-async def read_credential(
-    uid: int, db_credential: models.Credential = Depends(get_credential)
-):
+async def read_credential(uid: int, db_credential: CredentialDep):
     return domain_to_dto_credential(db_credential)
 
 
 @router.get("/", response_model=Credentials)
 async def read_credentials(
     db: CurrentSession,
-    credential_service: CredentialService = Depends(get_credential_service),
+    credential_service: CredentialServiceDep,
     search: str | None = None,
     credtype: str | None = None,
     tags: list[TagStr] | None = Query(None),
@@ -81,7 +87,7 @@ async def read_credentials(
 async def create_credential(
     credential_req: CredentialPostRequest,
     db: CurrentSession,
-    credential_service: CredentialService = Depends(get_credential_service),
+    credential_service: CredentialServiceDep,
 ):
     resp, err = credential_service.create_credential(db, credential_req)
 
@@ -96,8 +102,8 @@ async def update_credential(
     uid: int,
     credential_req: CredentialUpdateRequest,
     db: CurrentSession,
-    db_credential: models.Credential = Depends(get_credential),
-    credential_service: CredentialService = Depends(get_credential_service),
+    db_credential: CredentialDep,
+    credential_service: CredentialServiceDep,
 ):
     resp, err = credential_service.update_credential(db, db_credential, credential_req)
 
@@ -115,7 +121,7 @@ async def update_credential(
 async def delete_credential(
     uid: str,
     db: CurrentSession,
-    db_credential: models.Credential = Depends(get_credential),
-    credential_service: CredentialService = Depends(get_credential_service),
+    db_credential: CredentialDep,
+    credential_service: CredentialServiceDep,
 ):
     credential_service.delete_credential(db, db_credential)

@@ -1,0 +1,43 @@
+name: SpawnProcess
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Beacon Object File (BOF) that creates a sacrificial process in a suspended state for
+  process injection techniques. Spawns a Microsoft-signed binary (default: calc.exe) as a child of
+  a specified parent process (default: explorer.exe) to establish a legitimate process tree.
+tactics: [TA0002]
+techniques: [T1134.004, T1106]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/NVISOsecurity/CobaltWhispers
+options:
+  - name: processpath
+    description: The location of the executable on disk to be used to spawn a new
+      process.
+    required: true
+    value: 'C:\\Windows\\System32\\calc.exe'
+  - name: parent
+    description: The name of the process to set as parent.
+    required: true
+    value: 'explorer.exe'
+  - name: Architecture
+    description: Architecture of the beacon_funcs.o to generate with (x64 or x86).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+bof:
+  x86: ''
+  x64: bof/cobaltwhispers/SpawnProcess.o
+  entry_point: ''
+  format_string: zz
+script_path: ''
+script_end: ''

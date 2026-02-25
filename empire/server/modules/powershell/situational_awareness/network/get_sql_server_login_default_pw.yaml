@@ -1,0 +1,66 @@
+name: Get-SQLServerLoginDefaultPw
+authors:
+  - name: ''
+    handle: '@_nullbind'
+    link: ''
+  - name: ''
+    handle: '@0xbadjuju'
+    link: ''
+description: |
+  A reconnaissance module that tests SQL Server instances for default
+  password configurations. This module leverages the SQL Server
+  instance name to determine potential default credentials and
+  attempts to authenticate using known default password combinations.
+
+  The module can test individual SQL Server instances or perform
+  comprehensive checks across all discovered instances in a domain
+  environment. It uses the instance name to identify the likely
+  default username and then attempts authentication with common
+  default passwords associated with that instance type.
+
+  This technique is based on research from PowerUpSQL and provides
+  a systematic approach to identifying SQL Server instances with
+  weak default configurations. The module is particularly effective
+  for discovering SQL Server instances that have not been properly
+  secured after installation, as many SQL Server deployments retain
+  default credentials that are well-documented and easily exploitable.
+  This makes it an essential tool for database security assessments
+  and penetration testing scenarios where SQL Server access is a
+  priority.
+software: ''
+tactics: [TA0007]
+techniques: [T1505]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/NetSPI/PowerUpSQL/blob/master/PowerUpSQL.ps1
+  - https://github.com/pwnwiki/pwnwiki.github.io/blob/master/tech/db/mssql.md
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Username
+    description: SQL Server or domain account to authenticate with. Only used for
+      CheckAll
+    required: false
+    value: ''
+  - name: Password
+    description: SQL Server or domain account password to authenticate with. Only
+      used for CheckAll
+    required: false
+    value: ''
+  - name: Instance
+    description: SQL Server instance to connection to.
+    required: false
+    value: ''
+  - name: CheckAll
+    description: Check all systems retrieved by Get-SQLInstanceDomain.
+    required: false
+    value: ''
+advanced:
+  custom_generate: true

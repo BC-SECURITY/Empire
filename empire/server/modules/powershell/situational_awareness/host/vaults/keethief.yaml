@@ -1,0 +1,57 @@
+name: Invoke-KeeThief
+authors:
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A sophisticated PowerShell module that extracts master key information
+  from unlocked KeePass password databases in memory. This module leverages
+  the KeeThief toolkit to perform in-memory credential harvesting from
+  active KeePass processes without requiring the master password.
+
+  The module works by analyzing the memory space of running KeePass
+  processes to locate and extract the master key components used to
+  decrypt the password database. This technique bypasses the need for
+  the master password by targeting the decrypted key material that
+  remains in memory while KeePass is running.
+
+  This attack vector is particularly effective because it targets
+  users who have already unlocked their KeePass database, allowing
+  for immediate access to all stored credentials without additional
+  authentication. The extracted master key information can be used
+  to decrypt the entire password database and access sensitive
+  credentials, passwords, and other stored secrets.
+software: ''
+tactics: [TA0006, TA0007]
+techniques: [T1055, T1555.005, T1057]
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/adaptivethreat/KeeThief
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/vaults/KeeThief.ps1
+script_end: Get-KeePassDatabaseKey | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-KeePassDatabaseKey
+  completed'

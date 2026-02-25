@@ -29,7 +29,7 @@ Empire is a post-exploitation and adversary emulation framework that is used to 
 - JA3/S and JARM Evasion
 - MITRE ATT&CK Integration
 - Integrated Roslyn compiler (Thanks to [Covenant](https://github.com/cobbr/Covenant))
-- Docker, Kali, ParrotOS, Ubuntu 22.04/24.04, and Debian 11/12 Install Support
+- Docker, Kali, ParrotOS, Ubuntu 22.04/24.04, and Debian 11/12/13 Install Support
 
 ### Agents
 - PowerShell

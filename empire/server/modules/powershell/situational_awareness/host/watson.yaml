@@ -1,0 +1,33 @@
+name: Invoke-Watson
+authors:
+  - name: 'Daniel Duggan'
+    handle: '@_RastaMouse'
+    link: 'https://twitter.com/_rastamouse'
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: |
+  Performs automated enumeration of missing Windows security patches and suggests
+  corresponding privilege escalation exploits. Scans the system for unpatched
+  vulnerabilities by checking installed KB (Knowledge Base) updates and comparing
+  against known security patches. Provides detailed information about missing
+  patches including CVE references, affected components, and suggested exploitation
+  techniques.
+software: ''
+tactics: [TA0007]
+techniques: [T1012, T1518, T1082]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '4'
+comments:
+  - https://github.com/rasta-mouse/Watson
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+script_path: privesc/Invoke-Watson.ps1
+script_end: Invoke-Watson | %{$_ + "`n"}; 'Invoke-Watson completed'

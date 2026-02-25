@@ -160,7 +160,9 @@ def test_execute_plugin_file_option(install_path, session_local, models):
             assert err is None
             assert res == "success"
             mocked_execute.assert_called_once_with(
-                {"file_option": download}, db=db, user=None
+                {"file_option": download},
+                db=db,
+                user=None,
             )
 
 

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -23,6 +25,9 @@ def get_listener_service(main: AppCtx) -> ListenerService:
     return main.listenersv2
 
 
+ListenerServiceDep = Annotated[ListenerService, Depends(get_listener_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/listeners",
     tags=["listeners"],
@@ -37,7 +42,7 @@ router = APIRouter(
 async def get_listener(
     uid: int,
     db: CurrentSession,
-    listener_service: ListenerService = Depends(get_listener_service),
+    listener_service: ListenerServiceDep,
 ):
     listener = listener_service.get_by_id(db, uid)
 
@@ -47,18 +52,21 @@ async def get_listener(
     raise HTTPException(404, f"Listener not found for id {uid}")
 
 
+ListenerDep = Annotated[models.Listener, Depends(get_listener)]
+
+
 tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_listener)
 
 
 @router.get("/{uid}", response_model=Listener)
-async def read_listener(uid: int, db_listener: models.Listener = Depends(get_listener)):
+async def read_listener(uid: int, db_listener: ListenerDep):
     return domain_to_dto_listener(db_listener)
 
 
 @router.get("/", response_model=Listeners)
 async def read_listeners(
     db: CurrentSession,
-    listener_service: ListenerService = Depends(get_listener_service),
+    listener_service: ListenerServiceDep,
 ):
     listeners = [domain_to_dto_listener(x) for x in listener_service.get_all(db)]
 
@@ -69,7 +77,7 @@ async def read_listeners(
 async def create_listener(
     listener_req: ListenerPostRequest,
     db: CurrentSession,
-    listener_service: ListenerService = Depends(get_listener_service),
+    listener_service: ListenerServiceDep,
 ):
     """
     Note: options['Name'] will be overwritten by name. When v1 api is eventually removed, it wil no longer be needed.
@@ -90,8 +98,8 @@ async def update_listener(
     uid: int,
     listener_req: ListenerUpdateRequest,
     db: CurrentSession,
-    db_listener: models.Listener = Depends(get_listener),
-    listener_service: ListenerService = Depends(get_listener_service),
+    db_listener: ListenerDep,
+    listener_service: ListenerServiceDep,
 ):
     if listener_req.enabled and not db_listener.enabled:
         # update then turn on
@@ -140,8 +148,8 @@ async def update_listener(
 async def delete_listener(
     uid: int,
     db: CurrentSession,
-    db_listener: models.Listener = Depends(get_listener),
-    listener_service: ListenerService = Depends(get_listener_service),
+    db_listener: ListenerDep,
+    listener_service: ListenerServiceDep,
 ):
     listener_service.delete_listener(db, db_listener)
 
@@ -151,7 +159,7 @@ async def update_listener_autorun(
     uid: int,
     autorun_config: AutorunConfig,
     db: CurrentSession,
-    db_listener: models.Listener = Depends(get_listener),
+    db_listener: ListenerDep,
 ):
     module_list_serializable = [
         module.model_dump() for module in autorun_config.records
@@ -163,7 +171,7 @@ async def update_listener_autorun(
 @router.get("/{uid}/autorun", response_model=AutorunConfig)
 async def get_listener_autorun(
     uid: int,
-    db_listener: models.Listener = Depends(get_listener),
+    db_listener: ListenerDep,
 ):
     autorun_tasks = db_listener.autorun_tasks or []
     return AutorunConfig(records=autorun_tasks)

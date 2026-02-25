@@ -62,6 +62,43 @@ def test_get_modules(client, admin_auth_header):
     assert len(response.json()["records"]) >= min_expected_modules
 
 
+def test_get_modules_hide_disabled(client, admin_auth_header):
+    uid = "python_trollsploit_osx_say"
+
+    response = client.put(
+        f"/api/v2/modules/{uid}", headers=admin_auth_header, json={"enabled": False}
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    # Without hide_disabled, module should be present
+    response = client.get("/api/v2/modules/", headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+    module_ids = [m["id"] for m in response.json()["records"]]
+    assert uid in module_ids
+
+    # With hide_disabled=false, module should still be present
+    response = client.get(
+        "/api/v2/modules/?hide_disabled=false", headers=admin_auth_header
+    )
+    assert response.status_code == status.HTTP_200_OK
+    module_ids = [m["id"] for m in response.json()["records"]]
+    assert uid in module_ids
+
+    # With hide_disabled=true, module should be hidden
+    response = client.get(
+        "/api/v2/modules/?hide_disabled=true", headers=admin_auth_header
+    )
+    assert response.status_code == status.HTTP_200_OK
+    module_ids = [m["id"] for m in response.json()["records"]]
+    assert uid not in module_ids
+
+    # Re-enable the module
+    response = client.put(
+        f"/api/v2/modules/{uid}", headers=admin_auth_header, json={"enabled": True}
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+
 def test_update_module(client, admin_auth_header):
     uid = "python_trollsploit_osx_say"
     response = client.put(

@@ -1,4 +1,5 @@
 import math
+from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, Query, UploadFile
 from starlette.responses import FileResponse
@@ -28,6 +29,9 @@ def get_download_service(main: AppCtx) -> DownloadService:
     return main.downloadsv2
 
 
+DownloadServiceDep = Annotated[DownloadService, Depends(get_download_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/downloads",
     tags=["downloads"],
@@ -42,7 +46,7 @@ router = APIRouter(
 async def get_download(
     uid: int,
     db: CurrentSession,
-    download_service: DownloadService = Depends(get_download_service),
+    download_service: DownloadServiceDep,
 ):
     download = download_service.get_by_id(db, uid)
 
@@ -52,11 +56,14 @@ async def get_download(
     raise HTTPException(404, f"Download not found for id {uid}")
 
 
+DownloadDep = Annotated[models.Download, Depends(get_download)]
+
+
 @router.get("/{uid}/download", response_class=FileResponse)
 async def download_download(
     uid: int,
     db: CurrentSession,
-    db_download: models.Download = Depends(get_download),
+    db_download: DownloadDep,
 ):
     filename = db_download.filename or db_download.location.split("/")[-1]
 
@@ -73,7 +80,7 @@ tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_download)
 async def read_download(
     uid: int,
     db: CurrentSession,
-    db_download: models.Download = Depends(get_download),
+    db_download: DownloadDep,
 ):
     return domain_to_dto_download(db_download)
 
@@ -88,7 +95,8 @@ async def read_downloads(
     query: str | None = None,
     sources: list[DownloadSourceFilter] | None = Query(None),
     tags: list[TagStr] | None = Query(None),
-    download_service: DownloadService = Depends(get_download_service),
+    *,
+    download_service: DownloadServiceDep,
 ):
     downloads, total = download_service.get_all(
         db=db,
@@ -116,7 +124,7 @@ async def read_downloads(
 async def create_download(
     user: CurrentActiveUser,
     db: CurrentSession,
+    download_service: DownloadServiceDep,
     file: UploadFile = File(...),
-    download_service: DownloadService = Depends(get_download_service),
 ):
     return domain_to_dto_download(download_service.create_download(db, user, file))

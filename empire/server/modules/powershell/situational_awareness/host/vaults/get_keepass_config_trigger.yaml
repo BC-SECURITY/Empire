@@ -1,0 +1,57 @@
+name: Get-KeePassconfig
+authors:
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A PowerShell module that extracts and analyzes trigger specifications from
+  KeePass 2.X configuration XML files. This module is part of the KeeThief
+  toolkit designed to compromise KeePass password manager installations
+  and extract stored credentials.
+
+  The module parses KeePass configuration files to identify custom triggers
+  that may have been previously installed for credential exfiltration.
+  These triggers can be configured to automatically export database contents
+  or copy data when specific conditions are met, providing persistent
+  access to stored passwords and sensitive information.
+
+  This reconnaissance capability is essential for understanding the current
+  state of KeePass installations and identifying existing compromise
+  mechanisms. The extracted trigger information helps operators assess
+  the effectiveness of previous attacks and determine if additional
+  persistence mechanisms are needed for ongoing credential harvesting.
+software: ''
+tactics: []
+techniques:
+  - T1119
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/adaptivethreat/KeeThief
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/vaults/KeePassConfig.ps1
+script_end: Find-KeePassconfig | Get-KeePassConfigTrigger | Format-List | {{ OUTPUT_FUNCTION
+  }} | %{$_ + "`n"}; 'Get-KeePassconfig completed'

@@ -1,4 +1,5 @@
 import logging
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Response
 
@@ -23,6 +24,9 @@ def get_module_service(main: AppCtx) -> ModuleService:
     return main.modulesv2
 
 
+ModuleServiceDep = Annotated[ModuleService, Depends(get_module_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/modules",
     tags=["modules"],
@@ -34,9 +38,7 @@ router = APIRouter(
 )
 
 
-async def get_module(
-    uid: str, module_service: ModuleService = Depends(get_module_service)
-):
+async def get_module(uid: str, module_service: ModuleServiceDep):
     module = module_service.get_by_id(uid)
 
     if module:
@@ -45,15 +47,22 @@ async def get_module(
     raise HTTPException(status_code=404, detail=f"Module not found for id {uid}")
 
 
+ModuleDep = Annotated[EmpireModule, Depends(get_module)]
+
+
 @router.get(
     "/",
     # todo is there an equivalent for this that doesn't cause fastapi to convert the object twice?
     #  Still want to display the response type in the docs
     # response_model=Modules,
 )
-async def read_modules(module_service: ModuleService = Depends(get_module_service)):
+async def read_modules(
+    module_service: ModuleServiceDep,
+    hide_disabled: bool = False,
+):
     modules = [
-        domain_to_dto_module(x[1], x[0]) for x in module_service.get_all().items()
+        domain_to_dto_module(x[1], x[0])
+        for x in module_service.get_all(hide_disabled).items()
     ]
 
     return {"records": modules}
@@ -62,7 +71,7 @@ async def read_modules(module_service: ModuleService = Depends(get_module_servic
 @router.get("/{uid}", response_model=Module)
 async def read_module(
     uid: str,
-    module: EmpireModule = Depends(get_module),
+    module: ModuleDep,
 ):
     return domain_to_dto_module(module, uid)
 
@@ -70,8 +79,8 @@ async def read_module(
 @router.get("/{uid}/script", response_model=ModuleScript)
 async def read_module_script(
     uid: str,
-    module: EmpireModule = Depends(get_module),
-    module_service: ModuleService = Depends(get_module_service),
+    module: ModuleDep,
+    module_service: ModuleServiceDep,
 ):
     script = module_service.get_module_script(module.id)
 
@@ -86,8 +95,8 @@ async def update_module(
     uid: str,
     module_req: ModuleUpdateRequest,
     db: CurrentSession,
-    module: EmpireModule = Depends(get_module),
-    module_service: ModuleService = Depends(get_module_service),
+    module: ModuleDep,
+    module_service: ModuleServiceDep,
 ):
     module_service.update_module(db, module, module_req)
 
@@ -98,21 +107,17 @@ async def update_module(
 async def update_bulk_enable(
     module_req: ModuleBulkUpdateRequest,
     db: CurrentSession,
-    module_service: ModuleService = Depends(get_module_service),
+    module_service: ModuleServiceDep,
 ):
     module_service.update_modules(db, module_req)
 
 
 @router.post("/reload", status_code=204, response_class=Response)
-async def reload_modules(
-    db: CurrentSession, module_service: ModuleService = Depends(get_module_service)
-):
+async def reload_modules(db: CurrentSession, module_service: ModuleServiceDep):
     module_service.load_modules(db)
 
 
 @router.post("/reset", status_code=204, response_class=Response)
-async def reset_modules(
-    db: CurrentSession, module_service: ModuleService = Depends(get_module_service)
-):
+async def reset_modules(db: CurrentSession, module_service: ModuleServiceDep):
     module_service.delete_all_modules(db)
     module_service.load_modules(db)

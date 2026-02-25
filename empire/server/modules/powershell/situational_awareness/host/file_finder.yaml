@@ -1,0 +1,129 @@
+name: Invoke-FileFinder
+authors:
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  PowerShell module that leverages PowerView's Find-InterestingDomainShareFile function
+  to perform comprehensive file discovery across domain shares. Enumerates all computers
+  in the domain, discovers accessible shares, and searches for sensitive files matching
+  predefined patterns including passwords, credentials, admin files, login scripts, and
+  configuration files. Supports filtering by file types (Office documents, recent EXEs),
+  access times, and write permissions. Can target specific computers or perform domain-wide
+  searches with threading capabilities for efficient reconnaissance across large networks.
+software: ''
+tactics: [TA0007]
+techniques: [T1083, T1135, T1039]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/PowerShellMafia/PowerSploit/blob/dev/Recon/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: ComputerName
+    description: Hosts to enumerate.
+    required: false
+    value: ''
+  - name: ComputerFilter
+    description: Host filter name to query AD for, wildcards accepted.
+    required: false
+    value: ''
+  - name: ShareList
+    description: List of '\\HOST\shares' (on the target) to search through.
+    required: false
+    value: ''
+  - name: Terms
+    description: Comma-separated terms to search for (overrides defaults).
+    required: false
+    value: ''
+  - name: OfficeDocs
+    description: Return only office documents.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: FreshEXES
+    description: Find .EXEs accessed in the last week.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: LastAccessTime
+    description: Only return files with a LastAccessTime greater than this date value.
+    required: false
+    value: ''
+  - name: CreationTime
+    description: Only return files with a CreationDate greater than this date value.
+    required: false
+    value: ''
+  - name: ExcludeHidden
+    description: Exclude hidden files and folders from the search results.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: CheckWriteAccess
+    description: Only returns files the current user has write access to.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: NoPing
+    description: Don't ping each host to ensure it's up before enumerating.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Delay
+    description: Delay between enumerating hosts, defaults to 0.
+    required: false
+    value: '0'
+  - name: Domain
+    description: Domain to query for machines.
+    required: false
+    value: ''
+  - name: SearchSYSVOL
+    description: Search for login scripts on the SYSVOL of the primary DCs for each
+      specified domain.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Threads
+    description: The maximum concurrent threads to execute.
+    required: false
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: situational_awareness/network/powerview.ps1
+script_end: Invoke-FileFinder {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Invoke-FileFinder completed'

@@ -27,6 +27,7 @@ class Plugin(BasePlugin):
         """
         user = kwargs["user"]
         db = kwargs["db"]
+        plugin_options = command
         input = f"Generating reports for: {command['report']}"
         plugin_task = models.PluginTask(
             plugin_id=self.info.id,
@@ -34,6 +35,7 @@ class Plugin(BasePlugin):
             input_full=input,
             user_id=user.id,
             status=PluginTaskStatus.completed,
+            plugin_options=plugin_options,
         )
         output = ""
         db_downloads = []

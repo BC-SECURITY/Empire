@@ -35,6 +35,13 @@ services:
         BASE_IMAGE: debian:bookworm
     image: bcsecurity/empire-test-debian12
     <<: *common-platform
+  debian13:
+    build:
+      <<: *common-build
+      args:
+        BASE_IMAGE: debian:trixie
+    image: bcsecurity/empire-test-debian13
+    <<: *common-platform
   kalirolling:
     build:
       <<: *common-build

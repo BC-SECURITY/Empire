@@ -1,0 +1,100 @@
+name: Find-Fruit
+authors:
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
+description: |
+  A reconnaissance module that performs network scanning to identify
+  potentially vulnerable web services across a specified network range.
+  This module conducts HTTP/HTTPS port scanning and path enumeration
+  to discover web applications and services that may be susceptible
+  to various web-based attacks.
+
+  The module scans target hosts and ports to identify web services
+  and then performs path enumeration using a dictionary-based approach
+  to discover potentially interesting endpoints. It can identify web
+  applications, administrative interfaces, default installations,
+  and other web services that might be vulnerable to exploitation.
+
+  This technique is inspired by mattifestation's Get-HttpStatus from
+  PowerSploit and provides a systematic approach to web service
+  discovery. The module includes options for SSL/TLS scanning,
+  customizable timeouts, threading controls, and output filtering
+  to focus on specific response codes or discovered services. This
+  makes it an effective tool for initial reconnaissance and
+  vulnerability assessment in web application security testing.
+software: ''
+tactics: [TA0007]
+techniques: [T1046]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - Inspired by mattifestation Get-HttpStatus in PowerSploit
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Rhosts
+    description: Specify the CIDR range or host to scan.
+    required: true
+    value: ''
+  - name: Port
+    description: Specify the port to scan.
+    required: false
+    value: ''
+  - name: Path
+    description: Specify the path to a dictionary file.
+    required: false
+    value: ''
+  - name: Timeout
+    description: Set timeout for each connection in milliseconds
+    required: false
+    value: '50'
+  - name: UseSSL
+    description: Force SSL useage.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: ShowAll
+    description: Switch. Show all results (default is to only show 200s).
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Threads
+    description: The maximum concurrent threads to execute.
+    required: false
+    value: '10'
+  - name: FoundOnly
+    description: Show only found sites
+    required: false
+    value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: recon/Find-Fruit.ps1
+advanced:
+  custom_generate: true

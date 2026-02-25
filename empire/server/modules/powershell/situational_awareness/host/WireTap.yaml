@@ -1,0 +1,94 @@
+name: Invoke-WireTap
+authors:
+  - name: ''
+    handle: '@mDoi12mdjf'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: |
+  Comprehensive hardware surveillance tool that consolidates multiple surveillance functions
+  into a single .NET 4.0 application. The module can capture screenshots (both display and
+  webcam), record audio from microphone and system speakers, perform keylogging, and
+  activate voice recording when specific keywords are detected. Uses Windows API calls
+  and DirectX components to interact with hardware devices directly. Supports configurable
+  recording durations, keyword-triggered audio capture, and real-time keystroke monitoring.
+  The tool operates at the system level to bypass application-level restrictions and can
+  capture sensitive information including passwords, conversations, and visual data.
+software: ''
+tactics: [TA0006, TA0009]
+techniques: [T1123, T1125, T1056.001]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '4'
+comments:
+  - https://github.com/djhohnstein/WireTap
+options:
+  - name: Agent
+    description: Agent to run on.
+    required: true
+    value: ''
+  - name: record_mic
+    description: Record audio from the attached microphone (line-in).
+    required: false
+    value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: record_sys
+    description: Record audio from the system speakers (line-out).
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: record_audio
+    description: 'Record audio from both the microphone and the speakers. Default:
+      10s'
+    required: false
+    value: '10'
+  - name: capture_screen
+    description: Screenshot the current user's screen.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: capture_webcam
+    description: Capture images from the user's attached webcam (if it exists).
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: keylogger
+    description: Begin logging keystrokes to a file.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: listen_for_passwords
+    description: Listens for words 'username', 'password', 'login' and 'credential',
+      and when heard, starts an audio recording for two minutes.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: time
+    description: Time to record mic, sys, or audio. Time suffix can be s/m/h.
+    required: false
+    value: 10s
+script_path: collection/Invoke-WireTap.ps1
+advanced:
+  custom_generate: true

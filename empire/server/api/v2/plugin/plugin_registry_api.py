@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
@@ -19,6 +21,11 @@ def get_plugin_registry_service(main: AppCtx) -> PluginRegistryService:
     return main.pluginregistriesv2
 
 
+PluginRegistryServiceDep = Annotated[
+    PluginRegistryService, Depends(get_plugin_registry_service)
+]
+
+
 def get_plugin_service(main: AppCtx) -> PluginService:
     return main.pluginsv2
 
@@ -37,9 +44,7 @@ router = APIRouter(
 @router.get("/marketplace", response_model=MarketplaceResponse)
 async def get_marketplace(
     db: CurrentSession,
-    plugin_registry_service: PluginRegistryService = Depends(
-        get_plugin_registry_service
-    ),
+    plugin_registry_service: PluginRegistryServiceDep,
 ):
     return MarketplaceResponse.model_validate(
         plugin_registry_service.get_marketplace(db)
@@ -50,9 +55,7 @@ async def get_marketplace(
 async def install_plugin(
     install_req: PluginInstallRequest,
     db: CurrentSession,
-    plugin_registry_service: PluginRegistryService = Depends(
-        get_plugin_registry_service
-    ),
+    plugin_registry_service: PluginRegistryServiceDep,
 ):
     try:
         plugin_registry_service.install_plugin(

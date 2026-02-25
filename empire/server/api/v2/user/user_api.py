@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Annotated
 
 from fastapi import Depends, File, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
@@ -33,6 +34,9 @@ def get_user_service(main: AppCtx) -> UserService:
     return main.usersv2
 
 
+UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+
+
 # no prefix so /token can be at root.
 # Might also just move auth out of user router.
 router = APIRouter(
@@ -44,9 +48,7 @@ router = APIRouter(
 )
 
 
-async def get_user(
-    uid: int, db: CurrentSession, user_service: UserService = Depends(get_user_service)
-):
+async def get_user(uid: int, db: CurrentSession, user_service: UserServiceDep):
     user = user_service.get_by_id(db, uid)
 
     if user:
@@ -55,10 +57,16 @@ async def get_user(
     raise HTTPException(status_code=404, detail=f"User not found for id {uid}")
 
 
+UserDep = Annotated[models.User, Depends(get_user)]
+
+
+OAuth2FormDep = Annotated[OAuth2PasswordRequestForm, Depends()]
+
+
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     db: CurrentSession,
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    form_data: OAuth2FormDep,
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
@@ -84,9 +92,7 @@ async def read_user_me(current_user: CurrentActiveUser):
     response_model=Users,
     dependencies=[Depends(get_current_active_user)],
 )
-async def read_users(
-    db: CurrentSession, user_service: UserService = Depends(get_user_service)
-):
+async def read_users(db: CurrentSession, user_service: UserServiceDep):
     users = [domain_to_dto_user(x) for x in user_service.get_all(db)]
 
     return {"records": users}
@@ -97,7 +103,7 @@ async def read_users(
     response_model=User,
     dependencies=[Depends(get_current_active_user)],
 )
-async def read_user(uid: int, db_user: models.User = Depends(get_user)):
+async def read_user(uid: int, db_user: UserDep):
     return domain_to_dto_user(db_user)
 
 
@@ -109,7 +115,7 @@ async def read_user(uid: int, db_user: models.User = Depends(get_user)):
 async def create_user(
     user: UserPostRequest,
     db: CurrentSession,
-    user_service: UserService = Depends(get_user_service),
+    user_service: UserServiceDep,
 ):
     resp, err = user_service.create_user(
         db, user.username, get_password_hash(user.password), user.is_admin
@@ -127,8 +133,8 @@ async def update_user(
     user_req: UserUpdateRequest,
     current_user: CurrentActiveUser,
     db: CurrentSession,
-    db_user: models.User = Depends(get_user),
-    user_service: UserService = Depends(get_user_service),
+    db_user: UserDep,
+    user_service: UserServiceDep,
 ):
     if not (current_user.admin or current_user.id == uid):
         raise HTTPException(
@@ -156,8 +162,8 @@ async def update_user_password(
     user_req: UserUpdatePasswordRequest,
     current_user: CurrentActiveUser,
     db: CurrentSession,
-    db_user: models.User = Depends(get_user),
-    user_service: UserService = Depends(get_user_service),
+    db_user: UserDep,
+    user_service: UserServiceDep,
 ):
     if not current_user.id == uid:
         raise HTTPException(
@@ -180,8 +186,8 @@ async def create_avatar(
     uid: int,
     user: CurrentActiveUser,
     db: CurrentSession,
+    user_service: UserServiceDep,
     file: UploadFile = File(...),
-    user_service: UserService = Depends(get_user_service),
 ):
     if not user.id == uid:
         raise HTTPException(

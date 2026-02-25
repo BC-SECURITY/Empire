@@ -1,0 +1,51 @@
+name: Invoke-NinjaCopy
+authors:
+  - name: Joseph Bialek
+    handle: '@JosephBialek'
+    link: https://twitter.com/JosephBialek
+description: |
+  Copies files from NTFS volumes by reading raw volume data and parsing NTFS structures directly,
+  bypassing file system access controls. This technique circumvents DACLs (Discretionary Access
+  Control Lists), SACLs (System Access Control Lists), and file handle locks that would normally
+  prevent access. The module uses reflective DLL injection to load a custom NTFS parser library
+  that reads files at the filesystem level, allowing access to system files that are typically
+  locked or protected. Common use cases include extracting the NTDS.dit Active Directory database,
+  registry hives, or other sensitive files that are actively in use by the system. Requires
+  administrative privileges to access raw volume data.
+software: ''
+tactics: [TA0006, TA0005]
+techniques: [T1003.003, T1005, T1006]
+background: true
+output_extension:
+needs_admin: true
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Invoke-NinjaCopy.ps1
+  - https://clymb3r.wordpress.com/2013/06/13/using-powershell-to-copy-ntds-dit-registry-hives-bypass-sacls-dacls-file-locks/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Path
+    description: 'The full path of the file to copy (example: c:\windows\ntds\ntds.dit)'
+    required: true
+    value: ''
+  - name: LocalDestination
+    description: A file path to copy the file to on the local computer.
+    required: false
+    value: ''
+  - name: RemoteDestination
+    description: A file path to copy the file to on the remote computer. If this
+      isn't used, LocalDestination must be specified.
+    required: false
+    value: ''
+  - name: ComputerName
+    description: An array of computernames to run the script on.
+    required: false
+    value: ''
+script_path: collection/Invoke-NinjaCopy.ps1
+script_end: $null = Invoke-NinjaCopy {{ PARAMS }}; Write-Output 'Invoke-NinjaCopy
+  Completed'

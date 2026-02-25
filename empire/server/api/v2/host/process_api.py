@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
@@ -18,8 +20,14 @@ def get_host_process_service(main: AppCtx) -> HostProcessService:
     return main.processesv2
 
 
+HostProcessServiceDep = Annotated[HostProcessService, Depends(get_host_process_service)]
+
+
 def get_host_service(main: AppCtx) -> HostService:
     return main.hostsv2
+
+
+HostServiceDep = Annotated[HostService, Depends(get_host_service)]
 
 
 router = APIRouter(
@@ -36,7 +44,7 @@ router = APIRouter(
 async def get_host(
     host_id: int,
     db: CurrentSession,
-    host_service: HostService = Depends(get_host_service),
+    host_service: HostServiceDep,
 ):
     host = host_service.get_by_id(db, host_id)
 
@@ -46,11 +54,14 @@ async def get_host(
     raise HTTPException(status_code=404, detail=f"Host not found for id {host_id}")
 
 
+HostDep = Annotated[models.Host, Depends(get_host)]
+
+
 async def get_process(
     uid: int,
     db: CurrentSession,
-    db_host: models.Host = Depends(get_host),
-    host_process_service: HostProcessService = Depends(get_host_process_service),
+    db_host: HostDep,
+    host_process_service: HostProcessServiceDep,
 ):
     process = host_process_service.get_process_for_host(db, db_host, uid)
 
@@ -62,16 +73,19 @@ async def get_process(
     )
 
 
+ProcessDep = Annotated[models.HostProcess, Depends(get_process)]
+
+
 @router.get("/{uid}", response_model=Process)
-async def read_process(uid: int, db_process: models.HostProcess = Depends(get_process)):
+async def read_process(uid: int, db_process: ProcessDep):
     return domain_to_dto_process(db_process)
 
 
 @router.get("/", response_model=Processes)
 async def read_processes(
     db: CurrentSession,
-    db_host: models.Host = Depends(get_host),
-    host_process_service: HostProcessService = Depends(get_host_process_service),
+    db_host: HostDep,
+    host_process_service: HostProcessServiceDep,
 ):
     processes = [
         domain_to_dto_process(x)

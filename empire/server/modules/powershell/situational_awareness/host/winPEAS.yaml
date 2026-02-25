@@ -1,0 +1,148 @@
+name: Invoke-winPEAS
+authors:
+  - name: ''
+    handle: '@carlospolop'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: |
+  Performs comprehensive privilege escalation reconnaissance by searching for potential
+  paths to escalate privileges on Windows hosts. Scans for misconfigured services,
+  weak file permissions, stored credentials, vulnerable applications, and other
+  security weaknesses that could lead to privilege escalation. Includes checks for
+  system information, user privileges, running processes, installed applications,
+  network configurations, and credential storage locations.
+software: ''
+tactics: [TA0007]
+techniques: [T1012, T1518, T1082]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '4'
+comments:
+  - https://github.com/carlospolop/privilege-escalation-awesome-scripts-suite/tree/master/winPEAS
+options:
+  - name: Agent
+    description: Agent to run on.
+    required: true
+    value: ''
+  - name: +
+    description: Full Scan. Default all checks (except CMD checks) are executed
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: searchfast
+    description: Avoid sleeping while searching files (notable amount of resources).
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: searchall
+    description: Search all known filenames with possible credentials.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: cmd
+    description: Obtain wifi, cred manager and clipboard information executing CMD
+      commands.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: systeminfo
+    description: Search system information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: userinfo
+    description: Search user information.
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: procesinfo
+    description: Search processes information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: servicesinfo
+    description: Search services information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: applicationsinfo
+    description: Search installed applications information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: networkinfo
+    description: Search network information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: windowscreds
+    description: Search windows information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: browserinfo
+    description: Search browser information.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: filesinfo
+    description: Search files that can contains credentials.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: notansi
+    description: Disable colored output.
+    required: true
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+script_path: privesc/Invoke-winPEAS.ps1
+script_end: Invoke-winPEAS -Command "{{ PARAMS }}"
+advanced:
+  option_format_string: '{{ VALUE }}'
+  option_format_string_boolean: ''

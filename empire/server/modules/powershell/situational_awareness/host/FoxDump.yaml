@@ -1,0 +1,48 @@
+name: FoxDump
+authors:
+  - name: Chris Ross
+    handle: '@xorrior'
+    link: https://twitter.com/xorrior
+description: |
+  PowerShell module that extracts saved passwords from Firefox browsers by leveraging
+  the NSS (Network Security Services) library functions. Loads Firefox's nss3.dll
+  library and uses native API calls to decrypt stored credentials from the logins.json
+  file. Extracts usernames, passwords, and associated URLs for all saved login
+  credentials. Requires Firefox version 32 or above and will only succeed if no
+  master password has been set.
+software: ''
+tactics: [TA0006]
+techniques: [T1555.03]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/xorrior/RandomPS-Scripts/blob/master/Get-FoxDump.ps1
+  - http://xakfor.net/threads/c-firefox-36-password-cookie-recovery.12192/
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: OutFile
+    description: Path to Output File
+    required: false
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/Get-FoxDump.ps1
+script_end: Get-FoxDump {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-FoxDump
+  completed'

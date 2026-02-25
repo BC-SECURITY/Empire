@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
@@ -16,6 +18,11 @@ def get_stager_template_service(main: AppCtx) -> StagerTemplateService:
     return main.stagertemplatesv2
 
 
+StagerTemplateServiceDep = Annotated[
+    StagerTemplateService, Depends(get_stager_template_service)
+]
+
+
 router = APIRouter(
     prefix="/api/v2/stager-templates",
     tags=["stager-templates"],
@@ -29,9 +36,7 @@ router = APIRouter(
 
 @router.get("/", response_model=StagerTemplates)
 async def get_stager_templates(
-    stager_template_service: StagerTemplateService = Depends(
-        get_stager_template_service
-    ),
+    stager_template_service: StagerTemplateServiceDep,
 ):
     templates = [
         domain_to_dto_template(x[1], x[0])
@@ -47,9 +52,7 @@ async def get_stager_templates(
 )
 async def get_stager_template(
     uid: str,
-    stager_template_service: StagerTemplateService = Depends(
-        get_stager_template_service
-    ),
+    stager_template_service: StagerTemplateServiceDep,
 ):
     template = stager_template_service.get_stager_template(uid)
 

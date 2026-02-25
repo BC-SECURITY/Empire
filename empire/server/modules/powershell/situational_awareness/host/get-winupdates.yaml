@@ -1,0 +1,50 @@
+name: Get-WinUpdates
+authors:
+  - name: Maarten Hartsuijker
+    handle: ''
+    link: ''
+  - name: ''
+    handle: '@classityinfosec'
+    link: ''
+description: |
+  PowerShell module that queries the Windows Update service to enumerate both installed
+  update history and pending updates on target systems. Leverages Microsoft.Update.Session
+  COM object to access the Windows Update service and retrieves comprehensive update
+  information including installation dates, operation types, status codes, KB numbers,
+  and update titles. Requires administrative privileges and can target local or remote
+  systems.
+software: ''
+tactics: [TA0009]
+techniques: [T1082]
+background: true
+output_extension:
+needs_admin: true
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments: []
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: ComputerName
+    description: The ComputerName this agents user has admin access to that must
+      be queried for updates
+    required: true
+    value: localhost
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/Get-WinUpdates.ps1
+script_end: Get-WinUpdates {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-WinUpdates
+  completed'

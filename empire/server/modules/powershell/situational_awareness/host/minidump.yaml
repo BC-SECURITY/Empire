@@ -1,0 +1,45 @@
+name: Out-Minidump
+authors:
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+description: |
+  PowerShell module that leverages PowerSploit to generate full-memory minidumps of
+  target processes using Windows' native MiniDumpWriteDump API. Creates comprehensive
+  process memory dumps containing all process memory, similar to procdump.exe with
+  the '-ma' switch. Supports dumping by process name or process ID, with configurable
+  output paths. Essential for memory forensics, credential extraction from LSASS,
+  and process analysis. Requires elevated privileges for dumping system processes
+  or processes from other users.
+software: ''
+tactics: [TA0006, TA0007]
+techniques: [T1003, T1555.03]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Out-Minidump.ps1
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: ProcessName
+    description: Specifies the process name for which a dump will be generated.
+    required: false
+    value: ''
+  - name: ProcessId
+    description: Specifies the process ID for which a dump will be generated.
+    required: false
+    value: ''
+  - name: DumpFilePath
+    description: Specifies the folder path where dump files will be written. Defaults
+      to the current user directory.
+    required: false
+    value: ''
+script_path: collection/Out-Minidump.ps1
+advanced:
+  custom_generate: true

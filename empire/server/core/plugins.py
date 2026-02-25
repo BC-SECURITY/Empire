@@ -89,6 +89,8 @@ class BasePlugin:
 
     def execute(self, command, **kwargs):
         """Execute a command: meant to be overridden by the inheriting plugin."""
+        if "plugin_options" not in kwargs:
+            kwargs["plugin_options"] = command
         pass
 
     def get_db_plugin(self, db) -> models.Plugin | None:

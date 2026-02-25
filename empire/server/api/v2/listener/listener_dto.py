@@ -230,15 +230,6 @@ class ListenerTemplate(BaseModel):
                         "depends_on:": [],
                         "internal": False,
                     },
-                    "StagerURI": {
-                        "description": "URI for the stager. Must use /download/. Example: /download/stager.php",
-                        "required": False,
-                        "value": "",
-                        "suggested_values": [],
-                        "strict": False,
-                        "depends_on:": [],
-                        "internal": False,
-                    },
                     "UserAgent": {
                         "description": "User-agent string to use for the staging request (default, none, or other).",
                         "required": False,
@@ -323,7 +314,6 @@ class ListenerPostRequest(BaseModel):
                     "WorkingHours": "",
                     "Headers": "Server:Microsoft-IIS/7.5",
                     "Cookie": "",
-                    "StagerURI": "",
                     "UserAgent": "default",
                     "Proxy": "default",
                     "ProxyCreds": "default",

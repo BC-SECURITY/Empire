@@ -1,0 +1,62 @@
+name: Invoke-NetRipper
+authors:
+  - name: Ionut Popescu (@NytroRST)
+    handle: ''
+    link: ''
+  - name: Matt Graeber
+    handle: '@mattifestation'
+    link: https://twitter.com/mattifestation
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: Injects NetRipper into targeted processes, which uses API hooking in
+  order to intercept network traffic and encryption related functions from a low
+  privileged user, being able to capture both plain-text traffic and encrypted traffic
+  before encryption/after decryption.
+software: ''
+tactics: [TA0006, TA0009]
+techniques: [T1056.004, T11638, T1055, T1040]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/NytroRST/NetRipper/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: ProcessID
+    description: Specific process ID to inject the NetRipper dll into.
+    required: false
+    value: ''
+  - name: ProcessName
+    description: Inject the NetRipper dll into all processes with the given name
+      (i.e. putty).
+    required: false
+    value: ''
+  - name: LogLocation
+    description: Folder location to log sniffed data to.
+    required: false
+    value: TEMP
+  - name: AllData
+    description: Log all data instead of just plaintext.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Datalimit
+    description: Data limit capture per request.
+    required: false
+    value: '4096'
+  - name: SearchStrings
+    description: Strings to search for in traffic.
+    required: true
+    value: user,login,pass,database,config
+script_path: collection/Invoke-NetRipper.ps1
+script_end: Invoke-NetRipper {{ PARAMS }}

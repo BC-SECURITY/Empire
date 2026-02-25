@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -20,6 +22,9 @@ def get_profile_service(main: AppCtx) -> ProfileService:
     return main.profilesv2
 
 
+ProfileServiceDep = Annotated[ProfileService, Depends(get_profile_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/malleable-profiles",
     tags=["malleable-profiles"],
@@ -34,7 +39,7 @@ router = APIRouter(
 async def get_profile(
     uid: int,
     db: CurrentSession,
-    profile_service: ProfileService = Depends(get_profile_service),
+    profile_service: ProfileServiceDep,
 ):
     profile = profile_service.get_by_id(db, uid)
 
@@ -44,15 +49,16 @@ async def get_profile(
     raise HTTPException(status_code=404, detail=f"Profile not found for id {uid}")
 
 
+ProfileDep = Annotated[models.Profile, Depends(get_profile)]
+
+
 @router.get("/{uid}", response_model=Profile)
-async def read_profile(uid: int, db_profile: models.Profile = Depends(get_profile)):
+async def read_profile(uid: int, db_profile: ProfileDep):
     return db_profile
 
 
 @router.get("/", response_model=Profiles)
-async def read_profiles(
-    db: CurrentSession, profile_service: ProfileService = Depends(get_profile_service)
-):
+async def read_profiles(db: CurrentSession, profile_service: ProfileServiceDep):
     profiles = profile_service.get_all(db)
 
     return {"records": profiles}
@@ -66,7 +72,7 @@ async def read_profiles(
 async def create_profile(
     profile_req: ProfilePostRequest,
     db: CurrentSession,
-    profile_service: ProfileService = Depends(get_profile_service),
+    profile_service: ProfileServiceDep,
 ):
     resp, err = profile_service.create_profile(db, profile_req)
 
@@ -81,8 +87,8 @@ async def update_profile(
     uid: int,
     profile_req: ProfileUpdateRequest,
     db: CurrentSession,
-    db_profile: models.Profile = Depends(get_profile),
-    profile_service: ProfileService = Depends(get_profile_service),
+    db_profile: ProfileDep,
+    profile_service: ProfileServiceDep,
 ):
     resp, err = profile_service.update_profile(db, db_profile, profile_req)
 
@@ -100,8 +106,8 @@ async def update_profile(
 async def delete_profile(
     uid: str,
     db: CurrentSession,
-    db_profile: models.Profile = Depends(get_profile),
-    profile_service: ProfileService = Depends(get_profile_service),
+    db_profile: ProfileDep,
+    profile_service: ProfileServiceDep,
 ):
     profile_service.delete_profile(db, db_profile)
 
@@ -113,7 +119,7 @@ async def delete_profile(
 )
 async def reload_profiles(
     db: CurrentSession,
-    profile_service: ProfileService = Depends(get_profile_service),
+    profile_service: ProfileServiceDep,
 ):
     profile_service.load_malleable_profiles(db)
 
@@ -125,7 +131,7 @@ async def reload_profiles(
 )
 async def reset_profiles(
     db: CurrentSession,
-    profile_service: ProfileService = Depends(get_profile_service),
+    profile_service: ProfileServiceDep,
 ):
     profile_service.delete_all_profiles(db)
     profile_service.load_malleable_profiles(db)

@@ -31,6 +31,7 @@ def domain_to_dto_plugin_task(
         user_id=task.user_id,
         username=None if not task.user else task.user.username,
         plugin_id=task.plugin_id,
+        plugin_options=task.plugin_options,
         downloads=[domain_to_dto_download_description(x) for x in task.downloads],
         status=task.status,
         created_at=task.created_at,
@@ -47,6 +48,7 @@ class PluginTask(BaseModel):
     user_id: int | None = None
     username: str | None = None
     plugin_id: str
+    plugin_options: dict | None = None
     downloads: list[DownloadDescription]
     status: models.PluginTaskStatus | None = None
     created_at: datetime

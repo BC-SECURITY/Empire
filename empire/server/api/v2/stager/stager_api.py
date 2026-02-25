@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from starlette.responses import Response
 from starlette.status import HTTP_204_NO_CONTENT
@@ -21,6 +23,9 @@ def get_stager_service(main: AppCtx) -> StagerGenerationService:
     return main.stagersv2
 
 
+StagerServiceDep = Annotated[StagerGenerationService, Depends(get_stager_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/stagers",
     tags=["stagers"],
@@ -35,7 +40,7 @@ router = APIRouter(
 async def get_stager(
     uid: int,
     db: CurrentSession,
-    stager_service: StagerGenerationService = Depends(get_stager_service),
+    stager_service: StagerServiceDep,
 ):
     stager = stager_service.get_by_id(db, uid)
 
@@ -45,10 +50,13 @@ async def get_stager(
     raise HTTPException(404, f"Stager not found for id {uid}")
 
 
+StagerDep = Annotated[models.Stager, Depends(get_stager)]
+
+
 @router.get("/", response_model=Stagers)
 async def read_stagers(
     db: CurrentSession,
-    stager_service: StagerGenerationService = Depends(get_stager_service),
+    stager_service: StagerServiceDep,
 ):
     stagers = [domain_to_dto_stager(x) for x in stager_service.get_all(db)]
 
@@ -56,7 +64,7 @@ async def read_stagers(
 
 
 @router.get("/{uid}", response_model=Stager)
-async def read_stager(uid: int, db_stager: models.Stager = Depends(get_stager)):
+async def read_stager(uid: int, db_stager: StagerDep):
     return domain_to_dto_stager(db_stager)
 
 
@@ -65,7 +73,7 @@ async def create_stager(
     stager_req: StagerPostRequest,
     current_user: CurrentActiveUser,
     db: CurrentSession,
-    stager_service: StagerGenerationService = Depends(get_stager_service),
+    stager_service: StagerServiceDep,
     save: bool = True,
 ):
     resp, err = stager_service.create_stager(
@@ -83,8 +91,8 @@ async def update_stager(
     uid: int,
     stager_req: StagerUpdateRequest,
     db: CurrentSession,
-    db_stager: models.Stager = Depends(get_stager),
-    stager_service: StagerGenerationService = Depends(get_stager_service),
+    db_stager: StagerDep,
+    stager_service: StagerServiceDep,
 ):
     resp, err = stager_service.update_stager(db, db_stager, stager_req)
 
@@ -102,7 +110,7 @@ async def update_stager(
 async def delete_stager(
     uid: int,
     db: CurrentSession,
-    db_stager: models.Stager = Depends(get_stager),
-    stager_service: StagerGenerationService = Depends(get_stager_service),
+    db_stager: StagerDep,
+    stager_service: StagerServiceDep,
 ):
     stager_service.delete_stager(db, db_stager)

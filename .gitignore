@@ -57,3 +57,5 @@ addons/
 __pycache__/
 workspace.xml
 starkiller-dist.tar.gz
+.worktrees/
+config.user.yaml

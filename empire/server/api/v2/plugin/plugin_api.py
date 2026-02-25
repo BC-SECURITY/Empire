@@ -31,6 +31,9 @@ def get_plugin_service(main: AppCtx) -> PluginService:
     return main.pluginsv2
 
 
+PluginServiceDep = Annotated[PluginService, Depends(get_plugin_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/plugins",
     tags=["plugins"],
@@ -45,7 +48,7 @@ router = APIRouter(
 async def get_plugin(
     plugin_id: str,
     db: CurrentSession,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin_service: PluginServiceDep,
 ) -> PluginHolder:
     plugin = plugin_service.get_by_id(db, plugin_id)
 
@@ -55,23 +58,21 @@ async def get_plugin(
     raise HTTPException(status_code=404, detail=f"Plugin not found for id {plugin_id}")
 
 
-async def get_loaded_plugin(
-    plugin_id: str, plugin_holder=Depends(get_plugin)
-) -> PluginHolder:
+PluginDep = Annotated[PluginHolder, Depends(get_plugin)]
+
+
+async def get_loaded_plugin(plugin_id: str, plugin_holder: PluginDep) -> PluginHolder:
     if plugin_holder.loaded_plugin:
         return plugin_holder
 
     raise HTTPException(status_code=400, detail=f"Plugin not loaded for id {plugin_id}")
 
 
-LoadedPlugin = Annotated[PluginHolder, Depends(get_loaded_plugin)]
-CurrentPlugin = Annotated[PluginHolder, Depends(get_plugin)]
+LoadedPluginDep = Annotated[PluginHolder, Depends(get_loaded_plugin)]
 
 
 @router.get("/", response_model=Plugins)
-async def read_plugins(
-    db: CurrentSession, plugin_service: PluginService = Depends(get_plugin_service)
-):
+async def read_plugins(db: CurrentSession, plugin_service: PluginServiceDep):
     plugins = plugin_service.get_all(db)
     return {"records": [domain_to_dto_plugin(x, db) for x in plugins]}
 
@@ -80,7 +81,7 @@ async def read_plugins(
 async def read_plugin(
     plugin_id: str,
     db: CurrentSession,
-    plugin: PluginHolder = Depends(get_plugin),
+    plugin: PluginDep,
 ):
     return domain_to_dto_plugin(plugin, db)
 
@@ -91,8 +92,8 @@ async def execute_plugin(
     plugin_req: PluginExecutePostRequest,
     db: CurrentSession,
     current_user: CurrentUser,
-    plugin: PluginHolder = Depends(get_loaded_plugin),
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin: LoadedPluginDep,
+    plugin_service: PluginServiceDep,
 ):
     try:
         results, err = plugin_service.execute_plugin(
@@ -117,8 +118,8 @@ async def update_plugin(
     plugin_id: str,
     plugin_update_req: PluginUpdateRequest,
     db: CurrentSession,
-    plugin: LoadedPlugin,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin: LoadedPluginDep,
+    plugin_service: PluginServiceDep,
 ):
     try:
         plugin_service.update_plugin_enabled(db, plugin, plugin_update_req.enabled)
@@ -134,8 +135,8 @@ async def update_plugin_settings(
     plugin_id: str,
     plugin_settings: dict,
     db: CurrentSession,
-    plugin: LoadedPlugin,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin: LoadedPluginDep,
+    plugin_service: PluginServiceDep,
 ):
     try:
         plugin_service.update_plugin_settings(db, plugin, plugin_settings)
@@ -146,7 +147,7 @@ async def update_plugin_settings(
 @router.post("/reload", status_code=204, response_class=Response)
 async def reload_plugins(
     db: CurrentSession,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin_service: PluginServiceDep,
 ):
     plugin_service.shutdown()
     plugin_service.load_plugins(db)
@@ -156,7 +157,7 @@ async def reload_plugins(
 async def install_plugin_git(
     req: PluginInstallGitRequest,
     db: CurrentSession,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin_service: PluginServiceDep,
 ):
     try:
         plugin_service.install_plugin_from_git(db, req.url, req.subdirectory, req.ref)
@@ -172,7 +173,7 @@ async def install_plugin_git(
 async def install_plugin_tar(
     req: PluginInstallTarRequest,
     db: CurrentSession,
-    plugin_service: PluginService = Depends(get_plugin_service),
+    plugin_service: PluginServiceDep,
 ):
     try:
         plugin_service.install_plugin_from_tar(db, req.url, req.subdirectory)

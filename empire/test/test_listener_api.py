@@ -21,7 +21,6 @@ def get_base_listener():
             "WorkingHours": "",
             "Headers": "Server:Microsoft-IIS/7.5",
             "Cookie": "session",
-            "StagerURI": "",
             "UserAgent": "default",
             "Proxy": "default",
             "ProxyCreds": "default",

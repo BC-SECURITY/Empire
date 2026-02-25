@@ -136,6 +136,7 @@ LANGUAGE = {
     "PYTHON": 2,
     "CSHARP": 3,
     "GO": 4,
+    "IRONPYTHON": 5,
 }
 LANGUAGE_IDS = {}
 for name, ID in list(LANGUAGE.items()):

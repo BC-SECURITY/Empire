@@ -126,11 +126,6 @@ class Listener:
                 "Required": True,
                 "Value": "session",
             },
-            "StagerURI": {
-                "Description": "URI for the stager. Must use /download/. Example: /download/stager.php",
-                "Required": False,
-                "Value": "",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,
@@ -821,9 +816,8 @@ class Listener:
         # Set HTTP/1.1 as in IIS 7.5 instead of /1.0
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
-        @app.route("/download/<stager>/")
-        @app.route("/download/<stager>/<hop>")
-        def send_stager(stager, hop=None):
+        def generate_stager_response(stager, hop=None):
+            stager = stager.lower()
             with SessionLocal.begin() as db:
                 if stager == "ironpython":
                     obfuscation_config = (
@@ -977,6 +971,17 @@ class Listener:
                 static_dir = self.mainMenu.installPath + "/data/misc/"
                 return send_from_directory(static_dir, "welcome.png")
 
+            stager = request.args.get("stager")
+            if stager:
+                try:
+                    stager_id = int(stager)
+                except (TypeError, ValueError):
+                    stager_id = None
+                if stager_id is not None:
+                    stager = packets.LANGUAGE_IDS.get(stager_id, stager)
+                hop = request.args.get("hop")
+                return generate_stager_response(stager, hop)
+
             clientIP = request.remote_addr
 
             listenerName = self.options["Name"]["Value"]
@@ -1045,6 +1050,9 @@ class Listener:
                     hopListener = self.mainMenu.listenersv2.get_active_listener_by_name(
                         hopListenerName
                     )
+
+                    if language.lower() in ["csharp", "ironpython", "go"]:
+                        return generate_stager_response(language, hopListenerName)
 
                     with SessionLocal() as db:
                         obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(

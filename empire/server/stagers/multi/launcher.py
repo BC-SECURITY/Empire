@@ -118,12 +118,12 @@ class Stager:
         if obfuscate.lower() == "true":
             invoke_obfuscation = True
 
-        if language in ["csharp", "ironpython"]:
+        if language in ["csharp"]:
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
                 log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                    "Only HTTP[S] and smb_pivot listeners are supported for C# stagers."
                 )
                 return ""
 
@@ -134,12 +134,21 @@ class Stager:
                 encode=encode,
                 listener_name=listener_name,
             )
+        elif language in ["ironpython"]:
+            launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
+                language=language,
+                obfuscate=invoke_obfuscation,
+                obfuscation_command=obfuscate_command,
+                encode=encode,
+                listener_name=listener_name,
+            )
+
         elif language == "go":
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
                 log.error(
-                    "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
+                    "Only HTTP[S] and smb_pivot listeners are supported for Go stagers."
                 )
                 return ""
 

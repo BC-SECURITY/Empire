@@ -5,4 +5,4 @@ commandTests:
   - name: "mysql version"
     command: "mysql"
     args: ["--version"]
-    expectedOutput: ["mysql  Ver 8.0.*"]
+    expectedOutput: ["mysql  Ver 8\\.[04].*"]

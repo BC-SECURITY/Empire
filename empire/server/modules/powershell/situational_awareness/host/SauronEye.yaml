@@ -1,0 +1,86 @@
+name: Invoke-SauronEye
+authors:
+  - name: ''
+    handle: '@vivami'
+    link: ''
+  - name: ''
+    handle: '@S3cur3Th1sSh1t'
+    link: https://twitter.com/ShitSecure
+description: |
+  Performs comprehensive file system searches to identify files containing specific keywords,
+  supporting multiple search criteria including file types, content patterns, date ranges,
+  and file sizes. The module can search file contents using regex patterns, filter by
+  file extensions (.txt, .doc, .docx, .xls, etc.), and restrict searches to specific
+  directories or system folders. Includes advanced features such as VBA macro detection
+  in legacy Office files, date-based filtering for files modified before/after specific
+  dates, and configurable file size limits for content searching.
+software: ''
+tactics: [TA0007]
+techniques: [T1083]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '4'
+comments:
+  - https://github.com/vivami/SauronEye
+options:
+  - name: Agent
+    description: Agent to run on.
+    required: true
+    value: ''
+  - name: 'filetypes '
+    description: File extensions to search for (space-separated list)
+    required: false
+    value: .txt .doc .docx .xls
+  - name: contents
+    description: Whether to search inside file contents or just filenames
+    required: false
+    value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: keywords
+    description: Keywords or regex patterns to search for in files
+    required: false
+    value: password pass*
+  - name: directories
+    description: Specific directories to search (leave empty for current directory)
+    required: false
+    value: ''
+  - name: maxfilesize
+    description: Maximum file size in KB for content searching (prevents processing
+      large files)
+    required: false
+    value: ''
+  - name: beforedate
+    description: 'Only search files modified before this date (format: yyyy-MM-dd)'
+    required: false
+    value: ''
+  - name: afterdate
+    description: 'Only search files modified after this date (format: yyyy-MM-dd)'
+    required: false
+    value: ''
+  - name: systemdirs
+    description: Include system directories (%APPDATA% and %WINDOWS%) in search
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: vbamacrocheck
+    description: Check for VBA macros in legacy Office files (*.doc and *.xls)
+    required: false
+    value: 'True'
+    strict: true
+    suggested_values:
+      - True
+      - False
+script_path: collection/Invoke-SauronEye.ps1
+script_end: Invoke-SauronEye -Command "{{ PARAMS }}"
+advanced:
+  option_format_string: --{{ KEY }} {{ VALUE }}
+  option_format_string_boolean: --{{ KEY }}

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
@@ -16,6 +18,11 @@ def get_listener_template_service(main: AppCtx) -> ListenerTemplateService:
     return main.listenertemplatesv2
 
 
+ListenerTemplateServiceDep = Annotated[
+    ListenerTemplateService, Depends(get_listener_template_service)
+]
+
+
 router = APIRouter(
     prefix="/api/v2/listener-templates",
     tags=["listener-templates"],
@@ -32,9 +39,7 @@ router = APIRouter(
     response_model=ListenerTemplates,
 )
 async def get_listener_templates(
-    listener_template_service: ListenerTemplateService = Depends(
-        get_listener_template_service
-    ),
+    listener_template_service: ListenerTemplateServiceDep,
 ):
     templates = [
         domain_to_dto_template(x[1], x[0])
@@ -50,9 +55,7 @@ async def get_listener_templates(
 )
 async def get_listener_template(
     uid: str,
-    listener_template_service: ListenerTemplateService = Depends(
-        get_listener_template_service
-    ),
+    listener_template_service: ListenerTemplateServiceDep,
 ):
     template = listener_template_service.get_listener_template(uid)
 

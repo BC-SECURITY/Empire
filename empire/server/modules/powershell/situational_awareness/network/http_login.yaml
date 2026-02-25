@@ -1,0 +1,102 @@
+name: HTTP-Login
+authors:
+  - name: ''
+    handle: '@424f424f'
+    link: https://twitter.com/424f424f
+description: |
+  A reconnaissance module that performs credential testing against
+  HTTP Basic Authentication endpoints. This module conducts brute
+  force attacks against web applications and services that use
+  Basic Authentication to identify valid username and password
+  combinations.
+
+  The module can test individual credentials or perform dictionary-based
+  attacks against specified authentication endpoints. It supports both
+  HTTP and HTTPS protocols and can target specific directories or
+  paths that require authentication. The module includes threading
+  capabilities for efficient scanning across multiple targets and
+  provides detailed output of successful authentication attempts.
+
+  This technique is particularly effective for discovering weak
+  credentials on web applications, administrative interfaces, and
+  other web services that use Basic Authentication. The module can
+  identify default credentials, weak passwords, and other
+  authentication vulnerabilities that could provide unauthorized
+  access to sensitive web resources. This makes it an essential
+  tool for web application security assessments and penetration
+  testing scenarios where credential harvesting is a priority.
+software: ''
+tactics: [TA0006, TA0007]
+techniques: [T1110.001, T1110.004]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - http://www.rvrsh3ll.net
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Rhosts
+    description: Specify the CIDR range or host to scan.
+    required: true
+    value: ''
+  - name: Port
+    description: Specify the port to scan.
+    required: false
+    value: ''
+  - name: Directory
+    description: Specify the path to authentication (e.g. /manager/html)
+    required: false
+    value: ''
+  - name: Username
+    description: Set the username to test.
+    required: false
+    value: ''
+  - name: Password
+    description: Set the password to test.
+    required: false
+    value: ''
+  - name: Dictionary
+    description: Set the password dictionary file.
+    required: false
+    value: ''
+  - name: UseSSL
+    description: Force SSL useage.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: Threads
+    description: The maximum concurrent threads to execute.
+    required: false
+    value: ''
+  - name: NoPing
+    description: Disable ping check.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - True
+      - False
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: recon/HTTP-Login.ps1
+script_end: Test-Login {{ PARAMS }} | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'HTTP-Login
+  completed'

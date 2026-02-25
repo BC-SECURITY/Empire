@@ -1,0 +1,34 @@
+name: Get-Screenshot
+authors:
+  - name: ''
+    handle: '@obscuresec'
+    link: ''
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  Captures a screenshot of the target user's desktop. Useful for spying
+  on user activity or capturing sensitive information displayed on the screen.
+software: ''
+tactics: [TA0009]
+techniques: [T1113]
+background: false
+output_extension: png
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Get-TimedScreenshot.ps1
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Ratio
+    description: 'JPEG Compression ratio: 1 to 100.'
+    required: false
+    value: ''
+script_path: collection/Get-Screenshot.ps1
+advanced:
+  custom_generate: true

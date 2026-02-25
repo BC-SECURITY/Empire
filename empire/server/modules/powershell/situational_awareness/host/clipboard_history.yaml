@@ -1,0 +1,26 @@
+name: Invoke-ClipboardHistory
+authors:
+  - name: ''
+    handle: '@e1k'
+    link: ''
+description: |
+  Retrieves Windows clipboard history via WinRT APIs and returns the text items
+  currently stored in history. Useful for quickly enumerating recently copied
+  data on hosts where clipboard history is enabled (Windows 10+) using
+  PowerShell 5+.
+software: ''
+tactics: [TA0009]
+techniques: [T1115]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '5'
+comments:
+  - Requires Windows 10/11 with Clipboard History enabled
+  - Leverages WinRT ClipboardHistory API; returns text entries only
+  - No network communication; local enumeration of clipboard history
+  - Script adapted from Raymond Chen (https://devblogs.microsoft.com/oldnewthing/20230303-00/?p=107894)
+script_path: collection/Get-ClipboardHistory.ps1
+script_end: Get-ClipboardHistory {{ PARAMS }}

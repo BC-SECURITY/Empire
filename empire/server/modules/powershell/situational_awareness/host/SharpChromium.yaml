@@ -1,0 +1,59 @@
+name: Get-SharpChromium
+authors:
+  - name: ''
+    handle: '@tyraniter'
+    link: ''
+description: |
+  Extracts sensitive browser data including cookies, browsing history, and saved login
+  credentials from Google Chrome, Microsoft Edge, and Microsoft Edge Beta browsers.
+  The module leverages the SharpChromium library to decrypt and parse browser databases
+  that store user authentication data, session information, and browsing patterns.
+  Supports selective data extraction by type (all, logins, history, cookies) and domain
+  filtering for targeted credential harvesting. The extracted data includes encrypted
+  passwords, session cookies, autofill data, and browsing history with timestamps.
+software: ''
+tactics: [TA0006, TA0007]
+techniques: [T1503.003, T1217]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: false
+language: powershell
+min_language_version: '5'
+comments:
+  - https://github.com/djhohnstein/SharpChromium
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: Type
+    description: Type of browser data to extract (all, logins, history, or cookies).
+    required: true
+    value: 'all'
+    strict: true
+    suggested_values:
+      - all
+      - logins
+      - history
+      - cookies
+  - name: Domains
+    description: Comma-separated list of domains to filter cookie extraction (only
+      applies when Type is set to cookies).
+    required: false
+    value: ''
+  - name: OutputFunction
+    description: PowerShell output format for the extracted data (Out-String, ConvertTo-Json,
+      ConvertTo-Csv, ConvertTo-Html, ConvertTo-Xml).
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/Get-SharpChromium.ps1
+advanced:
+  custom_generate: true

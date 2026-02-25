@@ -1,0 +1,43 @@
+name: Sherlock
+authors:
+  - name: 'Daniel Duggan'
+    handle: '@_RastaMouse'
+    link: 'https://twitter.com/_rastamouse'
+description: |
+  Performs automated vulnerability scanning to identify Windows local privilege escalation
+  opportunities. Searches for known security vulnerabilities, misconfigurations, and
+  weak security settings that could lead to privilege escalation. Includes checks for
+  missing patches, vulnerable services, weak permissions, and other security weaknesses
+  that have been documented in public exploits. Provides detailed information about
+  identified vulnerabilities including CVE references, affected systems, and potential
+  exploitation methods.
+software: ''
+tactics: [TA0007]
+techniques: [T1012, T1518, T11082]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/rasta-mouse/Sherlock
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: privesc/Sherlock.ps1
+script_end: Find-AllVulns | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};

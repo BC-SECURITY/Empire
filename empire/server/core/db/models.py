@@ -470,6 +470,7 @@ class AgentTask(Base):
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
     module_name = Column(Text)
+    module_options = Column(JSON)
     task_name = Column(Text)
     status = Column(Enum(AgentTaskStatus), index=True)
     downloads = relationship("Download", secondary=agent_task_download_assc)
@@ -521,6 +522,7 @@ class PluginTask(Base):
     updated_at = Column(
         UtcDateTime, default=utcnow(), onupdate=utcnow(), nullable=False
     )
+    plugin_options = Column(JSON)
     task_name = Column(Text)
     status = Column(Enum(PluginTaskStatus), index=True)
     downloads = relationship("Download", secondary=plugin_task_download_assc)

@@ -11,7 +11,7 @@ description: |
 software: ''
 tactics: [TA0040]
 techniques: [T1496.001]
-background: false
+background: true
 output_extension: ''
 needs_admin: false
 opsec_safe: true

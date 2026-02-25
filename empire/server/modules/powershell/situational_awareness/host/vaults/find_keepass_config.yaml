@@ -1,0 +1,59 @@
+name: Find-KeePassconfig
+authors:
+  - name: Lee Christensen
+    handle: '@tifkin_'
+    link: https://twitter.com/tifkin_
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  A PowerShell reconnaissance module that discovers and analyzes
+  KeePass password manager configuration files across the target
+  system. This module is part of the KeeThief toolkit designed
+  for compromising KeePass installations and extracting stored
+  credentials.
+
+  The module searches for and parses both KeePass 2.X configuration
+  files (KeePass.config.xml) and KeePass 1.X configuration files
+  (KeePass.ini) to identify installed instances and their current
+  configuration state. This reconnaissance capability is essential
+  for understanding the target environment and identifying potential
+  attack vectors for credential harvesting.
+
+  The discovered configuration files provide critical intelligence
+  about KeePass installations, including trigger configurations,
+  plugin settings, and other customization that may affect the
+  attack approach. This information helps operators determine
+  the most effective method for compromising the password manager
+  and extracting stored credentials from the target system.
+software: ''
+tactics: [TA0007, TA0009]
+techniques: [T1119, T1083]
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://github.com/adaptivethreat/KeeThief
+options:
+  - name: Agent
+    description: Agent to run the module on.
+    required: true
+    value: ''
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: false
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/vaults/KeePassConfig.ps1
+script_end: Find-KeePassconfig | Format-List | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"};
+  'Find-KeePassconfig completed'

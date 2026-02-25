@@ -35,6 +35,7 @@ def domain_to_dto_task(
         agent_id=task.agent_id,
         downloads=[domain_to_dto_download_description(x) for x in task.downloads],
         module_name=task.module_name,
+        module_options=task.module_options,
         task_name=task.task_name,
         status=task.status,
         created_at=task.created_at,
@@ -54,6 +55,7 @@ class AgentTask(BaseModel):
     agent_id: str
     downloads: list[DownloadDescription]
     module_name: str | None = None
+    module_options: dict | None = None
     task_name: str | None = None
     status: models.AgentTaskStatus
     created_at: datetime
@@ -129,4 +131,8 @@ class SocksPostRequest(BaseModel):
 
 
 class KillJobPostRequest(BaseModel):
+    id: int
+
+
+class StopJobPostRequest(BaseModel):
     id: int

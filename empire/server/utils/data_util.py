@@ -43,6 +43,19 @@ def get_listener_options(listener_name):
         return None
 
 
+def get_host_address(listener_name):
+    try:
+        with SessionLocal() as db:
+            return (
+                db.query(models.Listener.host_address)
+                .filter(models.Listener.name == listener_name)
+                .first()
+            )[0]
+
+    except Exception:
+        return None
+
+
 def is_powershell_installed():
     return get_powershell_name() != ""
 

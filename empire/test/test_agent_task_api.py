@@ -316,6 +316,18 @@ def test_create_task_module(client, admin_auth_header, agent):
     assert response.json()["id"] > 0
     assert response.json()["input"].startswith("function Invoke-InternalMonologue")
     assert response.json()["agent_id"] == agent
+    assert (
+        response.json()["module_name"]
+        == "powershell_credentials_invoke_internal_monologue"
+    )
+    assert response.json()["module_options"] == {
+        "Agent": agent,
+        "Challenge": "1122334455667788",
+        "Downgrade": "False",
+        "Impersonate": "False",
+        "Restore": "False",
+        "Verbose": "False",
+    }
 
 
 def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
@@ -323,7 +335,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "bof_nanodump",
+            "module_id": "bof_credentials_nanodump",
             "options": {},
         },
     )
@@ -462,7 +474,7 @@ def test_create_task_module_validates_options_strict(client, admin_auth_header, 
         f"/api/v2/agents/{agent}/tasks/module",
         headers=admin_auth_header,
         json={
-            "module_id": "powershell_collection_foxdump",
+            "module_id": "powershell_situational_awareness_host_foxdump",
             "options": {
                 "OutputFunction": "not-valid-choice",
             },
@@ -715,6 +727,16 @@ def test_create_task_jobs(client, admin_auth_header, agent):
 def test_kill_task_jobs(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/kill_job",
+        headers=admin_auth_header,
+        json={"id": 0},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_stop_task_jobs(client, admin_auth_header, agent):
+    response = client.post(
+        f"/api/v2/agents/{agent}/tasks/stop_job",
         headers=admin_auth_header,
         json={"id": 0},
     )

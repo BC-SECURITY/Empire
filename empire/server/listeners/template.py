@@ -101,11 +101,6 @@ class Listener:
                 "Required": True,
                 "Value": "Microsoft-IIS/7.5",
             },
-            "StagerURI": {
-                "Description": "URI for the stager. Example: stager.php",
-                "Required": False,
-                "Value": "",
-            },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
                 "Required": False,

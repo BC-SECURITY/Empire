@@ -102,8 +102,7 @@ jobs:
         with:
           submodules: 'recursive'
           token: ${{ secrets.RELEASE_TOKEN }}
-      - name: Set up SSH (sponsors only)
-        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+      - name: Set up SSH
         run: |
           eval "$(ssh-agent -s)"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
@@ -133,7 +132,7 @@ jobs:
       matrix:
         # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
         images:
-          - ['debian11', 'debian12']
+          - ['debian11', 'debian12', 'debian13']
           - ['ubuntu2204', 'ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
@@ -143,8 +142,7 @@ jobs:
         with:
           submodules: 'recursive'
           depth: 0
-      - name: Set up SSH (sponsors only)
-        if: ${{ endswith(github.repository, 'Empire-Sponsors') }}
+      - name: Set up SSH
         run: |
           eval "$(ssh-agent -s)"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
@@ -159,7 +157,7 @@ jobs:
       # To save CI time, only run these tests when the install script or deps changed
       - name: Get changed files using defaults
         id: changed-files
-        uses: tj-actions/changed-files@v47.0.0
+        uses: tj-actions/changed-files@v47.0.1
       - name: Build images
         if: ${{ contains(steps.changed-files.outputs.modified_files, 'setup/install.sh')
           || contains(steps.changed-files.outputs.modified_files, 'poetry.lock')

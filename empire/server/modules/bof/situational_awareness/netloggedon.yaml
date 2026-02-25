@@ -32,7 +32,7 @@ bof:
   x86: bof/situational_awareness/netloggedon/netloggedon.x86.o
   x64: bof/situational_awareness/netloggedon/netloggedon.x64.o
   entry_point: ''
-  format_string: i
+  format_string: Zi
 script_path: ''
 script_end: ''
 advanced:

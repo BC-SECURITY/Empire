@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Annotated
 
 import netaddr
-import yaml
 from netaddr.core import AddrFormatError
 from pydantic import (
     AfterValidator,
@@ -19,6 +18,7 @@ from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
+    YamlConfigSettingsSource,
 )
 
 log = logging.getLogger(__name__)
@@ -33,6 +33,10 @@ class EmpireBaseModel(BaseModel):
                 return v.expanduser().resolve()
             return DATA_DIR / v
         return v
+
+
+class ServerConfig(EmpireBaseModel):
+    socketio: bool = True
 
 
 class ApiConfig(EmpireBaseModel):
@@ -145,6 +149,12 @@ class PluginConfig(EmpireBaseModel):
     auto_execute: PluginAutoExecuteConfig | None = None
 
 
+class PluginAutoInstallConfig(EmpireBaseModel):
+    name: str
+    version: str
+    registry: str
+
+
 class PluginRegistryConfig(EmpireBaseModel):
     name: str
     location: Path | None = None
@@ -163,11 +173,13 @@ class PluginRegistryConfig(EmpireBaseModel):
 
 class PluginMarketplaceConfig(EmpireBaseModel):
     registries: list[PluginRegistryConfig] = []
+    auto_install: list[PluginAutoInstallConfig] = []
 
 
 class EmpireConfig(BaseSettings):
     suppress_self_cert_warning: bool = Field(default=True)
     api: ApiConfig = ApiConfig()
+    server: ServerConfig = ServerConfig()
     empire_compiler: EmpireCompilerConfig = EmpireCompilerConfig()
     starkiller: StarkillerConfig = StarkillerConfig()
     submodules: SubmodulesConfig = SubmodulesConfig()
@@ -220,19 +232,53 @@ class EmpireConfig(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        # Precedence: nested env > .env > YAML/init; legacy handled in validator above
-        return (
+        # settings_customise_sources is a classmethod with no instance access,
+        # so we use _module_base_config_path to pass the base config path in.
+        base_path = _module_base_config_path or _resolve_base_config_path()
+
+        sources: list[PydanticBaseSettingsSource] = [
             env_settings,
             dotenv_settings,
             init_settings,
-        )
+        ]
+
+        # User config: config.user.yaml next to base config
+        user_path = base_path.parent / "config.user.yaml"
+        if user_path.exists():
+            log.info(f"Loading user config from {user_path}")
+            sources.append(
+                YamlConfigSettingsSource(
+                    settings_cls,
+                    yaml_file=user_path,
+                )
+            )
+
+        # Base config
+        if base_path.exists():
+            sources.append(
+                YamlConfigSettingsSource(
+                    settings_cls,
+                    yaml_file=base_path,
+                )
+            )
+
+        return tuple(sources)
 
     def __getitem__(self, key):
         return getattr(self, key)
 
     # Backwards-compatible initialization from a single dict positional arg
     # to support existing tests/usages like EmpireConfig(test_config_dict).
-    def __init__(self, config_dict: dict | None = None, **values):  # type: ignore[override]
+    def __init__(
+        self,
+        config_dict: dict | None = None,
+        /,
+        _base_config_path: Path | None = None,
+        **values,
+    ):
+        global _module_base_config_path  # noqa: PLW0603
+        if _base_config_path is not None:
+            _module_base_config_path = _base_config_path
         if config_dict is not None:
             if not isinstance(config_dict, dict):
                 raise ValueError("config_dict must be a dictionary")
@@ -242,15 +288,19 @@ class EmpireConfig(BaseSettings):
         super().__init__(**values)
 
 
-def set_yaml(location: str):
-    location = Path(location).expanduser().resolve()
-    try:
-        with location.open() as stream:
-            return yaml.safe_load(stream)
-    except yaml.YAMLError as exc:
-        log.warning(exc)
-    except FileNotFoundError as exc:
-        log.warning(exc)
+def _resolve_base_config_path() -> Path:
+    """Determine the base config YAML path from --config flag or default location."""
+    if "--config" in sys.argv:
+        index = sys.argv.index("--config")
+        try:
+            location = sys.argv[index + 1]
+        except IndexError:
+            log.warning("--config flag provided without a path; using default config")
+        else:
+            log.info(f"Loading config from {location}")
+            return Path(location).expanduser().resolve()
+    log.info("Loading default config")
+    return CONFIG_PATH
 
 
 DEFAULT_CONFIG = Path("empire/server/config.yaml")
@@ -278,18 +328,12 @@ if not CONFIG_PATH.exists():
     shutil.copy(DEFAULT_CONFIG, CONFIG_PATH)
     log.info(f"Copied {DEFAULT_CONFIG} to {CONFIG_PATH}")
 
+DEFAULT_USER_CONFIG = DEFAULT_CONFIG.parent / "config.user.yaml"
+USER_CONFIG_PATH = CONFIG_DIR / "config.user.yaml"
+if DEFAULT_USER_CONFIG.exists() and not USER_CONFIG_PATH.exists():
+    shutil.copy(DEFAULT_USER_CONFIG, USER_CONFIG_PATH)
+    log.info(f"Copied {DEFAULT_USER_CONFIG} to {USER_CONFIG_PATH}")
 
-config_dict = EmpireConfig().model_dump()
-if "--config" in sys.argv:
-    location = sys.argv[sys.argv.index("--config") + 1]
-    log.info(f"Loading config from {location}")
-    loaded_config = set_yaml(location)
-    if loaded_config:
-        config_dict = loaded_config
-elif CONFIG_PATH.exists():
-    log.info("Loading default config")
-    loaded_config = set_yaml(str(CONFIG_PATH))
-    if loaded_config:
-        config_dict = loaded_config
 
-empire_config = EmpireConfig(**config_dict)
+_module_base_config_path: Path | None = _resolve_base_config_path()
+empire_config = EmpireConfig()

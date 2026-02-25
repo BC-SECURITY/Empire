@@ -14,11 +14,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.4.1] - 2026-02-15
+-   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
+-   Updated Starkiller to v3.3.0
+
+### Added
+
+-   Added `config.user.yaml` layering support — create a `config.user.yaml` next to `config.yaml` to override specific settings without modifying the base config
+-   Added `auto_install` option to `plugin_marketplace` config for automatic plugin installation during setup
+-   Added `server.socketio` config option to disable Socket.IO (default: `true`)
+-   Added C# spawn module with Powershell and C# executables
+
+### Fixed
+
+-   Fixed Go agent failing to run powershell modules that are too long
+-   Removed StagerURI from http listeners
+-   Fixed HTTP hop listener not getting proper host address
+-   Fixed arguments for bof module netloggedon
+-   Fixed option ComputerName being removed from modules without custom_generate
+-   Fixed missing CompatibleDotNetVersions for ShellcmdRunas and ShellRunAs
+-   Fixed missing CompatibleDotNetVersions for Assembly and AssemblyReflect
+-   Fixed parameter error when running Sharpsploit.Assembly
+
+## [6.4.0] - 2026-01-18
+
+
 ### Added
 
 -   Added Debian 13 support
 -   Added error message if running `ps-empire server` under root without `-f`
+-   Added `hide_disabled` parameter to `GET /api/v2/modules/` endpoint
+-   Added a health check endpoint at `/healthz`
+-   Added `module_options` to `AgentTask` and `plugin_options` to `PluginTask` for better execution tracking
+-   Added `-c` (compile from source) and `-o` (override) options to `ps-empire`
 -   Added local ticket support to Invoke-PSRemoting module
+-   Added an endpoint to stop background jobs on agents
+-   Added foreground C# tasking support to IronPython agent
+-   Added Get-ClipboardHistory PowerShell module to enumerate Windows clipboard history (Windows 10/11) via WinRT APIs
+
+### Changed
+
+-   Updated the module categeories to be more clear
+-   Updated FastAPI deps to use Annotated types
+-   Changed StratumMiner, Moriarty, and Sharpup to background tasks
+-   Updated empire-compiler to v0.4.3
+
+### Fixed
+
+-   Fixed results not coming back properly for powershell agents on C# background tasks
 
 ## [6.3.0] - 2025-12-11
 -   Updated Starkiller to v3.2.0
@@ -1205,7 +1248,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.3.0...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...HEAD
+
+[6.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.0...v6.4.1
+
+[6.4.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.3.0...v6.4.0
 
 [6.3.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.2.1...v6.3.0
 

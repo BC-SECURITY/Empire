@@ -1,6 +1,8 @@
 suppress_self_cert_warning: true
 api:
   port: 1337
+server:
+  socketio: true
 database:
   use: mysql
   mysql:

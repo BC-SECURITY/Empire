@@ -1,0 +1,37 @@
+name: Get-ClipboardContents
+authors:
+  - name: Will Schroeder
+    handle: '@harmj0y'
+    link: https://twitter.com/harmj0y
+description: |
+  Continuously monitors and logs clipboard content changes on the target
+  system. Helpful in tracking copied passwords or sensitive data used during a
+  session.
+software: ''
+tactics: [TA0009]
+techniques: [T1115, T1082]
+background: true
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - http://brianreiter.org/2010/09/03/copy-and-paste-with-clipboard-from-powershell/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: CollectionLimit
+    description: Specifies the interval in minutes to capture clipboard text. Defaults
+      to indefinite collection.
+    required: false
+    value: ''
+  - name: PollInterval
+    description: Interval (in seconds) to check the clipboard for changes, defaults
+      to 15 seconds.
+    required: true
+    value: '15'
+script_path: collection/Get-ClipboardContents.ps1
+script_end: Get-ClipboardContents {{ PARAMS }}

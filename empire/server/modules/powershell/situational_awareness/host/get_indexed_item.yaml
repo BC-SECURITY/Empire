@@ -1,0 +1,49 @@
+name: Get-IndexedItem
+authors:
+  - name: ''
+    handle: "@James O'Neill"
+    link: ''
+description: |
+  PowerShell module that queries the Windows Search Index using SQL-like syntax to
+  discover files and their metadata across the system. Leverages Windows' built-in
+  search indexing service to perform fast, comprehensive searches for files based
+  on content, properties, and metadata. Supports complex filtering by file types,
+  dates, sizes, and custom properties including photos, music, documents, and media
+  files. Can search local and remote file systems, providing detailed file information
+  including ownership, timestamps, and content summaries.
+software: ''
+tactics: [TA0007]
+techniques: [T1083]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: powershell
+min_language_version: '2'
+comments:
+  - https://gallery.technet.microsoft.com/scriptcenter/Get-IndexedItem-PowerShell-5bca2dae
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Terms
+    description: Terms to query the search indexer for.
+    required: true
+    value: password,pass,sensitive,admin,login,secret,creds,credentials
+  - name: OutputFunction
+    description: PowerShell's output function to use ("Out-String", "ConvertTo-Json",
+      "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").
+    required: false
+    value: Out-String
+    strict: true
+    suggested_values:
+      - Out-String
+      - ConvertTo-Json
+      - ConvertTo-Csv
+      - ConvertTo-Html
+      - ConvertTo-Xml
+script_path: collection/Get-IndexedItem.ps1
+script_end: Get-IndexedItem {{ PARAMS }} | ?{!($_.ITEMURL -like '*AppData*')} | Select-Object
+  ITEMURL, COMPUTERNAME, FILEOWNER, SIZE, DATECREATED, DATEACCESSED, DATEMODIFIED,
+  AUTOSUMMARY | fl | {{ OUTPUT_FUNCTION }} | %{$_ + "`n"}; 'Get-IndexedItem completed'

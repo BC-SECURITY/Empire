@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, HTTPException
 
 from empire.server.api.api_router import APIRouter
@@ -14,8 +16,14 @@ def get_agent_file_service(main: AppCtx) -> AgentFileService:
     return main.agentfilesv2
 
 
+AgentFileServiceDep = Annotated[AgentFileService, Depends(get_agent_file_service)]
+
+
 def get_agent_service(main: AppCtx) -> AgentService:
     return main.agentsv2
+
+
+AgentServiceDep = Annotated[AgentService, Depends(get_agent_service)]
 
 
 router = APIRouter(
@@ -32,7 +40,7 @@ router = APIRouter(
 async def get_agent(
     agent_id: str,
     db: CurrentSession,
-    agent_service: AgentService = Depends(get_agent_service),
+    agent_service: AgentServiceDep,
 ):
     agent = agent_service.get_by_id(db, agent_id)
 
@@ -42,11 +50,14 @@ async def get_agent(
     raise HTTPException(404, f"Agent not found for id {agent_id}")
 
 
+AgentDep = Annotated[models.Agent, Depends(get_agent)]
+
+
 async def get_file(
     uid: int,
     db: CurrentSession,
-    db_agent: models.Agent = Depends(get_agent),
-    agent_file_service: AgentFileService = Depends(get_agent_file_service),
+    db_agent: AgentDep,
+    agent_file_service: AgentFileServiceDep,
 ):
     file = agent_file_service.get_file(db, db_agent.session_id, uid)
 
@@ -58,11 +69,16 @@ async def get_file(
     )
 
 
+FileDep = Annotated[
+    tuple[models.AgentFile, list[models.AgentFile]] | None, Depends(get_file)
+]
+
+
 @router.get("/root")
 async def read_file_root(
     db: CurrentSession,
-    db_agent: models.Agent = Depends(get_agent),
-    agent_file_service: AgentFileService = Depends(get_agent_file_service),
+    db_agent: AgentDep,
+    agent_file_service: AgentFileServiceDep,
 ):
     file = agent_file_service.get_file_by_path(db, db_agent.session_id, "/")
 
@@ -77,8 +93,8 @@ async def read_file_root(
 @router.get("/{uid}", response_model=AgentFile)
 async def read_file(
     uid: int,
-    db_agent: models.Agent = Depends(get_agent),
-    db_file: tuple[models.AgentFile, list[models.AgentFile]] | None = Depends(get_file),
+    db_agent: AgentDep,
+    db_file: FileDep,
 ):
     if db_file:
         return domain_to_dto_file(*db_file)

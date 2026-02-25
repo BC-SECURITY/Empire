@@ -1,0 +1,96 @@
+name: Spawn
+authors:
+  - name: Anthony Rose
+    handle: Cx01N
+    link: https://twitter.com/Cx01N_
+description: |
+  Spawns a new Empire C# agent by generating a Sharpire executable assembly
+  and executing it in-memory using the Assembly module. The new agent connects
+  to the designated listener. This is the C# equivalent of the PowerShell
+  spawn module.
+software: ''
+tactics: []
+techniques:
+  - T1059
+background: true
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: csharp
+min_language_version: ''
+comments: []
+options:
+  - name: Agent
+    description: Agent to execute module on.
+    required: true
+    value: ''
+  - name: Listener
+    description: Listener to use.
+    required: true
+    value: ''
+  - name: Language
+    description: Language of the agent to spawn (powershell, csharp, ironpython).
+    required: true
+    value: csharp
+    strict: true
+    suggested_values:
+      - powershell
+      - csharp
+  - name: DotNetVersion
+    description: .NET version for the generated launcher EXE.
+    required: true
+    value: net40
+    strict: true
+    suggested_values:
+      - net40
+      - net45
+  - name: UserAgent
+    description: User-agent string to use for the staging request (default, none,
+      or other).
+    required: false
+    value: default
+  - name: Proxy
+    description: Proxy to use for request (default, none, or other).
+    required: false
+    value: default
+  - name: ProxyCreds
+    description: Proxy credentials ([domain\]username:password) to use for request
+      (default, none, or other).
+    required: false
+    value: default
+  - name: Bypasses
+    description: Bypasses as a space separated list to be prepended to the launcher.
+    required: false
+    value: 'mattifestation etw'
+  - name: Obfuscate
+    description: Obfuscate the launcher powershell code (PowerShell only).
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - 'True'
+      - 'False'
+    depends_on:
+      - name: Language
+        values: ['powershell']
+  - name: ObfuscateCommand
+    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
+      is True. For powershell only.
+    required: false
+    value: 'Token\All\1'
+    depends_on:
+      - name: Language
+        values: ['powershell']
+      - name: Obfuscate
+        values: ['True']
+csharp:
+  UnsafeCompile: false
+  CompatibleDotNetVersions:
+    - Net35
+    - Net40
+  Code: ''
+  ReferenceSourceLibraries: []
+  ReferenceAssemblies: []
+  EmbeddedResources: []
+advanced:
+  custom_generate: true
