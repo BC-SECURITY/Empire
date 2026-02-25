@@ -28,7 +28,8 @@ options:
     required: false
     value: ''
   - name: Background
-    description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job endpoint.
+    description: Run as a background job (non-blocking). Can be killed via the jobs/kill_job
+      endpoint.
     required: false
     value: 'false'
     type: bool
