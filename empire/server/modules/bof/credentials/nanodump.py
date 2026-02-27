@@ -16,7 +16,6 @@ class Module:
             "ProcessID": params.get("pid") if params.get("pid") else "0",
             "DumpPath": params.get("write", "find_me.dmp"),
             "WriteFile": "1" if params.get("write") else "0",
-            "Chunksize": params.get("chunksize") if params.get("chunksize") else "0",
             "ValidSignature": "1" if params.get("valid").lower() == "true" else "0",
             "Fork": "1" if params.get("fork").lower() == "true" else "0",
             "Snapshot": "1" if params.get("snapshot").lower() == "true" else "0",
@@ -43,10 +42,6 @@ class Module:
             "SilentProcessExitBinary": params.get("silent-process-exit", ""),
             "Shtinkering": "1" if params.get("shtinkering").lower() == "true" else "0",
         }
-
-        import debugpy
-        # debugpy.wait_for_client()
-        # breakpoint()
 
         return main_menu.modulesv2.generate_script_bof(
             module=module,
