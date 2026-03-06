@@ -45,7 +45,7 @@ type MainAgent struct {
 	encryptionKey    []byte
 }
 
-func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMessageSender, sessionID, killDate, workingHours string, delay int, jitter float64, lostLimit int, aeskey []byte, defaultResponse string) *MainAgent {
+func NewMainAgent(packetHandler comms.PacketHandler, messagesender MessageSender, sessionID, killDate, workingHours string, delay int, jitter float64, lostLimit int, aeskey []byte, defaultResponse string) *MainAgent {
 	packetHandler.SessionID = sessionID
 
 	return &MainAgent{
