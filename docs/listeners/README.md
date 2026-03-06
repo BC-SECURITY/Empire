@@ -15,6 +15,7 @@ Empire offers several listener types designed for different network conditions a
 
 * **HTTP/HTTPS**: A standard HTTP listener for internet-facing operations supports both standard HTTP and encrypted HTTPS.
 * **HTTP Malleable**: A customizable HTTP listener that allows beacons to match specific threat profiles.
+* **DNS**: A listener that communicates entirely over DNS A/TXT records, ideal for restricted environments where only DNS egress is available.
 * **SMB**: A peer-to-peer listener that works over SMB pipes (**currently only supports IronPython**).
 * **HTTP Hop**: A listener that adds an intermediate hop or redirection server using PHP.
 * **Port Forward**: Enables chaining agents through port forwarding.

@@ -154,3 +154,55 @@ func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte, ag
 
 	return sessionKey, newSessionID, nonce, nil
 }
+
+func PerformDHKeyExchangeDns(server string, sessionID string, stagingKey []byte, agent_private_cert_key []byte, agent_public_cert_key []byte, server_public_cert_key []byte) ([]byte, string, []byte, error) {
+	privateKey, publicKey, err := GenerateDHKeyPair()
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("error generating DH keys: %v", err)
+	}
+
+	nbytes := floorDiv((publicKey.BitLen() + 7), 8)
+	clientPubBytes := publicKey.FillBytes(make([]byte, nbytes))
+	agentCert := sign_with_hash([]byte("SIGNATURE"), agent_private_cert_key)
+	message := append(clientPubBytes, agentCert...)
+	packetHandler := PacketHandler{}
+	encData := common.AesEncryptThenHMAC(stagingKey, message)
+	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 2, encData)
+
+	sender := NewDnsMessageSender(server)
+	responseData, err := sender.SendMessage(routingPacket)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("error sending DH via DNS: %v", err)
+	}
+
+	parsedPackets, err := packetHandler.ParseRoutingPacket(stagingKey, responseData)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("error parsing routing packet: %v", err)
+	}
+
+	var newSessionID string
+	for sid, packet := range parsedPackets {
+		newSessionID = sid
+		encData = packet[3].([]byte)
+		break
+	}
+
+	if len(encData) < 32 {
+		return nil, "", nil, fmt.Errorf("invalid server response length in DH exchange")
+	}
+
+	serverNonce := encData[:16]
+	serverPubKeyBytes := encData[16:]
+	serverPubKey := new(big.Int).SetBytes(serverPubKeyBytes)
+
+	if !CheckPublicKey(serverPubKey) {
+		return nil, "", nil, fmt.Errorf("invalid server public key")
+	}
+
+	sessionKey, err := ComputeDHSharedSecret(privateKey, serverPubKey)
+	if err != nil {
+		return nil, "", nil, fmt.Errorf("error computing shared secret: %v", err)
+	}
+
+	return sessionKey, newSessionID, serverNonce, nil
+}

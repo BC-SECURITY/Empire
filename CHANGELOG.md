@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-   Added DNS C2 listener (`empire/server/listeners/dns.py`) enabling full agent communication over DNS A/TXT records on UDP/53
+-   Added PowerShell DNS stager and comms templates (`dns/dns.ps1`, `dns/comms.ps1`) with chunked upload/download, JOB-based large payload delivery, and Ed25519/ChaCha20/AES crypto stack
+-   Added Python DNS launcher with native UDP socket implementation (no external dependencies)
+-   Added Go agent DNS support via `comms.MessageSender` interface, native DNS client (`dns.go`), and DH key exchange over DNS (`dh.go`)
+-   Added DNS listener documentation (`docs/listeners/dns.md`)
+-   Added DNS listener API and launcher generation tests
 -   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
 
 ### Fixed

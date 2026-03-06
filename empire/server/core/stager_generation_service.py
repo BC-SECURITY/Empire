@@ -782,6 +782,7 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             "DELAY": delay,
             "JITTER": jitter,
             "LOST_LIMIT": lost_limit,
+            "LISTENER_TYPE": active_listener.info["Name"].lower(),
             "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
                 "UTF-8"
             ),

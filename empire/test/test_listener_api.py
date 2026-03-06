@@ -1,6 +1,27 @@
 from starlette import status
 
 
+def get_base_dns_listener():
+    return {
+        "name": "dns-listener-1",
+        "template": "dns",
+        "options": {
+            "Name": "dns-listener-1",
+            "Host": "127.0.0.1",
+            "BindIP": "0.0.0.0",
+            "Port": "5553",
+            "Launcher": "powershell -noP -sta -w 1 -enc ",
+            "StagingKey": "2c103f2c4ed1e59c0b4e2e01821770fa",
+            "DefaultDelay": "5",
+            "DefaultJitter": "0.0",
+            "DefaultLostLimit": "60",
+            "DefaultProfile": "/admin/get.php,/news.php,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+            "KillDate": "",
+            "WorkingHours": "",
+        },
+    }
+
+
 def get_base_listener():
     return {
         "name": "new-listener-1",
@@ -570,6 +591,44 @@ def test_update_listener_autorun(client, admin_auth_header, listener):
 
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {"records": autorun_tasks}
+
+
+def test_create_dns_listener(client, admin_auth_header):
+    base_listener = get_base_dns_listener()
+    response = client.post(
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["options"]["Name"] == base_listener["name"]
+    assert response.json()["options"]["Port"] == base_listener["options"]["Port"]
+
+    client.delete(
+        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+    )
+
+
+def test_create_dns_listener_validation_fails_required_field(client, admin_auth_header):
+    base_listener = get_base_dns_listener()
+    base_listener["options"]["Host"] = ""
+    response = client.post(
+        "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
+    )
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "required option missing: Host"
+
+
+def test_get_dns_listener_template(client, admin_auth_header):
+    response = client.get(
+        "/api/v2/listener-templates/dns",
+        headers=admin_auth_header,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == "DNS"
+    assert response.json()["id"] == "dns"
+    assert isinstance(response.json()["options"], dict)
+    assert "Host" in response.json()["options"]
+    assert "Port" in response.json()["options"]
+    assert "StagingKey" in response.json()["options"]
 
 
 def test_update_listener_autorun_invalid(client, admin_auth_header, listener):

