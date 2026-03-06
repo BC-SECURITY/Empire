@@ -14,6 +14,7 @@
   * [OneDrive](listeners/onedrive.md)
   * [HTTP](listeners/http.md)
   * [Malleable C2](listeners/malleable-c2.md)
+  * [DNS](listeners/dns.md)
 * [Stagers](stagers/README.md)
   * [multi\_generate\_agent](stagers/multi_generate_agent.md)
 * [Plugins](plugins/README.md)
