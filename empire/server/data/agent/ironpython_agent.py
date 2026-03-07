@@ -1007,10 +1007,9 @@ class MainAgent:
         """
         try:
             buffer = StringIO()
-            sys.stdout = buffer
+            exec_globals = {**globals(), 'print': lambda *a, **k: print(*a, **k, file=buffer)}
             code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
+            exec(code_obj, exec_globals)
             results = buffer.getvalue()
             self.packet_handler.send_message(self.packet_handler.build_response_packet(110, str(results), result_id))
             self.tasks[result_id]["status"] = "completed"
@@ -1034,10 +1033,9 @@ class MainAgent:
         data = data[20:]
         try:
             buffer = StringIO()
-            sys.stdout = buffer
             code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
+            exec_globals = {**globals(), 'print': lambda *a, **k: print(*a, **k, file=buffer)}
+            exec(code_obj, exec_globals)
             results = buffer.getvalue().encode("latin-1")
             c = compress()
             start_crc32 = c.crc32_data(results)
@@ -1175,50 +1173,37 @@ class MainAgent:
         Adjusted for Windows and cross-platform compatibility.
         Task 112
         """
+
+        output_capture = io.StringIO()
+        script_globals = {'print': lambda *a, **k: print(*a, **k, file=output_capture)}
+
         try:
-            script_globals = {}
-            output_capture = io.StringIO()
-            sys.stdout = output_capture
-
-            try:
-                exec(data, script_globals)
-                captured_output = output_capture.getvalue()
-                if captured_output:
-                    result = "[*] Output from script:\n" + captured_output
-                else:
-                    result = "[*] No output captured from the script.\n"
-                if 'output' in script_globals:
-                    result += "[*] Output variable from script: \n" + str(script_globals['output'])
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(112, result, result_id)
-                )
-                self.tasks[result_id]["status"] = "completed"
-
-            except SyntaxError as e:
-                result = "[!] Syntax error in script: %s on line %d - %s" % (str(e), e.lineno, e.text)
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(0, result, result_id)
-                )
-                self.tasks[result_id]["status"] = "error"
-
-            except Exception as e:
-                result = "[!] Error executing script: %s" % str(e)
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(0, result, result_id)
-                )
-                self.tasks[result_id]["status"] = "error"
-
-        except Exception as e:
+            exec(data, script_globals)
+            captured_output = output_capture.getvalue()
+            if captured_output:
+                result = "[*] Output from script:\n" + captured_output
+            else:
+                result = "[*] No output captured from the script.\n"
+            if 'output' in script_globals:
+                result += "[*] Output variable from script: \n" + str(script_globals['output'])
             self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    0, "error executing TASK_PYTHON_CMD_JOB: %s" % (e), result_id
-                )
+                self.packet_handler.build_response_packet(112, result, result_id)
+            )
+            self.tasks[result_id]["status"] = "completed"
+
+        except SyntaxError as e:
+            result = "[!] Syntax error in script: %s on line %d - %s" % (str(e), e.lineno, e.text)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(0, result, result_id)
             )
             self.tasks[result_id]["status"] = "error"
 
-        finally:
-            sys.stdout = sys.__stdout__
-
+        except Exception as e:
+            result = "[!] Error executing script: %s" % str(e)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(0, result, result_id)
+            )
+            self.tasks[result_id]["status"] = "error"
 
     def start_python_job(self, code, result_id):
         # create/process Packet start/return the thread
