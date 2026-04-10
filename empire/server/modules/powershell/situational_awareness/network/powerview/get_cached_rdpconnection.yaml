@@ -19,8 +19,8 @@ description: Enumerates cached Remote Desktop Protocol (RDP) connection informat
   patterns, and identifying potential privilege escalation opportunities through
   historical remote access relationships.
 software: S0194
-tactics: [TA0007]
-techniques: [T1069, T1018, T1615, T1076]
+tactics: [TA0007, TA0008]
+techniques: [T1069, T1018, T1021.001]
 background: true
 output_extension:
 needs_admin: false

@@ -7,7 +7,7 @@ description: |
   Moriarty is a comprehensive .NET tool that extends the functionality of Watson and Sherlock, originally developed by @_RastaMouse. It is designed to enumerate missing KBs, detect various vulnerabilities, and suggest potential exploits for Privilege Escalation in Windows environments. Moriarty combines the capabilities of Watson and Sherlock, adding enhanced scanning for newer vulnerabilities and integrating additional checks.
 software: ''
 tactics: [TA0007]
-techniques: [T1012, T1518, T11082]
+techniques: [T1012, T1518, T1082]
 background: true
 output_extension: ''
 needs_admin: false

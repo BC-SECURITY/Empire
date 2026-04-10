@@ -13,7 +13,7 @@ description: |
   passwords, session cookies, autofill data, and browsing history with timestamps.
 software: ''
 tactics: [TA0006, TA0007]
-techniques: [T1503.003, T1217]
+techniques: [T1217, T1555.003]
 background: true
 output_extension:
 needs_admin: false

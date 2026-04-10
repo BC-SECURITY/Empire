@@ -9,7 +9,7 @@ description: |
   UAC will report Powershell is requesting Administrator privileges. Because this
   does not use the BypassUAC DLLs, it should not trigger any AV alerts.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0006, TA0009]
 techniques: [T1056.002]
 background: true
 output_extension:

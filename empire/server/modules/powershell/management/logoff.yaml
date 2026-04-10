@@ -17,7 +17,7 @@ description: |
   is often used to disrupt user activity, clear evidence, or ensure that only authorized
   sessions remain active during post-exploitation operations.
 software: ''
-tactics: [TA0040]
+tactics: [TA0040, TA0003, TA0004]
 techniques: [T1098, T1529]
 background: false
 output_extension:

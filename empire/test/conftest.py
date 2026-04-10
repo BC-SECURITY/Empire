@@ -177,6 +177,33 @@ def session_local(client):
     return SessionLocal
 
 
+def make_agent(models, **overrides):
+    """Factory for creating Agent model instances with sensible defaults."""
+    name = overrides.pop("name", f"agent_{get_random_string(5)}")
+    overrides.setdefault("session_id", name)
+    defaults = {
+        "name": name,
+        "delay": 1,
+        "jitter": 0.1,
+        "external_ip": "1.1.1.1",
+        "session_key": "qwerty",
+        "nonce": "nonce",
+        "profile": "profile",
+        "kill_date": "killDate",
+        "working_hours": "workingHours",
+        "lost_limit": 60,
+        "listener": "http",
+        "language": "powershell",
+        "language_version": "5",
+        "high_integrity": True,
+        "process_name": "proc",
+        "process_id": 12345,
+        "archived": False,
+    }
+    defaults.update(overrides)
+    return models.Agent(**defaults)
+
+
 @pytest.fixture
 def host(session_local, models):
     with session_local.begin() as db:
@@ -194,33 +221,18 @@ def host(session_local, models):
 @pytest.fixture
 def agent(session_local, models, host, main):
     with session_local.begin() as db:
-        name = f"agent_{get_random_string(5)}"
-        agent = models.Agent(
-            name=name,
-            session_id=name,
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
+        agent = make_agent(
+            models,
             session_key="2c103f2c4ed1e59c0b4e2e01821770fa",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=True,
             process_name="abc",
             process_id=123,
             host_id=host,
-            archived=False,
         )
         db.add(agent)
         db.add(models.AgentCheckIn(agent_id=agent.session_id))
         db.flush()
 
-        main.agentcommsv2.agents[name] = {
+        main.agentcommsv2.agents[agent.session_id] = {
             "sessionKey": agent.session_key,
             "language": agent.language,
         }
@@ -231,143 +243,71 @@ def agent(session_local, models, host, main):
 
 
 # These are global for test_agent_api and test_agents
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def agents(session_local, models, main):
     random_string = get_random_string(5)
     with session_local.begin() as db:
         host = models.Host(name=f"host_{get_random_string(5)}", internal_ip="127.0.0.1")
 
-        agent = models.Agent(
-            name=f"TEST123_{random_string}",
-            session_id=f"TEST123_{random_string}",
-            delay=60,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host=host,
-            archived=False,
-        )
-
-        agent2 = models.Agent(
-            name=f"SECOND_{random_string}",
-            session_id=f"SECOND_{random_string}",
-            delay=60,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host=host,
-            archived=False,
-        )
-
-        agent3 = models.Agent(
-            name=f"ARCHIVED_{random_string}",
-            session_id=f"ARCHIVED_{random_string}",
-            delay=60,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host=host,
-            archived=True,
-        )
-
-        agent4 = models.Agent(
-            name=f"STALE_{random_string}",
-            session_id=f"STALE_{random_string}",
-            delay=1,
-            jitter=0.1,
-            external_ip="1.1.1.1",
-            session_key="qwerty",
-            nonce="nonce",
-            profile="profile",
-            kill_date="killDate",
-            working_hours="workingHours",
-            lost_limit=60,
-            listener="http",
-            language="powershell",
-            language_version="5",
-            high_integrity=False,
-            process_name="proc",
-            process_id=12345,
-            hostname="vinnybod",
-            host=host,
-            archived=False,
-        )
+        agent_defs = [
+            {
+                "name": f"TEST123_{random_string}",
+                "delay": 60,
+                "high_integrity": False,
+                "hostname": "vinnybod",
+                "host": host,
+            },
+            {
+                "name": f"SECOND_{random_string}",
+                "delay": 60,
+                "high_integrity": False,
+                "hostname": "vinnybod",
+                "host": host,
+            },
+            {
+                "name": f"ARCHIVED_{random_string}",
+                "delay": 60,
+                "high_integrity": False,
+                "hostname": "vinnybod",
+                "host": host,
+                "archived": True,
+            },
+            {
+                "name": f"STALE_{random_string}",
+                "delay": 1,
+                "high_integrity": False,
+                "hostname": "vinnybod",
+                "host": host,
+            },
+        ]
 
         db.add(host)
-        db.add(agent)
-        db.add(agent2)
-        db.add(agent3)
-        db.add(agent4)
-        db.add(models.AgentCheckIn(agent_id=agent.session_id))
-        db.add(models.AgentCheckIn(agent_id=agent2.session_id))
-        db.add(models.AgentCheckIn(agent_id=agent3.session_id))
-        db.add(
-            models.AgentCheckIn(
-                agent_id=agent4.session_id,
-                checkin_time=datetime.now(UTC) - timedelta(days=2),
-            )
-        )
+        agent_objs = []
+        for kwargs in agent_defs:
+            agent_obj = make_agent(models, **kwargs)
+            db.add(agent_obj)
+            agent_objs.append(agent_obj)
+
+        stale_index = len(agent_defs) - 1
+        for i, agent_obj in enumerate(agent_objs):
+            checkin_kwargs = {"agent_id": agent_obj.session_id}
+            if i == stale_index:  # STALE agent gets an old checkin
+                checkin_kwargs["checkin_time"] = datetime.now(UTC) - timedelta(days=2)
+            db.add(models.AgentCheckIn(**checkin_kwargs))
+
         db.flush()
-        agents = [agent, agent2, agent3, agent4]
 
-        main.agentcommsv2.agents[f"TEST123_{random_string}"] = {
-            "sessionKey": agents[0].session_key,
-            "functions": agents[0].functions,
-        }
-        main.agentcommsv2.agents[f"SECOND_{random_string}"] = {
-            "sessionKey": agents[1].session_key,
-            "functions": agents[1].functions,
-        }
-        main.agentcommsv2.agents[f"ARCHIVED_{random_string}"] = {
-            "sessionKey": agents[2].session_key,
-            "functions": agents[2].functions,
-        }
-        main.agentcommsv2.agents[f"STALE_{random_string}"] = {
-            "sessionKey": agents[3].session_key,
-            "functions": agents[3].functions,
-        }
+        for agent_obj in agent_objs:
+            main.agentcommsv2.agents[agent_obj.session_id] = {
+                "sessionKey": agent_obj.session_key,
+                "functions": agent_obj.functions,
+            }
 
-        return [agent.session_id for agent in agents]
+        return [agent_obj.session_id for agent_obj in agent_objs]
 
 
 @pytest.fixture
-def agent_task(client, admin_auth_header, agent, session_local, main):
+def agent_task(client, admin_auth_header, agent):
     resp = client.post(
         f"/api/v2/agents/{agent}/tasks/shell",
         headers=admin_auth_header,
@@ -375,6 +315,23 @@ def agent_task(client, admin_auth_header, agent, session_local, main):
     )
 
     return resp.json()
+
+
+@pytest.fixture
+def plugin_task(main, session_local, models):
+    with session_local.begin() as db:
+        task = models.PluginTask(
+            plugin_id="basic_reporting",
+            input="This is the trimmed input for the task.",
+            input_full="This is the full input for the task.",
+            user_id=1,
+            plugin_options={"report": "all"},
+        )
+        db.add(task)
+        db.flush()
+        task_id = task.id
+
+    return task_id  # noqa RET504
 
 
 @pytest.fixture

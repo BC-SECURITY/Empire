@@ -107,7 +107,7 @@ class ObfuscationService:
             toObfuscateFile.write(ps_script)
 
             # Obfuscate using Invoke-Obfuscation w/ PowerShell
-            install_path = self.main_menu.installPath
+            install_path = self.main_menu.install_path
             toObfuscateFile.seek(0)
             subprocess.call(
                 f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',

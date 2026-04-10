@@ -19,7 +19,7 @@ description: Enumerates group membership details within Active Directory to iden
   patterns, and identifying high-value targets within specific group contexts.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482, T1615, T1069.002]
+techniques: [T1069.002]
 background: true
 output_extension:
 needs_admin: false

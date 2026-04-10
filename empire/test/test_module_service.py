@@ -1,3 +1,5 @@
+import base64
+import json
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -33,6 +35,9 @@ def module_service(main_menu_mock):
     module_service.dotnet_compiler.compile_task = Mock(
         return_value=Path("/tmp/compiled_task.exe")
     )
+
+    # Wire up so custom_generate modules can access modulesv2 via main_menu
+    main_menu_mock.modulesv2 = module_service
 
     return module_service
 
@@ -168,7 +173,7 @@ def test_execute_module_task_command_csharp_agent_with_missing_csharp_module(
         "Text": "Hello World",
     }
     module_id = "csharp_execution_some_module"
-    res, err = module_service.execute_module(
+    _res, err = module_service.execute_module(
         None, agent_mock, module_id, params, True, True, None
     )
 
@@ -426,6 +431,27 @@ def test_execute_module_with_empty_params(module_service, agent_mock):
     assert "required option missing: Agent" in str(excinfo.value)
 
 
+def test_handle_save_file_command_with_extension(module_service):
+    """Test _handle_save_file_command extracts basename from path-like module name."""
+    command, data = module_service._handle_save_file_command(
+        "TASK_PYTHON", "python/trollsploit/osx/say", ".txt ", "data_here"
+    )
+    assert command == "TASK_PYTHON_CMD_WAIT_SAVE"
+    # The prefix should be the basename "say" right-justified to 15 chars
+    assert data.startswith("say".rjust(15))
+    assert ".txt " in data
+    assert data.endswith("data_here")
+
+
+def test_handle_save_file_command_without_extension(module_service):
+    """Test _handle_save_file_command with empty extension returns CMD_WAIT."""
+    command, data = module_service._handle_save_file_command(
+        "TASK_POWERSHELL", "powershell/collection/screenshot", "", "script_data"
+    )
+    assert command == "TASK_POWERSHELL_CMD_WAIT"
+    assert data == "script_data"
+
+
 @pytest.mark.parametrize(
     ("agent_language", "module_language", "should_raise"),
     [
@@ -626,3 +652,94 @@ def test_validate_module_version_check(
         )
         assert err is None
         assert options is not None
+
+
+def test_format_bof_output_go_agent(module_service):
+    """Test format_bof_output returns base64 JSON with File and HexData for Go agents."""
+    result = module_service.format_bof_output(
+        bof_data_b64="dGVzdA==",
+        hex_data="AAAA",
+        agent_language="go",
+    )
+
+    decoded = json.loads(base64.b64decode(result))
+    assert decoded == {"File": "dGVzdA==", "HexData": "AAAA"}
+    assert "Entrypoint" not in decoded
+
+
+def test_format_bof_output_dotnet_agent(module_service):
+    """Test format_bof_output returns file|,json format with Entrypoint for .NET agents."""
+    result = module_service.format_bof_output(
+        bof_data_b64="dGVzdA==",
+        hex_data="AAAA",
+        agent_language="csharp",
+        obfuscate=False,
+    )
+
+    assert "|," in result
+    script_file, b64_json = result.split("|,", 1)
+    assert script_file  # non-empty file path
+
+    decoded = json.loads(base64.b64decode(b64_json))
+    assert decoded["Entrypoint"] == "go"
+    assert decoded["File"] == "dGVzdA=="
+    assert decoded["HexData"] == "AAAA"
+
+
+def test_format_bof_output_custom_entry_point(module_service):
+    """Test format_bof_output respects custom entry_point parameter."""
+    result = module_service.format_bof_output(
+        bof_data_b64="dGVzdA==",
+        hex_data="AAAA",
+        agent_language="csharp",
+        entry_point="main",
+    )
+
+    _, b64_json = result.split("|,", 1)
+    decoded = json.loads(base64.b64decode(b64_json))
+    assert decoded["Entrypoint"] == "main"
+
+
+def test_execute_module_bof_go_agent(module_service, agent_mock):
+    """Test standard BOF module execution with Go agent produces correct format."""
+    agent_mock.language = "go"
+    params = {
+        "Agent": agent_mock.session_id,
+        "Architecture": "x64",
+        "Server": ".",
+    }
+    module_id = "bof_situational_awareness_tasklist"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    assert res.command == "TASK_BOF_CMD_WAIT"
+
+    # Go format: base64 JSON with File + HexData, no Entrypoint
+    decoded = json.loads(base64.b64decode(res.data))
+    assert "File" in decoded
+    assert "HexData" in decoded
+    assert "Entrypoint" not in decoded
+
+
+def test_execute_module_bof_custom_generate_go_agent(module_service, agent_mock):
+    """Test custom-generate BOF module with Go agent returns Go format, not .NET format."""
+    agent_mock.language = "go"
+    params = {
+        "Agent": agent_mock.session_id,
+    }
+    module_id = "bof_situational_awareness_clipboard_window_inject_list"
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    assert res.command == "TASK_BOF_CMD_WAIT"
+
+    # Must be valid base64 JSON, not the .NET file|,json format
+    assert "|," not in res.data
+    decoded = json.loads(base64.b64decode(res.data))
+    assert "File" in decoded
+    assert "HexData" in decoded
+    assert "Entrypoint" not in decoded

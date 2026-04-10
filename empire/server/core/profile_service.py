@@ -1,7 +1,6 @@
 import fnmatch
 import logging
 import typing
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -25,7 +24,7 @@ class ProfileService:
         """
         Load Malleable C2 Profiles to the database
         """
-        malleable_path = Path(self.main_menu.installPath) / "data/profiles/"
+        malleable_path = self.main_menu.install_path / "data/profiles"
         log.info(f"v2: Loading malleable profiles from: {malleable_path}")
 
         for file_path in malleable_path.rglob("*.profile"):

@@ -27,7 +27,7 @@ description: |
   options for precise targeting and comprehensive output formatting.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482, T1069.002, T1615]
+techniques: [T1069.002, T1087.002]
 background: true
 output_extension:
 needs_admin: false

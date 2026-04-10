@@ -10,6 +10,7 @@ class Module:
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        **kwargs,
     ):
         resource = f"\\\\{params['System']}\\{params['Namespace']}"
 

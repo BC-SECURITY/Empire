@@ -1,8 +1,8 @@
-import pathlib
+from pathlib import Path
 
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -16,25 +16,24 @@ class Module:
     ):
         # read in the common powerview.ps1 module source code
         module_source = (
-            main_menu.installPath
-            + "/data/module_source/situational_awareness/network/powerview.ps1"
+            main_menu.install_path
+            / "data/module_source/situational_awareness/network/powerview.ps1"
         )
         if obfuscate:
-            obfuscated_module_source = module_source.replace(
-                "module_source", "obfuscated_module_source"
+            obfuscated_module_source = Path(
+                str(module_source).replace("module_source", "obfuscated_module_source")
             )
-            if pathlib.Path(obfuscated_module_source).is_file():
+            if obfuscated_module_source.is_file():
                 module_source = obfuscated_module_source
 
         try:
-            with open(module_source) as f:
-                module_code = f.read()
+            module_code = module_source.read_text()
         except Exception:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Could not read module source path at: " + str(module_source)
-            )
+            ) from None
 
-        if obfuscate and not pathlib.Path(obfuscated_module_source).is_file():
+        if obfuscate and not obfuscated_module_source.is_file():
             script = main_menu.obfuscationv2.obfuscate(module_code, obfuscation_command)
         else:
             script = module_code

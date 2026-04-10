@@ -21,7 +21,7 @@ description: Analyzes Group Policy Objects (GPOs) to identify users and groups t
   policy-granted administrative access.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482, T1069, T1615]
+techniques: [T1069, T1615]
 background: true
 output_extension:
 needs_admin: false

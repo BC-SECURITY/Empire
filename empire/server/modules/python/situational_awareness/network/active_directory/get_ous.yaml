@@ -22,9 +22,9 @@ description: |
   potential targets for privilege escalation and lateral movement based on
   organizational roles and responsibilities.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1069.002
 background: false
 output_extension: ''
 needs_admin: false

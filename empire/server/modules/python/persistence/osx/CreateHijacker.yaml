@@ -18,9 +18,9 @@ description: |
   persistence through application hijacking and maintaining
   access when vulnerable applications are launched.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004, TA0005]
 techniques:
-  - T1157
+  - T1574.004
 background: false
 output_extension: ''
 needs_admin: true

@@ -21,9 +21,9 @@ description: |
   remains active across shell sessions and can be triggered by any sudo command
   execution.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004]
 techniques:
-  - T1156
+  - T1546.004
 background: true
 output_extension: ''
 needs_admin: false

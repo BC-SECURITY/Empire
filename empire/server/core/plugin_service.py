@@ -55,7 +55,7 @@ class PluginService:
         self.main_menu = main_menu
         self.download_service = main_menu.downloadsv2
         self.loaded_plugins = {}
-        self.plugin_path = Path(self.main_menu.installPath) / "plugins/"
+        self.plugin_path = self.main_menu.install_path / "plugins"
         self.marketplace_path = config_manager.DATA_DIR / "plugins" / "marketplace"
         self.marketplace_path.mkdir(parents=True, exist_ok=True)
 
@@ -104,7 +104,7 @@ class PluginService:
                 continue
 
             req = PluginExecutePostRequest(options=auto_execute.options)
-            results, err = self.execute_plugin(db, plugin, req, None)
+            results, _err = self.execute_plugin(db, plugin, req, None)
             if results is False:
                 log.error(f"Plugin failed to run: {plugin_name}")
             else:
@@ -205,7 +205,9 @@ class PluginService:
         version_name: str | None = None,
         registry_data: dict | None = None,
     ):
-        temp_dir = Path(tempfile.gettempdir()) / tar_url.split("/")[-1].split(".")[0]
+        temp_dir = (
+            Path(tempfile.gettempdir()) / Path(tar_url.rsplit("/", maxsplit=1)[-1]).stem
+        )
 
         response = s.get(tar_url, stream=True)
 

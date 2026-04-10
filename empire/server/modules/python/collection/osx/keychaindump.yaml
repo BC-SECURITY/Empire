@@ -15,9 +15,10 @@ description: |
   website passwords, application passwords, and system credentials
   stored in the macOS Keychain.
 software: ''
-tactics: []
+tactics: [TA0006]
 techniques:
-  - T1142
+  - T1005
+  - T1555.001
 background: false
 output_extension: ''
 needs_admin: true

@@ -1,7 +1,6 @@
 import base64
 import copy
 import logging
-import os
 import random
 
 from empire.server.common import helpers, packets, templating
@@ -108,7 +107,7 @@ class Listener:
             )
             return None
 
-        if language in ["ironpython"]:
+        if language == "ironpython":
             launcherBase = "import sys;"
             if "https" in self.host_address:
                 # monkey patch ssl woohooo
@@ -253,8 +252,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -319,10 +317,9 @@ class Listener:
             return None
 
         if language == "python":
-            with open(
-                self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
-            ) as f:
-                code = f.read()
+            code = (
+                self.mainMenu.install_path / "data/agent/ironpython_agent.py"
+            ).read_text(encoding="utf-8")
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -371,8 +368,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("smb/comms.py")

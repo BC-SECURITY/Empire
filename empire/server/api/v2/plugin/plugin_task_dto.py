@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ from empire.server.api.v2.tag.tag_dto import Tag, domain_to_dto_tag
 from empire.server.core.db import models
 
 
-class PluginTaskOrderOptions(str, Enum):
+class PluginTaskOrderOptions(StrEnum):
     id = "id"
     updated_at = "updated_at"
     status = "status"

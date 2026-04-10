@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated
 
 from pydantic import BaseModel, StringConstraints
@@ -12,7 +12,7 @@ TagStr = Annotated[str, StringConstraints(pattern=r"^[^:]+:[^:]+$")]
 TagStrNoColon = Annotated[str, StringConstraints(pattern=r"^[^:]+$")]
 
 
-class TagSourceFilter(str, Enum):
+class TagSourceFilter(StrEnum):
     listener = "listener"
     agent = "agent"
     agent_task = "agent_task"
@@ -43,7 +43,7 @@ class TagRequest(BaseModel):
     color: str | None = None
 
 
-class TagOrderOptions(str, Enum):
+class TagOrderOptions(StrEnum):
     name = "name"
     created_at = "created_at"
     updated_at = "updated_at"

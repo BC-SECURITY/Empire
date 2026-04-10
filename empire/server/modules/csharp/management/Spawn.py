@@ -72,7 +72,7 @@ class Module:
             )
 
         if not exe_path or exe_path == "" or str(exe_path).lower() == "failed":
-            raise ModuleValidationException("[!] Error generating launcher EXE.")
+            raise ModuleValidationException("Error generating launcher EXE.")
 
         assembly_bytes = Path(exe_path).read_bytes()
         base64_assembly = base64.b64encode(assembly_bytes).decode("utf-8")

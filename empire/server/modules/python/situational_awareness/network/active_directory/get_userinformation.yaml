@@ -21,9 +21,9 @@ description: |
   reconnaissance and helps operators build comprehensive profiles of potential
   targets for credential harvesting and targeted attacks.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1087.002
 background: false
 output_extension: ''
 needs_admin: false

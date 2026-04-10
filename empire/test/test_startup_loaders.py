@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from unittest.mock import MagicMock, Mock
 
 from empire.server.core.bypass_service import BypassService
@@ -19,6 +20,7 @@ def test_bypass_loader(monkeypatch):
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
+    main_menu.install_path = Path("empire/server")
 
     BypassService(main_menu)
 
@@ -40,6 +42,7 @@ def test_listener_template_loader(monkeypatch):
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
+    main_menu.install_path = Path("empire/server")
 
     listener_template_service = ListenerTemplateService(main_menu)
 
@@ -58,6 +61,7 @@ def test_stager_template_loader(monkeypatch):
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
+    main_menu.install_path = Path("empire/server")
 
     stager_template_service = StagerTemplateService(main_menu)
 
@@ -76,6 +80,7 @@ def test_profile_loader(monkeypatch):
 
     main_menu = Mock()
     main_menu.installPath = "empire/server"
+    main_menu.install_path = Path("empire/server")
 
     ProfileService(main_menu)
 

@@ -14,9 +14,9 @@ description: |
   user interactions. Useful for surveillance, intelligence gathering,
   and monitoring user activities through audio capture.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
-  - T1512
+  - T1123
 background: false
 output_extension: caf
 needs_admin: false

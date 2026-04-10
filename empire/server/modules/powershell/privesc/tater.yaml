@@ -12,7 +12,7 @@ description: |
   authentication fallback mechanisms and can bypass certain security controls to
   gain elevated privileges.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0006]
 techniques: [T1068, T1187]
 background: true
 output_extension:

@@ -14,9 +14,11 @@ authors:
   - name: John Doe
     handle: '@johndoe'
 description: A sample module demonstrating Empire module structure.
-tactics: []
+software: ''
+tactics:
+  - TA0002
 techniques:
-  - T1234
+  - T1059
 background: true
 output_extension: ps1
 needs_admin: false
@@ -31,6 +33,17 @@ options:
     value: 'default_value'
     strict: true
 ```
+
+## MITRE ATT&CK Fields
+
+Every module should include proper MITRE ATT&CK metadata. The fields are:
+
+- **`tactics`**: A list of ATT&CK tactic IDs (e.g., `TA0001` through `TA0043`). Every module should have at least one tactic — do not leave this as an empty list.
+- **`techniques`**: A list of ATT&CK technique or sub-technique IDs. Use the format `T####` for techniques (e.g., `T1059`) or `T####.###` for sub-techniques (e.g., `T1059.001`).
+- **`software`**: If the module wraps a known ATT&CK software entry, set this to its ID (e.g., `S0002` for Mimikatz, `S1071` for Rubeus). Leave as `''` if the tool is not cataloged in ATT&CK.
+
+Refer to the [MITRE ATT&CK Enterprise Matrix](https://attack.mitre.org/matrices/enterprise/) for valid tactic, technique, and software IDs.
+
 
 ## Special Options
 

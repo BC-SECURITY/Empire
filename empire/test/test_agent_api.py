@@ -17,14 +17,14 @@ def test_get_agent(client, agent, admin_auth_header):
     assert response.json()["session_id"] == agent
 
 
-def test_get_agents(client, admin_auth_header):
+def test_get_agents(client, admin_auth_header, agents):
     response = client.get("/api/v2/agents", headers=admin_auth_header)
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()["records"]) > 0
 
 
-def test_get_agents_include_stale_false(client, admin_auth_header):
+def test_get_agents_include_stale_false(client, admin_auth_header, agents):
     response = client.get(
         "/api/v2/agents?include_stale=false", headers=admin_auth_header
     )
@@ -34,7 +34,7 @@ def test_get_agents_include_stale_false(client, admin_auth_header):
     assert all(record["stale"] is False for record in response.json()["records"])
 
 
-def test_get_agents_include_archived_true(client, admin_auth_header):
+def test_get_agents_include_archived_true(client, admin_auth_header, agents):
     response = client.get(
         "/api/v2/agents?include_archived=true", headers=admin_auth_header
     )

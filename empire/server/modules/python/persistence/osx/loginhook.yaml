@@ -15,9 +15,9 @@ description: |
   maintaining long-term access to compromised macOS systems
   through legitimate system mechanisms.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004]
 techniques:
-  - T1037
+  - T1037.002
 background: false
 output_extension:
 needs_admin: false

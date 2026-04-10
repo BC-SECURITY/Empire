@@ -1,8 +1,7 @@
 import base64
-import errno
 import logging
-import os
 import random
+from pathlib import Path
 from textwrap import dedent
 
 from cryptography.hazmat.primitives import serialization
@@ -351,8 +350,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -423,8 +421,7 @@ class Listener:
 
         if language.lower() in ["python", "ironpython"]:
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -483,8 +480,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -507,8 +503,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/comms.py")
@@ -550,30 +545,21 @@ class Listener:
 
         uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
 
-        hopCodeLocation = f"{self.mainMenu.installPath}/data/misc/hop.php"
-        with open(hopCodeLocation) as f:
-            hopCode = f.read()
+        hopCode = (self.mainMenu.install_path / "data/misc/hop.php").read_text(
+            encoding="utf-8"
+        )
 
         hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
         hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
 
         saveFolder = self.options["OutFolder"]["Value"]
         for uri in uris:
-            saveName = f"{saveFolder}{uri}"
-
-            # recursively create the file's folders if they don't exist
-            if not os.path.exists(os.path.dirname(saveName)):
-                try:
-                    os.makedirs(os.path.dirname(saveName))
-                except OSError as exc:  # Guard against race condition
-                    if exc.errno != errno.EEXIST:
-                        raise
-
-            with open(saveName, "w") as f:
-                f.write(hopCode)
-                log.info(
-                    f"Hop redirector written to {saveName} . Place this file on the redirect server."
-                )
+            save_path = Path(saveFolder) / uri.lstrip("/")
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            save_path.write_text(hopCode)
+            log.info(
+                f"Hop redirector written to {save_path} . Place this file on the redirect server."
+            )
 
         return True
 

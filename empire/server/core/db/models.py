@@ -435,7 +435,7 @@ class Download(Base):
         return Path(self.location).read_bytes()
 
 
-class AgentTaskStatus(str, enum.Enum):
+class AgentTaskStatus(enum.StrEnum):
     queued = "queued"
     pulled = "pulled"
     completed = "completed"
@@ -499,7 +499,7 @@ class Plugin(Base):
     installed_version = Column(String(255), nullable=False, default="unknown")
 
 
-class PluginTaskStatus(str, enum.Enum):
+class PluginTaskStatus(enum.StrEnum):
     queued = "queued"
     started = "started"
     completed = "completed"
@@ -627,7 +627,7 @@ class Tag(Base):
     )
 
 
-class IpList(str, enum.Enum):
+class IpList(enum.StrEnum):
     allow = "allow"
     deny = "deny"
 

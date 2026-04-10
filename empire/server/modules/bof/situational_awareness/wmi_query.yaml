@@ -10,7 +10,7 @@ description: Beacon Object File (BOF) that executes custom Windows Management In
   settings, and security data. Enables targeted reconnaissance by querying specific
   system properties and can be used for both local and remote system discovery.
 software: ''
-tactics: [TA0007]
+tactics: [TA0007, TA0002]
 techniques: [T1047, T1082]
 background: false
 output_extension:

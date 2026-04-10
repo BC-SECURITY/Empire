@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
@@ -11,39 +11,28 @@ class Module:
     """
 
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ) -> tuple[str | None, str | None]:
-        # Step 1: Get the module source code
-        # The script should be stripped of comments, with a link to any
-        #   original reference script included in the comments.
-        # If your script is more than a few lines, it's probably best to use
-        #   the first method to source it.
-        #
-        # First method: Read in the source script from module_source
-        # get_module_source will return the source code, getting the obfuscated version if necessary.
-        # It will also return an error message if there was an issue reading the source code.
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
+        # The @auto_get_source decorator handles loading the module source code
+        # from module.script_path (with obfuscation if needed) and passes it as
+        # the `script` parameter.
 
         # If you'd just like to import a subset of the functions from the
         #   module source, use the following:
         #   script = helpers.generate_dynamic_powershell_script(module_code, ["Get-Something", "Set-Something"])
 
-        # Second method: Use the script from the module's yaml.
-        script = module.script
+        # Alternative: Use the script from the module's yaml instead of @auto_get_source.
+        # script = module.script
 
-        # Step 2: Parse the module options
+        # Parse the module options.
         # The params dict contains the validated options that were sent.
         script_end = ""
         # Add any arguments to the end execution of the script
@@ -55,11 +44,7 @@ class Module:
                 else:
                     script_end += " -" + str(option) + " " + str(values)
 
-        # Step 3: Return the final script
-        # finalize_module will obfuscate the "script_end" (if needed), then append it to the script.
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        # The @auto_finalize decorator takes the (script, script_end) tuple returned
+        # here and calls finalize_module() to obfuscate script_end (if needed) and
+        # append it to the script.
+        return script, script_end

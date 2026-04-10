@@ -10,7 +10,7 @@ description: |
   loud music without user interaction. Uses macOS system commands to
   control volume settings and launch Safari with specific URL parameters.
 software: ''
-tactics: []
+tactics: [TA0040]
 techniques:
   - T1491
 background: false

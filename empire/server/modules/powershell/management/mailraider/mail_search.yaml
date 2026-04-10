@@ -11,7 +11,9 @@ description: |
   Typical use cases include searching for passwords, financial data, project information, or other targeted content in user mailboxes.
 software: ''
 tactics: [TA0007, TA0009]
-techniques: [T1114]
+techniques:
+  - T1114
+  - T1114.001
 background: true
 output_extension:
 needs_admin: false

@@ -10,9 +10,9 @@ description: |
   lateral movement, or process migration. The new agent connects to the
   designated listener with configurable User-Agent settings.
 software: ''
-tactics: []
+tactics: [TA0002]
 techniques:
-  - T1050
+  - T1059.006
 background: true
 output_extension: ''
 needs_admin: false

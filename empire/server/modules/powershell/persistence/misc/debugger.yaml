@@ -22,7 +22,7 @@ description: |
   and creates registry artifacts that can be detected by advanced
   security monitoring tools.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0003, TA0005]
 techniques: [T1112, T1546.008]
 background: false
 output_extension:

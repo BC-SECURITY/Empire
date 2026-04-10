@@ -1,17 +1,21 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         # staging options
         listener_name = params["Listener"]
@@ -22,16 +26,6 @@ class Module:
         launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
-
         script_end = "Invoke-ExecuteMSBuild"
         cred_id = params["CredID"]
         if cred_id != "":
@@ -39,7 +33,7 @@ class Module:
                 cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
                 if not cred:
-                    return handle_error_message("[!] CredID is invalid!")
+                    raise ModuleValidationException("CredID is invalid!")
 
                 if cred.domain != "":
                     params["UserName"] = str(cred.domain) + "\\" + str(cred.username)
@@ -50,9 +44,9 @@ class Module:
 
         # Only "Command" or "Listener" but not both
         if listener_name == "" and command == "":
-            return handle_error_message("[!] Listener or Command required")
+            raise ModuleValidationException("Listener or Command required")
         if listener_name and command:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Cannot use Listener and Command at the same time"
             )
 
@@ -61,7 +55,7 @@ class Module:
             and not command
         ):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
@@ -77,7 +71,7 @@ class Module:
                 bypasses=params["Bypasses"],
             )
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
 
             launcher = launcher.replace("$", "`$")
             script = script.replace("LAUNCHER", launcher)
@@ -105,9 +99,4 @@ class Module:
 
         script_end += " | Out-String"
 
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        return script, script_end

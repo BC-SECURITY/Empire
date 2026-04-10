@@ -22,7 +22,7 @@ description: |
   privileges and involves modifying system files and registry values. These changes
   may be detected by file integrity monitoring or advanced EDR solutions. System
   updates or patches may revert these modifications, requiring reapplication.
-software: ''
+software: 'S0002'
 tactics: [TA0005, TA0008]
 techniques: [T1021.001, T1562]
 background: true

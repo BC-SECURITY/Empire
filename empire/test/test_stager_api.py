@@ -137,8 +137,16 @@ def get_base_csharp_exe_stager():
     }
 
 
+def get_windows_c_stager():
+    return {
+        "name": "windows-c-test-stager",
+        "template": "windows_c_launcher",
+        "options": {"Listener": "new-listener-1", "OutFile": "test_stager.exe"},
+    }
+
+
 def test_get_stager_templates(client, admin_auth_header):
-    min_stagers = 30
+    min_stagers = 32
     response = client.get(
         "/api/v2/stager-templates/",
         headers=admin_auth_header,
@@ -563,6 +571,7 @@ def test_delete_stager(client, admin_auth_header):
     assert stager_id not in [stager["id"] for stager in response.json()["records"]]
 
 
+@pytest.mark.slow
 def test_pyinstaller_stager_creation(client, admin_auth_header):
     pyinstaller_stager = get_pyinstaller_stager()
     response = client.post(
@@ -709,9 +718,7 @@ def test_macro_stager_generation(
 
     # Check if the file is downloaded successfully
     assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("content-type").split(";")[0] in [
-        "text/plain",
-    ]
+    assert response.headers.get("content-type").split(";")[0] == "text/plain"
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
@@ -721,6 +728,7 @@ def test_macro_stager_generation(
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
 
 
+@pytest.mark.slow
 def test_csharp_stager_creation(client, admin_auth_header):
     base_stager = get_base_csharp_exe_stager()
 
@@ -757,6 +765,61 @@ def test_csharp_stager_creation(client, admin_auth_header):
     assert isinstance(response.content, bytes)
 
     # Check if the downloaded file is not empty
+    assert len(response.content) > 0
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def test_windows_c_stager_creation(client, admin_auth_header):
+    stager_data = get_windows_c_stager()
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager_data
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.text
+    assert response.json()["id"] != 0
+
+    stager_id = response.json()["id"]
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def test_create_stager_download_metadata(client, admin_auth_header):
+    """Verify that stager download metadata has basename-only filename."""
+    base_stager = get_base_stager()
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=base_stager
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+    stager_id = response.json()["id"]
+
+    downloads = response.json().get("downloads", [])
+    assert len(downloads) > 0
+
+    download = downloads[0]
+    filename = download["filename"]
+    # filename should be a basename, not a full path
+    assert "/" not in filename
+    assert "\\" not in filename
+    assert len(filename) > 0
+
+    client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)
+
+
+def test_windows_c_stager_download(client, admin_auth_header):
+    stager_data = get_windows_c_stager()
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager_data
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    stager_id = response.json()["id"]
+    download_link = response.json()["downloads"][0]["link"]
+
+    response = client.get(download_link, headers=admin_auth_header)
+    assert response.status_code == status.HTTP_200_OK
+    assert isinstance(response.content, bytes)
     assert len(response.content) > 0
 
     client.delete(f"/api/v2/stagers/{stager_id}", headers=admin_auth_header)

@@ -20,29 +20,26 @@ class Module:
         script_end = ""
 
         # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
+        script, _err = main_menu.modulesv2.get_module_source(
             module_name="collection/Get-SQLColumnSampleData.ps1",
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
         )
 
         if check_all:
-            aux_module_source = main_menu.modulesv2.get_module_source(
+            aux_script, aux_err = main_menu.modulesv2.get_module_source(
                 module_name="situational_awareness/network/Get-SQLInstanceDomain.ps1",
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,
             )
-            try:
-                with open(aux_module_source) as auxSource:
-                    aux_script = auxSource.read()
-                    script += " " + aux_script
-            except Exception:
+            if aux_err:
                 print(
                     helpers.color(
-                        "[!] Could not read additional module source path at: "
-                        + str(aux_module_source)
+                        "[!] Could not read additional module source: " + str(aux_err)
                     )
                 )
+            else:
+                script += " " + aux_script
             script_end = " Get-SQLInstanceDomain "
             if username != "":
                 script_end += " -Username " + username

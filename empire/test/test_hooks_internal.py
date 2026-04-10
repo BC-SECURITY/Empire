@@ -3,6 +3,29 @@ import json
 import pytest
 
 from empire.server.core.hooks import hooks
+from empire.server.core.hooks_internal import _format_table
+
+
+def test_format_table():
+    result = _format_table(
+        ["PID", "ProcessName", "Arch", "UserName", "MemUsage"],
+        [
+            ["1234", "svchost", "x64", "SYSTEM", "15MB"],
+            ["5678", "explorer.exe", "x64", "Admin", "120MB"],
+            ["9", "idle", "", "", "0MB"],
+            ["42", "System", None, None, "1MB"],
+        ],
+    )
+
+    expected = (
+        " PID   ProcessName   Arch  UserName  MemUsage \n"
+        "----------------------------------------------\n"
+        " 1234  svchost       x64   SYSTEM    15MB     \n"
+        " 5678  explorer.exe  x64   Admin     120MB    \n"
+        " 9     idle                          0MB      \n"
+        " 42    System        None  None      1MB      "
+    )
+    assert result == expected
 
 
 @pytest.fixture

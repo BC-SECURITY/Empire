@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -126,7 +126,7 @@ class AgentCheckInsAggregate(BaseModel):
     bucket_size: str
 
 
-class AggregateBucket(str, Enum):
+class AggregateBucket(StrEnum):
     second = "second"
     minute = "minute"
     hour = "hour"

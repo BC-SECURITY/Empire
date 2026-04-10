@@ -86,7 +86,7 @@ class Stager:
             return ""
 
         launcher = ""
-        if listener.module in ["http"]:
+        if listener.module == "http":
             if language == "powershell":
                 launcher = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=listener_name,

@@ -22,7 +22,7 @@ def test_validate_options_required_strict_success():
         "enabled": "True",
     }
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == options
 
@@ -82,7 +82,7 @@ def test_validate_options_required_missing_uses_default():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": "DEFAULT_VALUE"}
 
@@ -104,7 +104,7 @@ def test_validate_options_casts_string_to_int_success():
         "Port": "123",
     }
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Port": 123}
 
@@ -122,7 +122,7 @@ def test_validate_options_missing_optional_field_no_default():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": ""}
 
@@ -140,7 +140,7 @@ def test_validate_options_strict_required_no_default():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    _cleaned_options, err = validate_options(instance_options, options, None, None)
 
     assert err == "required option missing: Command"
 
@@ -158,7 +158,7 @@ def test_validate_options_missing_optional_field_with_default():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": "Test"}
 
@@ -176,7 +176,7 @@ def test_validate_options_missing_optional_field_with_default_and_strict():
 
     options = {}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"Command": "Test"}
 
@@ -193,7 +193,7 @@ def test_validate_options_with_uneditable_field():
 
     options = {"UneditableField": "Test"}
 
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {}
 
@@ -245,7 +245,7 @@ def test_validate_options_with_file(session_local, models):
     download_service_mock.get_by_id.return_value = download
 
     with session_local.begin() as db:
-        cleaned_options, err = validate_options(
+        cleaned_options, _err = validate_options(
             instance_options, options, db, download_service_mock
         )
 
@@ -570,6 +570,6 @@ def test_validation_options_file_not_required():
     }
 
     options = {"File": ""}
-    cleaned_options, err = validate_options(instance_options, options, None, None)
+    cleaned_options, _err = validate_options(instance_options, options, None, None)
 
     assert cleaned_options == {"File": ""}

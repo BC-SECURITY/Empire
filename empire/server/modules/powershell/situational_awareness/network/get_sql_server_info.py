@@ -17,7 +17,7 @@ class Module:
         check_all = params["CheckAll"]
 
         # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
+        script, _err = main_menu.modulesv2.get_module_source(
             module_name="situational_awareness/network/Get-SQLServerInfo.ps1",
             obfuscate=obfuscate,
             obfuscate_command=obfuscation_command,
@@ -26,7 +26,7 @@ class Module:
         script_end = ""
         if check_all:
             # read in the common module source code
-            script, err = main_menu.modulesv2.get_module_source(
+            script, _err = main_menu.modulesv2.get_module_source(
                 module_name="situational_awareness/network/Get-SQLInstanceDomain.ps1",
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,

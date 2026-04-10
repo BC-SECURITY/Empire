@@ -19,7 +19,7 @@ description: |
   as it leverages social engineering principles and user behavior patterns,
   providing a reliable method for re-establishing connections through
   user-initiated actions.
-tactics: [TA0004]
+tactics: [TA0004, TA0002]
 techniques: [T1204.001]
 background: true
 output_extension:

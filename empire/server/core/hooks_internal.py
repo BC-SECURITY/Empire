@@ -3,7 +3,7 @@ import logging
 from json.decoder import JSONDecodeError
 
 import jq
-import terminaltables
+from prettytable import PrettyTable
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,17 @@ from empire.server.core.db import models
 from empire.server.core.hooks import hooks
 
 log = logging.getLogger(__name__)
+
+
+def _format_table(headers: list[str], rows: list[list]) -> str:
+    table = PrettyTable(headers)
+    table.border = False
+    table.align = "l"
+    for row in rows:
+        table.add_row(row)
+    lines = table.get_string().split("\n")
+    lines.insert(1, "-" * len(lines[0]))
+    return "\n".join(lines)
 
 
 def ps_hook(db: Session, task: models.AgentTask):
@@ -134,13 +145,9 @@ def ps_filter(db: Session, task: models.AgentTask):
             ]
         )
 
-    output_list.insert(0, ["PID", "ProcessName", "Arch", "UserName", "MemUsage"])
-
-    table = terminaltables.AsciiTable(output_list)
-    table.inner_row_border = False
-    table.outer_border = False
-    table.inner_column_border = False
-    task.output = table.table
+    task.output = _format_table(
+        ["PID", "ProcessName", "Arch", "UserName", "MemUsage"], output_list
+    )
 
     return db, task
 
@@ -179,13 +186,9 @@ def ls_filter(db: Session, task: models.AgentTask):
             ]
         )
 
-    output_list.insert(0, ["Mode", "Owner", "LastWriteTime", "Length", "Name"])
-
-    table = terminaltables.AsciiTable(output_list)
-    table.inner_row_border = False
-    table.outer_border = False
-    table.inner_column_border = False
-    task.output = table.table
+    task.output = _format_table(
+        ["Mode", "Owner", "LastWriteTime", "Length", "Name"], output_list
+    )
 
     return db, task
 
@@ -206,18 +209,14 @@ def ipconfig_filter(db: Session, task: models.AgentTask):
     if isinstance(output, dict):  # if there's only one adapter, it won't be a list.
         output = [output]
 
-    output_list = []
+    table = PrettyTable(header=False)
+    table.border = False
+    table.align = "l"
     for rec in output:
         for key, value in rec.items():
-            output_list.append([key, f": {value}"])
-        output_list.append([])
-
-    table = terminaltables.AsciiTable(output_list)
-    table.inner_heading_row_border = False
-    table.inner_row_border = False
-    table.outer_border = False
-    table.inner_column_border = False
-    task.output = table.table
+            table.add_row([key, f": {value}"])
+        table.add_row(["", ""])
+    task.output = table.get_string()
 
     return db, task
 
@@ -228,7 +227,7 @@ def route_filter(db: Session, task: models.AgentTask):
 
     if the results are from the Python or C# agents, it does nothing.
     """
-    if task.input.strip() not in ["route"] or task.agent.language != "powershell":
+    if task.input.strip() != "route" or task.agent.language != "powershell":
         return db, task
 
     output = json.loads(task.output)
@@ -245,13 +244,9 @@ def route_filter(db: Session, task: models.AgentTask):
             ]
         )
 
-    output_list.insert(0, ["Destination", "Netmask", "NextHop", "Interface", "Metric"])
-
-    table = terminaltables.AsciiTable(output_list)
-    table.inner_row_border = False
-    table.outer_border = False
-    table.inner_column_border = False
-    task.output = table.table
+    task.output = _format_table(
+        ["Destination", "Netmask", "NextHop", "Interface", "Metric"], output_list
+    )
 
     return db, task
 

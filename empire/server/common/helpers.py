@@ -47,6 +47,8 @@ import sys
 import threading
 from datetime import datetime
 
+import click
+
 from empire.server.utils.math_util import old_div
 
 log = logging.getLogger(__name__)
@@ -284,7 +286,7 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
         # get the dependencies for the function we're currently processing
         try:
             functionDependencies = get_dependent_functions(
-                functions[requiredFunction], list(functions.keys())
+                functions[requiredFunction], functions.keys()
             )
         except Exception:
             functionDependencies = []
@@ -485,7 +487,7 @@ def parse_mimikatz(data):  # noqa: PLR0912 PLR0915
                 if not (credType == "plaintext" and username.endswith("$")):
                     creds.append((credType, domain, username, password, hostName, sid))
 
-    if len(creds) == 0 and len(lines) >= 13:  # noqa: PLR2004
+    if not creds and len(lines) >= 13:  # noqa: PLR2004
         # check if we have lsadump output to check for krbtgt
         #   happens on domain controller hashdumps
         for x in range(8, 13):
@@ -522,7 +524,7 @@ def parse_mimikatz(data):  # noqa: PLR0912 PLR0915
                     pass
 
     # check if we get lsadump::dcsync output
-    if len(creds) == 0 and b"** SAM ACCOUNT **" in lines:
+    if not creds and b"** SAM ACCOUNT **" in lines:
         domain, user, userHash, dcName, sid = "", "", "", "", ""
         for line in lines:
             if line.strip().endswith(b"will be the domain"):
@@ -609,35 +611,22 @@ def color(string, color=None):
     """
     Change text color for the Linux terminal.
     """
+    color_map = {"red": "red", "green": "green", "yellow": "yellow", "blue": "blue"}
+    prefix_map = {"[!]": "red", "[+]": "green", "[*]": "blue", "[>]": "yellow"}
 
-    attr = []
-    # bold
-    attr.append("1")
-
+    fg = None
     if color:
-        if color.lower() == "red":
-            attr.append("31")
-        elif color.lower() == "green":
-            attr.append("32")
-        elif color.lower() == "yellow":
-            attr.append("33")
-        elif color.lower() == "blue":
-            attr.append("34")
-        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
+        fg = color_map.get(color.lower())
+    else:
+        stripped = string.strip()
+        for prefix, prefix_color in prefix_map.items():
+            if stripped.startswith(prefix):
+                fg = prefix_color
+                break
+        else:
+            return string
 
-    if string.strip().startswith("[!]"):
-        attr.append("31")
-        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-    if string.strip().startswith("[+]"):
-        attr.append("32")
-        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-    if string.strip().startswith("[*]"):
-        attr.append("34")
-        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-    if string.strip().startswith("[>]"):
-        attr.append("33")
-        return "\x1b[{}m{}\x1b[0m".format(";".join(attr), string)
-    return string
+    return click.style(string, fg=fg, bold=True)
 
 
 def unique(seq, idfun=None):

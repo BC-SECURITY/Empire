@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -18,14 +18,14 @@ def domain_to_dto_download(download):
     )
 
 
-class DownloadSourceFilter(str, Enum):
+class DownloadSourceFilter(StrEnum):
     upload = "upload"
     stager = "stager"
     agent_file = "agent_file"
     agent_task = "agent_task"
 
 
-class DownloadOrderOptions(str, Enum):
+class DownloadOrderOptions(StrEnum):
     filename = "filename"
     location = "location"
     size = "size"

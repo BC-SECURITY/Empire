@@ -16,7 +16,9 @@ description: |
   new events from being logged.
 software: ''
 tactics: [TA0005]
-techniques: [T1562.006]
+techniques:
+  - T1562.002
+  - T1562.006
 background: false
 output_extension:
 needs_admin: true

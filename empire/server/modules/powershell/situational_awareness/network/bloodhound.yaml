@@ -20,8 +20,8 @@ description: |
   group memberships, and potential privilege escalation opportunities. Information
   gathered includes user accounts, group memberships, computer objects, and trust
   relationships.
-software: ''
-tactics: [TA0007]
+software: 'S0521'
+tactics: [TA0007, TA0002, TA0009]
 techniques: [T1087.001, T1087.002, T1560, T1059.001, T1482, T1615, T1106, T1201,
   T1069.001, T1069.002, T1018, T1033]
 background: true

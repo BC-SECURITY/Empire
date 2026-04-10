@@ -1,4 +1,4 @@
-name: Invoke-Script
+name: PSRansom
 authors:
   - name: ''
     handle: '@JoelGMSec'
@@ -9,8 +9,13 @@ description: |
   data during encryption and includes a demonstration mode that changes the desktop
   wallpaper and displays a ransom note popup.
 software: ''
-tactics: [TA0040]
-techniques: [T1486, T1491.001, T1140, T1083]
+tactics: [TA0040, TA0005, TA0007]
+techniques:
+  - T1041
+  - T1083
+  - T1140
+  - T1486
+  - T1491.001
 background: true
 output_extension:
 needs_admin: false

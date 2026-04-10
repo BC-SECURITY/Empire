@@ -12,6 +12,7 @@ class Module:
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        **kwargs,
     ):
         nonce = random.randint(1000, 10000)
 

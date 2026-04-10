@@ -19,7 +19,7 @@ description: Performs comprehensive network range discovery by extracting hostna
   movement opportunities within specific subnet ranges.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482, T1069.002, T1615, T1016]
+techniques: [T1069.002, T1016]
 background: true
 output_extension:
 needs_admin: false

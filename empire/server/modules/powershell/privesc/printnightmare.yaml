@@ -13,7 +13,9 @@ description: |
   controls and gain elevated privileges on the target system.
 software: ''
 tactics: [TA0004]
-techniques: [T1068]
+techniques:
+  - T1068
+  - T1136.001
 background: false
 output_extension: ''
 needs_admin: false

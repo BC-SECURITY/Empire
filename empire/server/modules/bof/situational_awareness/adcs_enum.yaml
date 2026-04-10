@@ -9,8 +9,8 @@ description: |
   and their certificate templates. Serves as an alternative to COM-based enumeration
   by invoking low-level Windows API functions directly.
 software: ''
-tactics: [TA0043, TA0007]
-techniques: [T1590.001, T1590.003, T1482, T1106]
+tactics: [TA0043, TA0002]
+techniques: [T1590.001, T1590.003, T1106]
 background: false
 output_extension:
 needs_admin: false

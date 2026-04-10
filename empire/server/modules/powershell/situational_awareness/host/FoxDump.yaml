@@ -12,7 +12,7 @@ description: |
   master password has been set.
 software: ''
 tactics: [TA0006]
-techniques: [T1555.03]
+techniques: [T1555.003]
 background: true
 output_extension:
 needs_admin: false

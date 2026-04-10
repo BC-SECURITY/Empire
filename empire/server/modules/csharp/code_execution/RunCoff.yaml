@@ -9,7 +9,7 @@ description: |
   frameworks. COFF loader allows for the execution of C/C++ programs as position independent
   code. The user must pass in the Format String, Entry Point, and Arguments.
 software: ''
-tactics: [TA0002]
+tactics: [TA0002, TA0005]
 techniques: [T1106, T1620]
 background: true
 output_extension: ''

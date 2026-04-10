@@ -1,3 +1,4 @@
+import os
 import random
 import time
 
@@ -309,7 +310,7 @@ class Listener:
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
         self.thread.daemon = True
         self.thread.start()
-        time.sleep(1)
+        time.sleep(0.1 if os.environ.get("TEST_MODE") else 1)
         # returns True if the listener successfully started, false otherwise
         return self.thread.is_alive()
 

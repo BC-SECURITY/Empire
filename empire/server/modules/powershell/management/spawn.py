@@ -53,7 +53,7 @@ class Module:
             )
 
         if launcher == "":
-            raise ModuleValidationException("[!] Error in launcher command generation.")
+            raise ModuleValidationException("Error in launcher command generation.")
 
         if sys_wow64.lower() == "true":
             stager_code = (

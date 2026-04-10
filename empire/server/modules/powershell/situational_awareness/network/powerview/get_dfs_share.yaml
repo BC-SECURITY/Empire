@@ -20,7 +20,7 @@ description: Enumerates Distributed File System (DFS) shares within an Active Di
   file repositories.
 software: S0194
 tactics: [TA0007]
-techniques: [T1069, T1615, T1135]
+techniques: [T1069, T1135]
 background: true
 output_extension:
 needs_admin: false

@@ -23,7 +23,7 @@ description: |
   creates visible file and registry artifacts.
 software: ''
 tactics: [TA0004]
-techniques: [T1101.005]
+techniques: [T1547.005]
 background: true
 output_extension:
 needs_admin: true

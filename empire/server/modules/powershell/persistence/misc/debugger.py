@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -43,7 +43,9 @@ class Module:
 
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+                raise ModuleValidationException(
+                    "[!] Invalid listener: " + listener_name
+                )
 
             # generate the PowerShell one-liner
             launcher = main_menu.stagergenv2.generate_launcher(

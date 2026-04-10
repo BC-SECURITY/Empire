@@ -118,7 +118,7 @@ class Stager:
         if obfuscate.lower() == "true":
             invoke_obfuscation = True
 
-        if language in ["csharp"]:
+        if language == "csharp":
             if self.mainMenu.listenersv2.get_active_listener_by_name(
                 listener_name
             ).info["Name"] not in ["HTTP[S]", "smb_pivot"]:
@@ -134,7 +134,7 @@ class Stager:
                 encode=encode,
                 listener_name=listener_name,
             )
-        elif language in ["ironpython"]:
+        elif language == "ironpython":
             launcher = self.mainMenu.stagergenv2.generate_exe_oneliner(
                 language=language,
                 obfuscate=invoke_obfuscation,

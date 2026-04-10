@@ -16,9 +16,9 @@ description: |
   and maintaining operational security by eliminating
   persistence artifacts.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004, TA0005]
 techniques:
-  - T1055
+  - T1543.001
 background: false
 output_extension:
 needs_admin: false

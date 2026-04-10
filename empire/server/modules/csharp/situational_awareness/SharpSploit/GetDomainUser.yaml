@@ -11,7 +11,7 @@ description: |
   targeted enumeration of specific users by name or comprehensive enumeration of
   all domain users.
 tactics: [TA0007]
-techniques: [T1482, T1069.002, T1615]
+techniques: [T1069.002, T1087.002]
 background: false
 output_extension: ''
 needs_admin: false

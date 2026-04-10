@@ -22,7 +22,7 @@ description: |
   on the PowerUp toolkit developed by @harmj0y and provides detailed
   output that can be used to plan targeted privilege escalation attacks.
 software: S0194
-tactics: [TA0007]
+tactics: [TA0007, TA0004]
 techniques: [T1068, T1082]
 background: true
 output_extension:

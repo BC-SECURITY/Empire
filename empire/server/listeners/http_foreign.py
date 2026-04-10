@@ -1,6 +1,5 @@
 import base64
 import logging
-import os
 import random
 from textwrap import dedent
 
@@ -121,7 +120,6 @@ class Listener:
         )
 
         self.session_cookie = self.options["Cookie"]["Value"]
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
         self.instance_log = log
 
     def default_response(self):
@@ -399,8 +397,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -415,8 +412,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/comms.py")

@@ -12,7 +12,8 @@ description: |
   enumeration of all network sessions.
 software: ''
 tactics: [TA0007]
-techniques: [T1076, T1018, T1933]
+techniques:
+  - T1049
 background: false
 output_extension: ''
 needs_admin: false

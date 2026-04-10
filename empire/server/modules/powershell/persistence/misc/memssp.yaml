@@ -25,7 +25,7 @@ description: |
   re-injection after system restarts.
 software: S0194
 tactics: [TA0004, TA0006]
-techniques: [T1101.005, T1056]
+techniques: [T1547.005, T1056]
 background: true
 output_extension:
 needs_admin: true

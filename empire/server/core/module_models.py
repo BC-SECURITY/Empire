@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
-class LanguageEnum(str, Enum):
+class LanguageEnum(StrEnum):
     python = "python"
     powershell = "powershell"
     csharp = "csharp"

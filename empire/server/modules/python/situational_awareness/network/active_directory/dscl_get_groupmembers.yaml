@@ -23,9 +23,9 @@ description: |
   targets for credential harvesting and privilege escalation attacks using
   native macOS directory service capabilities.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1069.002
 background: false
 output_extension: ''
 needs_admin: false

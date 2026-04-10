@@ -87,7 +87,7 @@ class AgentService:
         if not session_key:
             session_key = AESCipher.generate_key()
 
-        if not profile or profile == "":
+        if not profile:
             profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"
 
         agent = models.Agent(

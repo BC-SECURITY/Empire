@@ -14,13 +14,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.5.0] - 2026-03-08
+-   Updated Starkiller to v3.4.0
+
 ### Added
 
+-   Log Empire version and git commit SHA at startup for easier production diagnostics; commit SHA is baked into the Docker image at build time via `--build-arg`
+-   Added C stager for lightweight stage0 shellcode injection via Fibers
+-   Added `shellcode_compiler` utility for compiling position-independent C stagers into raw x64 shellcode for BOF process injection
+-   Added `clipboard_window_inject_list` BOF module for enumerating processes with clipboard window class
+-   Added PIC shellcode C template and linker script for MinGW-based shellcode compilation
+-   Added unit tests for `shellcode_compiler` and rewrote `test_bof_packer` to cover the new `Packer` class API
 -   Added a runtime `Background` option to C# modules, allowing operators to override background/foreground execution at task time
+-   Added C# PatchETW module for in-process ETW patching via ntdll!EtwEventWrite
+-   Added C# PatchlessAMSI module for patchless AMSI bypass using hardware breakpoints and vectored exception handling
+-   Added PowerShell Invoke-VSSExtract module for NTDS.dit and SYSTEM hive extraction via Volume Shadow Copy
+-   Added PowerShell Invoke-RDPHijack module for RDP session hijacking via tscon.exe
+-   Added Python linux_keyring module for credential extraction from the Linux kernel keyring subsystem
+-   Added Python aws_imds module for AWS IAM role credential theft via EC2 Instance Metadata Service
+-   Added BOF `spawn` module for EarlyBird process hollowing with suspended process creation, shellcode injection, and APC thread hijacking
+
+### Changed
+
+-   Added Python 3.14 support (supports 3.13 and 3.14); Dockerfile now uses `python:3.14.3-trixie`
+-   Replace `os.path` with `pathlib` in core code and enforce `PTH` lint rule for all core files
+-   Switch `stager_generation_service` from deprecated `installPath` (str) to `install_path` (Path)
+-   Optimized test suite for faster CI and local runs
+-   Modernize Python patterns in core code: use `setdefault()`, truthiness checks, `click.style()` for terminal colors, and remove redundant operations
+-   Reduced test fixture boilerplate with a shared `make_agent()` factory and deduplicated `plugin_task` fixture across test files
+-   Removed `autouse` from test fixtures that don't need it, making test dependencies explicit
+-   Added unit tests for encryption, packet handling, helpers, malleable transformations, and listener utilities
+-   Migrate remaining `installPath` usages to `install_path` (Path) in core services
+-   Use `Path.read_text(encoding="utf-8")` instead of `read_bytes().decode()` in stager generation
+-   Replace `os.system()` calls with `subprocess.run()` in stager JAR generation
+-   Upgraded all Python dependencies to latest versions (Feb 2026)
+-   Replace deprecated `handle_error_message` with raised `ModuleValidationException` in all modules (#716)
+-   Convert 51 modules to use `@auto_get_source` and `@auto_finalize` decorators, eliminating boilerplate (#716)
+-   Replace unmaintained `terminaltables` dependency with `prettytable` (#809)
+-   Refactored `bof_packer` from standalone functions to a `Packer` class with granular packing methods (`addbytes`, `addstr`, `addWstr`, `addbool`, `adduint32`, `addint`, `addshort`)
+-   Rewrote `clipboard_window_inject` BOF module to use PIC shellcode instead of PowerShell launcher-based shellcode generation
+-   Simplified `clipboard_window_inject` module options by removing unnecessary launcher parameters and corrected BOF format string
+-   Bumped Empire Compiler from v0.4.3 to v0.4.4
+
+### Removed
+
+-   Removed `secinject` BOF module and its pre-compiled binary
 
 ### Fixed
 
+-   Fixed SQLAlchemy connection pool exhaustion caused by async hooks receiving the caller's committed session. `run_hooks` now wraps async hooks in `_run_async_hook`, which opens a fresh `SessionLocal` session for each hook and closes it cleanly after the hook returns. ORM objects are re-attached via `session.merge()` so lazy-loaded relationships resolve correctly.
+-   Fixed SQLAlchemy connection pool exhaustion during agent check-ins by releasing the DB session before expensive file I/O, encryption, and packet building in `handle_agent_request()`
+-   Fixed custom-generate BOF modules (`clipboard_window_inject`, `spawn`, `clipboard_window_inject_list`) returning .NET-only `file|,json` format for Go agents, causing BOF execution to fail on the Go agent's COFF loader
+-   Added `format_bof_output()` to `ModuleService` to centralize BOF output formatting for Go and .NET agents
+-   Pass `agent_language` to custom-generate modules so they can produce agent-appropriate output
+-   Fixed malleable HTTP listener stagers failing after server restart due to random URI regeneration in `Stager._defaults()`
+-   Fix null-safety bug in `_process_agent_packet` when `save_module_file` returns None on skywalker exploit detection
 -   Fixed stop-job handlers in PowerShell and Python agents crashing when the target job doesn't exist
+-   Fixed the `docs/quickstart/installation/README.md` file to specify a previously missing reference to Ubuntu
+-   Fixed 9 malformed MITRE ATT&CK technique IDs across PowerShell, Python, and C# modules
+-   Fixed 2 malformed tactic fields that used space-separated strings instead of YAML lists
+-   Replaced 7 deprecated or revoked ATT&CK techniques with current equivalents
+-   Added missing `software` field for known ATT&CK tools (Rubeus, BloodHound, Mimikatz)
+-   Added missing `tactics` field to 82 Python modules that had none
+-   Fixed 74 technique-to-tactic inconsistencies across all module languages
+-   Replaced 27 additional deprecated technique IDs predating ATT&CK v10 with current equivalents across Python and template modules
+-   Removed incorrect T1482 (Domain Trust Discovery) from 32 modules that perform user, group, or computer enumeration
+-   Removed incorrect T1615 (Group Policy Discovery) from 24 modules unrelated to GPO enumeration
+-   Replaced T1106 (Native API) with T1059.006 (Python) on 5 DCOS REST API modules
+-   Added missing `techniques` field to 3 session enumeration modules
+-   Corrected 3 macOS LaunchAgent persistence modules from T1055 (Process Injection) to T1543.001 (Launch Agent)
+-   Corrected macOS screensaver credential prompt module from T1113 (Screen Capture) to T1056.002 (GUI Input Capture)
+-   Corrected Invoke-DownloadFile from T1041 (Exfiltration Over C2) to T1105 (Ingress Tool Transfer)
+-   Upgraded 3 keylogger modules from parent T1056 to specific T1056.001 (Keylogging) sub-technique
+-   Upgraded macOS email search module from T1114 to T1114.001 (Local Email Collection) sub-technique
+-   Upgraded macOS LoginHook persistence from T1037 to T1037.002 (Login Hook) sub-technique
+-   Added T1105 (Ingress Tool Transfer) to 12 lateral movement modules that deploy stagers to remote hosts
+-   Added 10 new ATT&CK technique IDs across 51 modules to improve coverage from 181 to 190 unique techniques
+-   Added T1005 (Data from Local System) to 8 macOS and Linux credential and collection modules
+-   Added T1550.002 (Pass the Hash) to PsExec, SMBExec, and WMI lateral movement modules
+-   Added T1562.001 (Impair Defenses) to AMSI bypass, ETW patching, and Outlook security modules
+-   Fixed duplicate technique entries in RevertToSelf and NetRipper modules
+-   Fixed PSRansom module `name` field incorrectly set to `Invoke-Script` instead of `PSRansom`
 -   Fixed misc_skeleton_key Invoke-Mimikatz call
 
 ## [6.4.1] - 2026-02-15
@@ -1257,7 +1331,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.5.0...HEAD
+
+[6.5.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.1...v6.5.0
 
 [6.4.1]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v6.4.0...v6.4.1
 

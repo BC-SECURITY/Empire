@@ -9,7 +9,7 @@ description: |
   to the designated listener. This is the C# equivalent of the PowerShell
   spawn module.
 software: ''
-tactics: []
+tactics: [TA0002]
 techniques:
   - T1059
 background: true

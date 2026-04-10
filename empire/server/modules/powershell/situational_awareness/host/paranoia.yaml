@@ -12,7 +12,7 @@ description: |
   be lacking. Information gathered includes installed security software, monitoring
   agents, and security configuration settings.
 software: ''
-tactics: [TA0005]
+tactics: [TA0005, TA0003, TA0004, TA0007]
 techniques: [T1057, T1546]
 background: true
 output_extension:

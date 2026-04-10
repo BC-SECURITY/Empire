@@ -13,7 +13,7 @@ def test_user_credentials():
     return {"username": username, "password": password}
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def test_user_id(client, admin_auth_header, test_user_credentials):
     """Module-scoped fixture that creates a non-admin test user and returns the user ID"""
     response = client.post(
@@ -32,7 +32,7 @@ def test_user_id(client, admin_auth_header, test_user_credentials):
 
 
 @pytest.fixture
-def test_user_auth_token(client, test_user_credentials):
+def test_user_auth_token(client, test_user_id, test_user_credentials):
     """Module-scoped fixture that provides auth token for the test user"""
     response = client.post(
         "/token",

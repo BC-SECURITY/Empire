@@ -1,8 +1,8 @@
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -37,7 +37,7 @@ class Module:
                 cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
                 if not cred:
-                    return handle_error_message("[!] CredID is invalid!")
+                    raise ModuleValidationException("CredID is invalid!")
 
                 if cred.domain != "":
                     params["UserName"] = str(cred.domain) + "\\" + str(cred.username)
@@ -59,7 +59,9 @@ class Module:
             # if there's a listener specified, generate a stager and store it
             if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+                raise ModuleValidationException(
+                    "[!] Invalid listener: " + listener_name
+                )
 
             # generate the PowerShell one-liner with all of the proper options set
             launcher = main_menu.stagergenv2.generate_launcher(

@@ -19,7 +19,7 @@ description: |
   maintains the appearance of normal system operation while ensuring continued
   access through user-initiated shortcut execution.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0002]
 techniques: [T1204.001, T1547.009]
 background: true
 output_extension:

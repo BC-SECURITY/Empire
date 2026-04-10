@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -55,7 +55,7 @@ Invoke-EventLogBackdoor"""
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         stager_code = main_menu.stagergenv2.generate_launcher(
             listener_name=listener_name,
@@ -65,7 +65,7 @@ Invoke-EventLogBackdoor"""
         )
 
         if stager_code == "":
-            return handle_error_message("[!] Error in launcher generation.")
+            raise ModuleValidationException("Error in launcher generation.")
         script = script.replace("REPLACE_LAUNCHER", stager_code)
 
         for option, values in params.items():
@@ -87,16 +87,11 @@ Invoke-EventLogBackdoor"""
         out_file = params["OutFile"]
         if out_file != "":
             # make the base directory if it doesn't exist
-            if (
-                not os.path.exists(os.path.dirname(out_file))
-                and os.path.dirname(out_file) != ""
-            ):
-                os.makedirs(os.path.dirname(out_file))
+            out_path = Path(out_file)
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(script)
 
-            with open(out_file, "w") as f:
-                f.write(script)
-
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[+] PowerBreach deaduser backdoor written to " + out_file
             )
 

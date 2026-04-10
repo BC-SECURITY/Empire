@@ -23,10 +23,10 @@ description: |
   The spawned agent inherits root privileges, allowing access to sensitive system
   files, configuration changes, and administrative operations that would otherwise
   be restricted to the original user context.
-software: T1169
-tactics: []
+software: ''
+tactics: [TA0004, TA0005]
 techniques:
-  - T1050
+  - T1548.003
 background: true
 output_extension: ''
 needs_admin: false

@@ -19,9 +19,9 @@ description: Captures keystrokes from X11 user sessions on Linux systems by leve
   keyloggers. This tool is intended for authorized security assessments, red teaming,
   or research in controlled environments only.
 software: ''
-tactics: []
+tactics: [TA0009, TA0006]
 techniques:
-  - T1056
+  - T1056.001
 background: true
 output_extension: ''
 needs_admin: false
