@@ -173,8 +173,12 @@ def test_create_listener_normalization_preserves_user_defined_ports(
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "Port cannot be provided in a host name"
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["host_address"] == "http://localhost:443/"
+
+    client.delete(
+        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+    )
 
 
 def test_create_listener_normalization_sets_host_port_as_bind_port(
