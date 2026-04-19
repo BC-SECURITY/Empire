@@ -18,7 +18,7 @@ description: |
   protocol headers, and payload data. Requires administrative privileges to access network
   diagnostic capabilities.
 software: ''
-tactics: [TA0009]
+tactics: [TA0009, TA0006, TA0007]
 techniques: [T1040]
 background: false
 output_extension:

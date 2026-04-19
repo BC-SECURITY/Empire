@@ -15,123 +15,54 @@ from empire.server.core.module_models import (
     LanguageEnum,
 )
 from empire.server.utils.module_util import handle_error_message
+from empire.test.conftest import make_agent
 
 
-@pytest.fixture(scope="module", autouse=True)
+def _get_or_create_agent(session_local, models, main, **kwargs):
+    """Helper to get-or-create a module-scoped agent."""
+    name = kwargs["name"]
+    with session_local.begin() as db:
+        agent = db.query(models.Agent).filter(models.Agent.session_id == name).first()
+        if not agent:
+            agent = make_agent(models, **kwargs)
+            db.add(agent)
+            db.add(models.AgentCheckIn(agent_id=agent.session_id))
+            db.flush()
+
+        main.agentcommsv2.agents[name] = {
+            "sessionKey": agent.session_key,
+        }
+
+        return agent.session_id
+
+
+@pytest.fixture(scope="module")
 def agent_low_version(session_local, models, main):
-    with session_local.begin() as db:
-        agent = db.query(models.Agent).filter(models.Agent.session_id == "WEAK").first()
-        if not agent:
-            agent = models.Agent(
-                name="WEAK",
-                session_id="WEAK",
-                delay=1,
-                jitter=0.1,
-                external_ip="1.1.1.1",
-                session_key="qwerty",
-                nonce="nonce",
-                profile="profile",
-                kill_date="killDate",
-                working_hours="workingHours",
-                lost_limit=60,
-                listener="http",
-                language="powershell",
-                language_version="1",
-                high_integrity=True,
-                archived=False,
-            )
-            db.add(agent)
-            db.add(models.AgentCheckIn(agent_id=agent.session_id))
-            db.flush()
-
-        main.agentcommsv2.agents["WEAK"] = {
-            "sessionKey": agent.session_key,
-        }
-
-        session_id = agent.session_id
-
-    return session_id  # noqa RET504
+    return _get_or_create_agent(
+        session_local, models, main, name="WEAK", language_version="1"
+    )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def agent_archived(session_local, models, main):
-    with session_local.begin() as db:
-        agent = (
-            db.query(models.Agent)
-            .filter(models.Agent.session_id == "iamarchived")
-            .first()
-        )
-        if not agent:
-            agent = models.Agent(
-                name="iamarchived",
-                session_id="iamarchived",
-                delay=1,
-                jitter=0.1,
-                external_ip="1.1.1.1",
-                session_key="qwerty",
-                nonce="nonce",
-                profile="profile",
-                kill_date="killDate",
-                working_hours="workingHours",
-                lost_limit=60,
-                listener="http",
-                language="powershell",
-                language_version="1",
-                high_integrity=True,
-                archived=True,
-            )
-            db.add(agent)
-            db.add(models.AgentCheckIn(agent_id=agent.session_id))
-            db.flush()
-
-        main.agentcommsv2.agents["iamarchived"] = {
-            "sessionKey": agent.session_key,
-        }
-
-        session_id = agent.session_id
-
-    return session_id  # noqa RET504
+    return _get_or_create_agent(
+        session_local,
+        models,
+        main,
+        name="iamarchived",
+        language_version="1",
+        archived=True,
+    )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def agent_low_integrity(session_local, models, main):
-    with session_local.begin() as db:
-        agent = (
-            db.query(models.Agent).filter(models.Agent.session_id == "WEAK2").first()
-        )
-        if not agent:
-            agent = models.Agent(
-                name="WEAK2",
-                session_id="WEAK2",
-                delay=1,
-                jitter=0.1,
-                external_ip="1.1.1.1",
-                session_key="qwerty",
-                nonce="nonce",
-                profile="profile",
-                kill_date="killDate",
-                working_hours="workingHours",
-                lost_limit=60,
-                listener="http",
-                language="powershell",
-                language_version="5",
-                high_integrity=False,
-                archived=False,
-            )
-            db.add(agent)
-            db.add(models.AgentCheckIn(agent_id=agent.session_id))
-            db.flush()
-
-        main.agentcommsv2.agents["WEAK2"] = {
-            "sessionKey": agent.session_key,
-        }
-
-        session_id = agent.session_id
-
-    return session_id  # noqa RET504
+    return _get_or_create_agent(
+        session_local, models, main, name="WEAK2", high_integrity=False
+    )
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
@@ -147,7 +78,7 @@ def download(client, admin_auth_header, session_local, models):
     return response.json()
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def bof_download(client, admin_auth_header, session_local, models):
     response = client.post(
         "/api/v2/downloads",
@@ -191,7 +122,7 @@ def return_handle_error_message_wrapper(message):
     return return_handle_error_message
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def _module_with_validation_exception(main):
     module_name = "this_module_has_a_validation_exception"
     main.modulesv2.modules[module_name] = EmpireModule(
@@ -211,7 +142,7 @@ def _module_with_validation_exception(main):
     del main.modulesv2.modules[module_name]
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def _module_with_execution_exception(main):
     module_name = "this_module_has_an_execution_exception"
     main.modulesv2.modules[module_name] = EmpireModule(
@@ -231,7 +162,7 @@ def _module_with_execution_exception(main):
     del main.modulesv2.modules[module_name]
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def _module_with_legacy_handle_error_message(main):
     module_name = "this_module_uses_legacy_handle_error_message"
     main.modulesv2.modules[module_name] = EmpireModule(
@@ -330,6 +261,7 @@ def test_create_task_module(client, admin_auth_header, agent):
     }
 
 
+@pytest.mark.slow
 def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
@@ -355,6 +287,7 @@ def test_create_task_module_bof(client, admin_auth_header, agent, bof_download):
     assert tags[0]["label"] == "task:input"
 
 
+@pytest.mark.slow
 def test_create_task_module_csharp(client, admin_auth_header, agent):
     response = client.post(
         f"/api/v2/agents/{agent}/tasks/module",
@@ -563,6 +496,7 @@ def test_create_task_module_ignore_admin_check(
     assert response.json()["id"] > 0
 
 
+@pytest.mark.usefixtures("_module_with_legacy_handle_error_message")
 def test_create_task_module_validation_exception(
     client, admin_auth_header, agent_low_integrity
 ):
@@ -583,6 +517,7 @@ def test_create_task_module_validation_exception(
     )
 
 
+@pytest.mark.usefixtures("_module_with_execution_exception")
 def test_create_task_module_execution_exception(
     client, admin_auth_header, agent_low_integrity
 ):
@@ -600,6 +535,7 @@ def test_create_task_module_execution_exception(
     assert response.json()["detail"] == "this_module_has_an_execution_exception"
 
 
+@pytest.mark.usefixtures("_module_with_execution_exception")
 def test_create_task_handle_error_message(
     client, admin_auth_header, agent_low_integrity
 ):

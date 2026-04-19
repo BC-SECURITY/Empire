@@ -1,15 +1,15 @@
 import base64
 import logging
 import struct
-import time
 import zlib
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 from sqlalchemy.exc import IntegrityError
 
 from empire.server.common.empire import MainMenu
+from empire.server.utils import datetime_util
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class compress:
         return header + data
 
 
-def test_stale_expression(empire_config, session_local, models):
+def test_stale_expression(empire_config, session_local, models, agents):
     with session_local.begin() as db:
         agents = db.query(models.Agent).all()
 
@@ -126,15 +126,16 @@ def test_duplicate_checkin_raises_exception(session_local, models, agent):
             db.flush()
 
 
-def test_can_ignore_duplicate_checkins(session_local, models, agent, main):
+def test_can_ignore_duplicate_checkins(session_local, models, agent, main, monkeypatch):
     with session_local.begin() as db:
         db_agent = (
             db.query(models.Agent).filter(models.Agent.session_id == agent).first()
         )
         prev_checkin_count = len(db_agent.checkins.all())
-        # Need to ensure that these two checkins are not the same second
-        # as the original checkin
-        time.sleep(2)
+        # Monkeypatch time to be 2 seconds in the future so the checkin
+        # timestamp differs from the original checkin
+        future_time = datetime_util.getutcnow() + timedelta(seconds=2)
+        monkeypatch.setattr(datetime_util, "getutcnow", lambda: future_time)
 
         main.agentsv2.update_agent_lastseen(db, db_agent.session_id)
         main.agentsv2.update_agent_lastseen(db, db_agent.session_id)

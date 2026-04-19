@@ -11,7 +11,7 @@ description: |
   saved to disk, converted to base64 format for transmission, and then securely
   deleted.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
   - T1113
 background: false

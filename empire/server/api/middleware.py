@@ -17,18 +17,20 @@ class EmpireCORSMiddleware(CORSMiddleware):
         allow_headers: typing.Sequence[str] = (),
         allow_credentials: bool = False,
         allow_origin_regex: str | None = None,
+        allow_private_network: bool = False,
         expose_headers: typing.Sequence[str] = (),
         max_age: int = 600,
     ) -> None:
         super().__init__(
             app,
-            allow_origins,
-            allow_methods,
-            allow_headers,
-            allow_credentials,
-            allow_origin_regex,
-            expose_headers,
-            max_age,
+            allow_origins=allow_origins,
+            allow_methods=allow_methods,
+            allow_headers=allow_headers,
+            allow_credentials=allow_credentials,
+            allow_origin_regex=allow_origin_regex,
+            allow_private_network=allow_private_network,
+            expose_headers=expose_headers,
+            max_age=max_age,
         )
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

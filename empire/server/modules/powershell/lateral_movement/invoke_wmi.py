@@ -1,7 +1,7 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -26,9 +26,9 @@ class Module:
 
         # Only "Command" or "Listener" but not both
         if listener_name == "" and command == "":
-            return handle_error_message("[!] Listener or Command required")
+            raise ModuleValidationException("Listener or Command required")
         if listener_name and command:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Cannot use Listener and Command at the same time"
             )
 
@@ -39,7 +39,7 @@ class Module:
                 cred = main_menu.credentialsv2.get_by_id(db, cred_id)
 
                 if not cred:
-                    return handle_error_message("[!] CredID is invalid!")
+                    raise ModuleValidationException("CredID is invalid!")
 
                 if cred.domain != "":
                     params["UserName"] = str(cred.domain) + "\\" + str(cred.username)
@@ -53,7 +53,7 @@ class Module:
             and not command
         ):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
@@ -70,7 +70,7 @@ class Module:
             )
 
             if launcher == "":
-                return handle_error_message("[!] Error generating launcher")
+                raise ModuleValidationException("Error generating launcher")
 
             stagerCode = "C:\\Windows\\System32\\WindowsPowershell\\v1.0\\" + launcher
 

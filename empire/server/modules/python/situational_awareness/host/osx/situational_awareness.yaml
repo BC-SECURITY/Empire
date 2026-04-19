@@ -24,9 +24,11 @@ description: |
   host reconnaissance and helps operators understand the target environment
   to identify the most effective attack vectors and persistence mechanisms.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
+  - T1033
   - T1082
+  - T1518.001
 background: false
 output_extension: ''
 needs_admin: false

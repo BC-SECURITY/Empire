@@ -22,7 +22,7 @@ description: |
   commonly used for pranks and social engineering scenarios
   where audible disruption can create confusion or amusement.
 software: ''
-tactics: []
+tactics: [TA0040]
 techniques:
   - T1491
 background: false

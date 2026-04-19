@@ -14,7 +14,7 @@ description: |
   legitimate browser traffic. Returns the API response content for analysis
   and data extraction.
 software: ''
-tactics: []
+tactics: [TA0007, TA0005]
 techniques:
   - T1006
 background: true

@@ -14,9 +14,10 @@ description: |
   Useful for credential harvesting, password analysis, and user
   enumeration on Linux systems.
 software: ''
-tactics: []
+tactics: [TA0009, TA0006]
 techniques:
   - T1003
+  - T1003.008
 background: false
 output_extension: ''
 needs_admin: true

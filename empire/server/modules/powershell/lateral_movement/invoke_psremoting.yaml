@@ -21,8 +21,12 @@ description: |
   output transmission, but may be subject to detection through PowerShell logging,
   ETW, or network traffic analysis if specifically monitored.
 software: ''
-tactics: [TA0008]
-techniques: [T1059.001, T1021.006, T1570]
+tactics: [TA0008, TA0002]
+techniques:
+  - T1021.006
+  - T1059.001
+  - T1105
+  - T1570
 background: true
 output_extension:
 needs_admin: false

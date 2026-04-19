@@ -1,7 +1,6 @@
 import fnmatch
 import logging
 import typing
-from pathlib import Path
 
 import yaml
 from sqlalchemy.orm import Session
@@ -25,7 +24,7 @@ class BypassService:
             self.load_bypasses(db)
 
     def load_bypasses(self, db: Session):
-        root_path = Path(self.main_menu.installPath) / "bypasses"
+        root_path = self.main_menu.install_path / "bypasses"
         log.info(f"v2: Loading bypasses from: {root_path}")
 
         # Get the list of default bypass names from config

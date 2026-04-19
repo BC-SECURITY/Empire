@@ -15,7 +15,7 @@ description: |
   surveillance, intelligence gathering, and understanding user
   behavior through visual analysis of desktop contents.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
   - T1113
 background: false

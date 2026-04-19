@@ -21,9 +21,9 @@ description: |
   identify the most valuable targets for credential harvesting, privilege
   escalation, and establishing persistent access to the domain infrastructure.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1018
 background: false
 output_extension: ''
 needs_admin: false

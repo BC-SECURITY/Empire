@@ -6,22 +6,6 @@ from empire.server.core.db.models import PluginTaskStatus
 PLUGIN_ID = "basic_reporting"
 
 
-@pytest.fixture
-def plugin_task(main, session_local, models):
-    with session_local.begin() as db:
-        plugin_task = models.PluginTask(
-            plugin_id=PLUGIN_ID,
-            input="This is the trimmed input for the task.",
-            input_full="This is the full input for the task.",
-            user_id=1,
-        )
-        db.add(plugin_task)
-        db.flush()
-        task_id = plugin_task.id
-
-    return task_id  # noqa RET504
-
-
 def _test_add_tag(client, admin_auth_header, path, taggable_id):
     resp = client.post(
         f"{path}/{taggable_id}/tags",

@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 class Stager:
     def __init__(self, mainMenu):
         self.info = {
@@ -51,7 +54,5 @@ class Stager:
         directory = self.mainMenu.stagergenv2.generate_go_stageless(self.options)
 
         if directory:
-            with open(directory, "rb") as f:
-                return f.read()
-        else:
-            return None
+            return Path(directory).read_bytes()
+        return None

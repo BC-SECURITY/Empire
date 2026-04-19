@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -43,7 +43,7 @@ class Module:
             if ads_path != "":
                 # remove the ADS storage location
                 if ".txt" not in ads_path:
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] For ADS, use the form C:\\users\\john\\AppData:blah.txt"
                     )
 
@@ -77,20 +77,20 @@ class Module:
         if ext_file != "":
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
-            if os.path.exists(ext_file):
-                with open(ext_file) as f:
-                    fileData = f.read()
+            ext_path = Path(ext_file)
+            if ext_path.exists():
+                fileData = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
                 enc_script = helpers.enc_powershell(fileData)
                 status_msg += "using external file " + ext_file
 
             else:
-                return handle_error_message("[!] File does not exist: " + ext_file)
+                raise ModuleValidationException("File does not exist: " + ext_file)
 
         elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
@@ -112,7 +112,7 @@ class Module:
         # store the script in the specified alternate data stream location
         if ads_path != "":
             if ".txt" not in ads_path:
-                return handle_error_message(
+                raise ModuleValidationException(
                     "[!] For ADS, use the form C:\\users\\john\\AppData:blah.txt"
                 )
 

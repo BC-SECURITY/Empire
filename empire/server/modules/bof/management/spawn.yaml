@@ -1,0 +1,69 @@
+name: spawn
+authors:
+  - name: Bobby Cooke
+    handle: '@0xBoku'
+    link: https://twitter.com/0xBoku
+  - name: Justin Hamilton
+    handle: '@JTHam0'
+    link: https://twitter.com/JTHam0
+  - name: Octavio Paguaga
+    handle: '@OakTree__'
+    link: https://twitter.com/OakTree__
+  - name: Matt Kingstone
+    handle: '@n00bRage'
+    link: https://twitter.com/n00bRage
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Beacon Object File (BOF) that spawns an arbitrary process
+  in a suspended state, injects shellcode into the remote
+  process, hijacks the main thread using the EarlyBird APC
+  technique, and executes the shellcode. x64 only.
+software: ''
+tactics: [TA0002, TA0005]
+techniques: [T1055.012, T1106]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/boku7/HOLLOW
+options:
+  - name: Listener
+    description: Listener to use.
+    required: true
+    value: ''
+  - name: Language
+    description: Language of the stager to generate.
+    required: true
+    value: powershell
+    strict: true
+    suggested_values:
+      - powershell
+      - csharp
+      - ironpython
+  - name: ProcessName
+    description: >-
+      Process to spawn in a suspended state for shellcode injection (e.g. svchost.exe).
+    required: true
+    value: svchost.exe
+  - name: Architecture
+    description: >-
+      Architecture of the BOF to use (x64 only).
+    required: true
+    value: x64
+    strict: true
+    suggested_values:
+      - x64
+bof:
+  x86: ''
+  x64: bof/spawn/hollow.x64.o
+  entry_point: ''
+  format_string: zb
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true

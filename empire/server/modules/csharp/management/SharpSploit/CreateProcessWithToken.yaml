@@ -10,7 +10,9 @@ description: |
   typically only available to administrative users.
 software: ''
 tactics: [TA0004, TA0005]
-techniques: [T1134.002]
+techniques:
+  - T1134.001
+  - T1134.002
 background: false
 output_extension: ''
 needs_admin: false

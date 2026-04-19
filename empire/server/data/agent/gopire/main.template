@@ -164,7 +164,7 @@ func main() {
 	encryptedSysInfo := common.AesEncryptThenHMAC(sessionKey, sysInfoBytes)
 
 	// Build and send routing packet for Stage 2
-	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 3, encryptedSysInfo)
+	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 3, 0, encryptedSysInfo)
 	postURL := server + "/stage2"
 	_, _ = http.Post(postURL, "application/octet-stream", bytes.NewReader(routingPacket))
 

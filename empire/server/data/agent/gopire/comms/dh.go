@@ -100,7 +100,7 @@ func PerformDHKeyExchange(server string, sessionID string, stagingKey []byte, ag
 	message := append(clientPubBytes, agentCert...)
 	packetHandler := PacketHandler{}
 	encData := common.AesEncryptThenHMAC(stagingKey, message) // Encrypt with stagingKey
-	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 2, encData)
+	routingPacket := packetHandler.BuildRoutingPacket(stagingKey, sessionID, 2, 0, encData)
 
 	// Send DH key exchange request
 	postURL := server + "/stage1"

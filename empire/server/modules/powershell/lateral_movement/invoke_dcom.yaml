@@ -14,7 +14,9 @@ description: |
   or other methods are monitored but DCOM isn't explicitly blocked.
 software: ''
 tactics: [TA0008]
-techniques: [T1021.003]
+techniques:
+  - T1021.003
+  - T1105
 background: false
 output_extension:
 needs_admin: false

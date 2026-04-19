@@ -14,7 +14,7 @@ description: |
   file system access. Provides a method for executing commands in the context
   of remote SMB shares without requiring persistent access.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
   - T1135
 background: false

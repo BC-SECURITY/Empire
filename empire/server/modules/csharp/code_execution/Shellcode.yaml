@@ -9,7 +9,7 @@ description: |
   format. The module modifies the memory with VirtualProtect to Read, Write, Execute.
   The module takes no command line inputs.
 software: ''
-tactics: [TA0002]
+tactics: [TA0002, TA0005]
 techniques: [T1106, T1620]
 background: false
 output_extension:

@@ -20,9 +20,9 @@ description: |
   reconnaissance and helps operators understand the target's role and potential
   access to sensitive resources within the domain.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1069.002
 background: false
 output_extension: ''
 needs_admin: false

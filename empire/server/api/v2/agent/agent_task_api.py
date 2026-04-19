@@ -245,7 +245,7 @@ async def create_task_jobs(
     db_agent: AgentDep,
     agent_task_service: AgentTaskServiceDep,
 ):
-    resp, err = agent_task_service.create_task_jobs(db, db_agent, current_user)
+    resp, _err = agent_task_service.create_task_jobs(db, db_agent, current_user)
 
     return domain_to_dto_task(resp)
 
@@ -259,7 +259,7 @@ async def create_task_kill_job(
     agent_task_service: AgentTaskServiceDep,
 ):
     kill_job = str(jobs.id)
-    resp, err = agent_task_service.create_task_kill_job(
+    resp, _err = agent_task_service.create_task_kill_job(
         db, db_agent, kill_job, current_user
     )
 
@@ -275,7 +275,7 @@ async def create_task_stop_job(
     agent_task_service: AgentTaskServiceDep,
 ):
     stop_job = str(jobs.id)
-    resp, err = agent_task_service.create_task_stop_job(
+    resp, _err = agent_task_service.create_task_stop_job(
         db, db_agent, stop_job, current_user
     )
 

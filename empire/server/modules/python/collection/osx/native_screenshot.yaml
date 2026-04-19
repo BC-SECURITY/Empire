@@ -12,7 +12,7 @@ description: |
   for capturing the current state of user desktops, including
   open applications, documents, and user activity.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
   - T1113
 background: false

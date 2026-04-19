@@ -7,7 +7,7 @@ description: Beacon Object File (BOF) that injects beacon shellcode into remote 
   avoiding the usage of common monitored APIs using the CLIPBRDWNDCLASS injection
   technique (similar to Propagate) learned from Hexacorn.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0009]
 techniques: [T1115]
 background: false
 output_extension:
@@ -35,43 +35,11 @@ options:
       - powershell
       - csharp
       - ironpython
-  - name: Obfuscate
-    description: Switch. Obfuscate the launcher powershell code, uses the ObfuscateCommand
-      for obfuscation types. For powershell only.
-    required: false
-    value: 'False'
-    strict: true
-    suggested_values:
-      - True
-      - False
-  - name: ObfuscateCommand
-    description: The Invoke-Obfuscation command to use. Only used if Obfuscate switch
-      is True. For powershell only.
-    required: false
-    value: Token\All\1
-  - name: Bypasses
-    description: Bypasses as a space separated list to be prepended to the launcher.
-    required: false
-    value: ''
-  - name: UserAgent
-    description: User-agent string to use for the staging request (default, none,
-      or other).
-    required: false
-    value: default
-  - name: Proxy
-    description: Proxy to use for request (default, none, or other).
-    required: false
-    value: default
-  - name: ProxyCreds
-    description: Proxy credentials ([domain\]username:password) to use for request
-      (default, none, or other).
-    required: false
-    value: default
 bof:
   x86: ''
   x64: bof/ClipboardWindow/ClipboardWindow-Inject.x64.o
   entry_point: ''
-  format_string: bi
+  format_string: ib
 script_path: ''
 script_end: ''
 advanced:

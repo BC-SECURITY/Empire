@@ -10,6 +10,7 @@ description: |
   essential network reconnaissance information for understanding the target's
   network infrastructure and DNS configuration.
 software: ''
+tactics: [TA0007]
 techniques:
   - T1016.001
 background: false

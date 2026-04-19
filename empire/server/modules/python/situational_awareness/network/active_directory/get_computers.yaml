@@ -21,9 +21,9 @@ description: |
   privilege escalation, and lateral movement based on computer roles and
   network positioning.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1018
 background: false
 output_extension: ''
 needs_admin: false

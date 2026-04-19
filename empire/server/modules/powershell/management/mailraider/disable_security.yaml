@@ -10,8 +10,12 @@ description: |
 
   Typical use cases include enabling automated email operations, bypassing security prompts for malicious macros, or preparing a target environment for further email-based attacks.
 software: ''
-tactics: [TA0005]
-techniques: [T1047, T1112, T1562.001]
+tactics: [TA0005, TA0002]
+techniques:
+  - T1012
+  - T1047
+  - T1112
+  - T1562.001
 background: true
 output_extension:
 needs_admin: false

@@ -10,6 +10,7 @@ class Module:
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        **kwargs,
     ):
         params_dict = {
             "Architecture": params["Architecture"],

@@ -10,7 +10,7 @@ description: |
   and can be used for situational awareness to identify running services, processes, and other
   system components.
 software: ''
-tactics: [TA0002]
+tactics: [TA0002, TA0003, TA0004]
 techniques: [T1047, T1546.003]
 background: true
 output_extension: ''

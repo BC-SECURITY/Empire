@@ -25,7 +25,7 @@ commandTests:
   - name: "poetry python version"
     command: "poetry"
     args: ["run", "python3", "--version"]
-    expectedOutput: ["Python 3.13.*"]
+    expectedOutput: ["Python 3.14.*"]
   # powershell
   - name: "powershell which"
     command: "which"
@@ -54,6 +54,15 @@ commandTests:
     command: "which"
     args: ["mono"]
     expectedOutput: ["/usr/bin/mono"]
+  # mingw / cross-compile deps
+  - name: "mingw64 gcc exists"
+    command: "which"
+    args: ["x86_64-w64-mingw32-gcc"]
+    expectedOutput: ["/usr/bin/x86_64-w64-mingw32-gcc"]
+  - name: "perl exists"
+    command: "which"
+    args: ["perl"]
+    expectedOutput: ["/usr/bin/perl"]
   # run
   - name: "ps-empire help"
     command: "./ps-empire"
@@ -75,4 +84,10 @@ fileExistenceTests:
     shouldExist: true
   - name: 'plugin-registries'
     path: '/home/empire/.local/share/empire/plugin-registries/BC-SECURITY/main/registry.yaml'
+    shouldExist: true
+  - name: 'openssl mingw prefix'
+    path: '/opt/openssl-mingw64/'
+    shouldExist: true
+  - name: 'openssl mingw headers'
+    path: '/opt/openssl-mingw64/include/openssl/ssl.h'
     shouldExist: true

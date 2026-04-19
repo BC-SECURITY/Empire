@@ -81,11 +81,11 @@ func (ma *MainAgent) SendJobMessageBuffer() {
 func (ma *MainAgent) preparepacket(packets []byte) ([]byte, error) {
 	if packets != nil {
 		encData := common.AesEncryptThenHMAC(ma.PacketHandler.Aeskey, packets)
-		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 5, encData)
+		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 5, 0, encData)
 		data, err := ma.MessageSender.SendMessage(routingPacket)
 		return data, err
 	} else {
-		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 4, nil)
+		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 4, 0, nil)
 		data, err := ma.MessageSender.SendMessage(routingPacket)
 		return data, err
 	}

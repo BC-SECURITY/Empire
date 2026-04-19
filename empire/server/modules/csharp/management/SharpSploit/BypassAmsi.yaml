@@ -11,7 +11,9 @@ description: |
   scanning when loaded.
 software: ''
 tactics: [TA0005]
-techniques: [T1562.006]
+techniques:
+  - T1562.001
+  - T1562.006
 background: false
 output_extension: ''
 needs_admin: false

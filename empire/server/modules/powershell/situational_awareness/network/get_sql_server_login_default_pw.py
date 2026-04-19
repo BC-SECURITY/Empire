@@ -18,7 +18,7 @@ class Module:
 
         if check_all:
             # read in the common module source code
-            script, err = main_menu.modulesv2.get_module_source(
+            script, _err = main_menu.modulesv2.get_module_source(
                 module_name="recon/Get-SQLInstanceDomain.ps1",
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,
@@ -34,7 +34,7 @@ class Module:
 
         if instance != "" and not check_all:
             # read in the common module source code
-            script, err = main_menu.modulesv2.get_module_source(
+            script, _err = main_menu.modulesv2.get_module_source(
                 module_name="recon/Get-SQLServerLoginDefaultPw.ps1",
                 obfuscate=obfuscate,
                 obfuscate_command=obfuscation_command,

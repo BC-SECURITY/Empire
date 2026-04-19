@@ -16,9 +16,10 @@ description: |
   establishing persistence that activates when specific
   emails are received.
 software: ''
-tactics: []
+tactics: [TA0002, TA0003]
 techniques:
-  - T1155
+  - T1059.002
+  - T1137
 background: false
 output_extension:
 needs_admin: false

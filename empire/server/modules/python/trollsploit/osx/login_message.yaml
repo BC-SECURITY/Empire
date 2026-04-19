@@ -22,7 +22,7 @@ description: |
   modification can be particularly effective for creating confusion
   or amusement depending on the content of the displayed message.
 software: ''
-tactics: []
+tactics: [TA0040]
 techniques:
   - T1491
 background: false

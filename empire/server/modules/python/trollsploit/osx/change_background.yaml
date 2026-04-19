@@ -24,7 +24,7 @@ description: |
   can create confusion or amusement while maintaining
   system functionality.
 software: ''
-tactics: []
+tactics: [TA0040]
 techniques:
   - T1491
 background: false

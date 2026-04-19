@@ -15,8 +15,8 @@ description: |
   alongside legitimate ones, providing an early warning system for credential
   harvesting activities.
 software: ''
-tactics: [TA0003]
-techniques: [T1156.001]
+tactics: [TA0006]
+techniques: [T1003]
 background: false
 output_extension:
 needs_admin: true

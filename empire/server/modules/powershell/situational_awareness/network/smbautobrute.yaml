@@ -10,7 +10,7 @@ description: Runs an SMB brute against a list of usernames/passwords. Will check
   the lockout threshold. VERY noisy! Generates a ton of traffic on the DCs.
 software: ''
 tactics: [TA0006]
-techniques: [T1615, T1110.001]
+techniques: [T1110.001]
 background: true
 output_extension:
 needs_admin: false

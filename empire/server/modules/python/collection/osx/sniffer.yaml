@@ -18,7 +18,7 @@ description: |
   traffic analysis, and capturing sensitive data in transit
   on macOS systems.
 software: ''
-tactics: []
+tactics: [TA0009, TA0006, TA0007]
 techniques:
   - T1040
 background: false

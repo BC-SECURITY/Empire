@@ -8,8 +8,8 @@ description: |
   in the current domain using the ICertConfig COM interface. Outputs all enterprise
   Certificate Authorities (CAs) and their published certificate templates.
 software: ''
-tactics: [TA0043, TA0007]
-techniques: [T1590.001, T1590.003, T1482, T1559.001]
+tactics: [TA0043, TA0002]
+techniques: [T1590.001, T1590.003, T1559.001]
 background: false
 output_extension:
 needs_admin: false

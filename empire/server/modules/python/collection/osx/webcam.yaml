@@ -12,7 +12,7 @@ description: |
   capabilities by capturing real-time images of the user or environment in
   front of the camera.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
   - T1125
 background: false

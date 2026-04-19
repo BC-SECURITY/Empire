@@ -13,11 +13,11 @@ log = logging.getLogger(__name__)
 
 
 class GoCompiler:
-    def __init__(self, install_path):
+    def __init__(self, install_path: Path):
         self.install_path = install_path
         self.jinja_env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(
-                str(Path(self.install_path) / "data/agent/gopire")
+                str(self.install_path / "data/agent/gopire")
             ),
             autoescape=True,
         )
@@ -25,7 +25,7 @@ class GoCompiler:
     def compile_task(self, source_code, task_name, goos="linux", goarch="amd64"):
         random_suffix = random_string(5)
         source_path = self.compiler / f"{task_name}_{random_suffix}.go"
-        with open(source_path, "w") as source_file:
+        with source_path.open("w") as source_file:
             source_file.write(source_code)
 
         # Prepare the Go build command
@@ -67,7 +67,7 @@ class GoCompiler:
         template = self.jinja_env.get_template(template_path)
         rendered_content = template.render(template_vars)
 
-        with open(output_path, "w") as output_file:
+        with Path(output_path).open("w") as output_file:
             output_file.write(rendered_content)
 
     def compile_stager(self, template_vars, task_name, goos="windows", goarch="amd64"):
@@ -77,7 +77,7 @@ class GoCompiler:
 
         # This should move to a temp location. Using this static path will
         # cause issues when multiple stagers are compiled at the same time.
-        source_file = Path(self.install_path) / "data/agent/gopire/main.go"
+        source_file = self.install_path / "data/agent/gopire/main.go"
 
         with (
             tempfile.NamedTemporaryFile(delete=False) as temp_executable_file,

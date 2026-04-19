@@ -12,9 +12,11 @@ description: |
   of potential attack paths and security misconfigurations that could
   lead to privilege escalation.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
   - T1046
+  - T1059.004
+  - T1082
 background: true
 output_extension:
 needs_admin: false

@@ -13,7 +13,7 @@ description: |
   network segments, remote command execution, and maintaining access to
   multiple systems through SSH connections.
 software: ''
-tactics: []
+tactics: [TA0008]
 techniques:
   - T1021
 background: true

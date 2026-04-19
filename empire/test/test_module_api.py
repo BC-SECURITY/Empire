@@ -1,3 +1,4 @@
+import pytest
 from starlette import status
 
 
@@ -62,6 +63,7 @@ def test_get_modules(client, admin_auth_header):
     assert len(response.json()["records"]) >= min_expected_modules
 
 
+@pytest.mark.slow
 def test_get_modules_hide_disabled(client, admin_auth_header):
     uid = "python_trollsploit_osx_say"
 
@@ -155,6 +157,7 @@ def test_update_modules_bulk(client, admin_auth_header):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
+@pytest.mark.slow
 def test_reset_modules(client, admin_auth_header):
     initial_response = client.get("/api/v2/modules", headers=admin_auth_header)
     initial_modules = initial_response.json()["records"]
@@ -177,6 +180,7 @@ def test_reset_modules(client, admin_auth_header):
     assert response.json()["enabled"] is True
 
 
+@pytest.mark.slow
 def test_reload_modules(client, admin_auth_header):
     uid = "python_trollsploit_osx_say"
     response = client.put(

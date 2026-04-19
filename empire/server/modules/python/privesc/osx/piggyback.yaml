@@ -25,10 +25,10 @@ description: |
   Apple patched this vulnerability in subsequent releases, making it ineffective
   on newer macOS versions. This makes it a valuable technique for targeting
   legacy macOS systems that may still be in use in enterprise environments.
-software: T1169
-tactics: []
+software: ''
+tactics: [TA0004, TA0005]
 techniques:
-  - T1050
+  - T1548.003
 background: false
 output_extension: ''
 needs_admin: false

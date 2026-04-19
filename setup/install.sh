@@ -222,6 +222,60 @@ function start_mysql() {
   fi
 }
 
+function install_mingw() {
+  if [ "$ASSUME_YES" == "1" ]; then
+    answer="Y"
+  else
+    echo -n -e "\x1b[1;33m[>] Do you want to install MinGW-w64? It is required for compiling Windows C stagers (y/N)? \x1b[0m"
+    read -r answer
+  fi
+  if [ "$answer" != "${answer#[Yy]}" ]; then
+    echo -e "\x1b[1;34m[*] Installing MinGW-w64\x1b[0m"
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      mingw-w64 perl make build-essential
+
+    # Build and install OpenSSL for MinGW cross-compilation
+    if [ ! -d /opt/openssl-mingw64/include/openssl ]; then
+      echo -e "\x1b[1;34m[*] Building OpenSSL for MinGW-w64 cross-compilation\x1b[0m"
+
+      OPENSSL_BUILD_DIR="$(mktemp -d)"
+      OPENSSL_TARBALL="$OPENSSL_BUILD_DIR/openssl-3.5.4.tar.gz"
+
+      # Always return to original dir + cleanup
+      local _oldpwd="$PWD"
+      cleanup_openssl_build() {
+        cd "$_oldpwd" 2>/dev/null || true
+        rm -rf "$OPENSSL_BUILD_DIR" 2>/dev/null || true
+      }
+      trap cleanup_openssl_build RETURN
+
+      pushd "$OPENSSL_BUILD_DIR" >/dev/null
+
+      wget -q https://www.openssl.org/source/openssl-3.5.4.tar.gz -O "$OPENSSL_TARBALL"
+      tar -xzf "$OPENSSL_TARBALL"
+
+      pushd openssl-3.5.4 >/dev/null
+
+      ./Configure mingw64 no-apps no-async no-docs no-shared no-tests \
+        --cross-compile-prefix=x86_64-w64-mingw32- \
+        --prefix=/opt/openssl-mingw64
+
+      make -j"$(nproc)"
+      sudo make install_dev
+
+      popd >/dev/null   # out of openssl-3.5.4
+      popd >/dev/null   # out of OPENSSL_BUILD_DIR
+
+      # trap will cleanup + restore cwd
+      echo -e "\x1b[1;32m[+] OpenSSL for MinGW installed to /opt/openssl-mingw64\x1b[0m"
+    else
+      echo -e "\x1b[1;32m[+] OpenSSL for MinGW already installed, skipping\x1b[0m"
+    fi
+  else
+    echo -e "\x1b[1;34m[*] Skipping MinGW-w64\x1b[0m"
+  fi
+}
+
 set -e
 
 if [ "$EUID" -eq 0 ]; then
@@ -241,6 +295,7 @@ sudo -v
 
 # https://stackoverflow.com/questions/24112727/relative-paths-based-on-file-location-instead-of-current-working-directory
 PARENT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; cd .. ; pwd -P )
+cd "$PARENT_PATH"
 OS_NAME=
 VERSION_ID=
 if VERSION_ID=$(grep -oP '^(11|12|13)' /etc/debian_version 2>/dev/null); then
@@ -293,6 +348,7 @@ fi
 
 install_go
 install_mono
+install_mingw
 
 if ! command_exists mysql; then
   install_mysql

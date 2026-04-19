@@ -21,7 +21,11 @@ description: |
   and not heavily monitored.
 software: ''
 tactics: [TA0002, TA0005, TA0008]
-techniques: [T1127.001, T1047, T1021.006]
+techniques:
+  - T1021.006
+  - T1047
+  - T1105
+  - T1127.001
 background: false
 output_extension:
 needs_admin: false

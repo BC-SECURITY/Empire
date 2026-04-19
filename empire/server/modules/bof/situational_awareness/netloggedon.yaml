@@ -5,7 +5,7 @@ authors:
     link: https://twitter.com/Cx01N_
 description: Returns users logged on the local or remote computer.
 software: ''
-tactics: [TA0043, TA0007]
+tactics: [TA0043, TA0007, TA0002]
 techniques: [T1049, T1106]
 background: false
 output_extension:

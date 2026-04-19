@@ -20,8 +20,8 @@ description: Modifies Active Directory object properties by leveraging PowerView
   filtering options to target specific objects and supports various output formats
   for operational flexibility.
 software: S0194
-tactics: [TA0007]
-techniques: [T1482, T1069.002, T1615]
+tactics: [TA0004, TA0005, TA0007]
+techniques: [T1069.002, T1484.001]
 background: true
 output_extension:
 needs_admin: false

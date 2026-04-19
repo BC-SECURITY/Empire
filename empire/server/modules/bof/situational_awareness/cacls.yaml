@@ -8,7 +8,7 @@ description: |
   If a folder is provided, permissions are enumerated recursively to identify access
   rights across all nested items.
 software: ''
-tactics: [TA0007]
+tactics: [TA0007, TA0002]
 techniques: [T1083, T1106]
 background: false
 output_extension:

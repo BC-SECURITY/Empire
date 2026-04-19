@@ -1,6 +1,15 @@
-import pytest
+import os
+import struct
+import zlib
 
+import pytest
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+
+from empire.server.common import packets
 from empire.server.common.empire import MainMenu
+from empire.server.core.agent_communication_service import AgentCommunicationService
+from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
 
 
@@ -58,14 +67,172 @@ def test_save_file_python(
     models,
     agent,
     agent_task,
+    empire_config,
 ):
-    # Python agent compresses the data
-    # Also test backslash vs forward slash?
-    pass
+    raw = b"Hello from python agent"
+    crc = zlib.crc32(raw) & 0xFFFFFFFF
+    header = struct.pack("!I", crc)
+    compressed = header + zlib.compress(raw, 9)
+
+    file_path = r"C:\Users\Public\python_test.txt"
+
+    # Mark the agent as a python agent in the comms cache
+    agent_communication_service.agents[agent]["language"] = "python"
+
+    try:
+        with session_local.begin() as db:
+            agent_communication_service.save_file(
+                db,
+                agent,
+                file_path,
+                compressed,
+                len(raw),
+                agent_task_service.get_task_for_agent(db, agent, agent_task["id"]),
+                "python",
+            )
+
+        with session_local.begin() as db:
+            task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
+            download = task.downloads[-1]
+            assert download.filename == "python_test.txt"
+            assert download.get_bytes_file() == raw
+    finally:
+        agent_communication_service.agents[agent]["language"] = "powershell"
 
 
-def test_save_module_file(agent_communication_service, session_local):
-    pass
+def test_save_module_file(agent_communication_service, agent, empire_config):
+    data = b"module output data here"
+    path = "screenshots/test_capture.png"
+
+    result = agent_communication_service.save_module_file(
+        agent, path, data, "powershell"
+    )
+
+    assert result is not None
+    assert result.name == "test_capture.png"
+    assert result.read_bytes() == data
+
+
+class TestIsPathSafe:
+    """Direct unit tests for _is_path_safe against adversarial inputs.
+
+    The integration-level skywalker test lives in test_agents.py.
+    These tests exercise the static method directly with various
+    traversal and bypass techniques.
+    """
+
+    @pytest.fixture
+    def download_dir(self, tmp_path):
+        d = tmp_path / "downloads"
+        d.mkdir()
+        return d
+
+    @pytest.mark.parametrize(
+        "relative_path",
+        [
+            "AGENT123/file.txt",
+            "AGENT123/subdir/file.txt",
+            "AGENT123/a/b/c/deep.bin",
+        ],
+    )
+    def test_safe_paths(self, download_dir, relative_path):
+        save_path = download_dir / relative_path
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is True
+        )
+
+    @pytest.mark.parametrize(
+        ("traversal", "description"),
+        [
+            ("../etc/passwd", "basic unix traversal"),
+            ("../../etc/shadow", "multi-level unix traversal"),
+            ("AGENT123/../../etc/cron.d/evil", "traversal after valid prefix"),
+            ("../../../../../../../etc/passwd", "deep traversal"),
+            ("AGENT123/../../../etc/passwd", "agent dir then deep traversal"),
+        ],
+    )
+    def test_traversal_blocked(self, download_dir, traversal, description):
+        save_path = download_dir / traversal
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        ), f"Should block: {description}"
+
+    @pytest.mark.parametrize(
+        "traversal",
+        [
+            r"..\Windows\System32\evil.dll",
+            r"AGENT123\..\..\evil.txt",
+        ],
+    )
+    @pytest.mark.skipif(
+        os.name != "nt", reason="Backslash is only a path separator on Windows"
+    )
+    def test_backslash_traversal_blocked_on_windows(self, download_dir, traversal):
+        save_path = download_dir / traversal
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        )
+
+    def test_traversal_to_sibling_directory(self, download_dir):
+        """Ensure traversal to a sibling of the download dir is blocked."""
+        sibling = download_dir.parent / "secrets" / "key.pem"
+        assert (
+            AgentCommunicationService._is_path_safe(sibling, download_dir, "TEST")
+            is False
+        )
+
+    def test_prefix_attack(self, tmp_path):
+        """A dir whose name starts with the download dir name must be rejected.
+
+        e.g. /tmp/downloads-evil should NOT pass a check for /tmp/downloads.
+        The old startswith() implementation was vulnerable to this.
+        """
+        download_dir = tmp_path / "downloads"
+        download_dir.mkdir()
+        evil_dir = tmp_path / "downloads-evil"
+        evil_dir.mkdir()
+        save_path = evil_dir / "payload.txt"
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is False
+        )
+
+    def test_dot_segments_in_middle(self, download_dir):
+        """Path with /./ segments that resolve to the download dir should be safe."""
+        save_path = download_dir / "AGENT123" / "." / "file.txt"
+        assert (
+            AgentCommunicationService._is_path_safe(save_path, download_dir, "TEST")
+            is True
+        )
+
+    def test_null_byte_in_path(self, download_dir):
+        """Null bytes in paths should not bypass the check."""
+        # Path() on most OSes will raise ValueError or the resolve will fail
+        # Either way, it should not return True
+        try:
+            save_path = download_dir / "AGENT123/\x00/../../etc/passwd"
+            result = AgentCommunicationService._is_path_safe(
+                save_path, download_dir, "TEST"
+            )
+            # If it didn't raise, it must have blocked it
+            assert result is False
+        except (ValueError, OSError):
+            pass  # Expected on most platforms
+
+    def test_logs_warning_on_traversal(self, download_dir, caplog):
+        save_path = download_dir / "../evil.txt"
+        AgentCommunicationService._is_path_safe(save_path, download_dir, "EVIL_AGENT")
+        assert any(
+            "EVIL_AGENT" in msg and "skywalker" in msg for msg in caplog.messages
+        )
+
+    def test_no_warning_on_safe_path(self, download_dir, caplog):
+        save_path = download_dir / "AGENT123/safe.txt"
+        AgentCommunicationService._is_path_safe(save_path, download_dir, "GOOD_AGENT")
+        assert not any("skywalker" in msg for msg in caplog.messages)
 
 
 def test__remove_agent(
@@ -219,9 +386,13 @@ def test_handle_agent_data():
 
 
 def test_handle_agent_request(
-    agent_task_service, agent_communication_service, agent, agent_task, monkeypatch
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    agent_task,
+    session_local,
 ):
-    task, _ = agent_task_service.add_temporary_task(
+    _task, _ = agent_task_service.add_temporary_task(
         agent, "TASK_SHELL", "echo 'hello world'"
     )
 
@@ -230,6 +401,108 @@ def test_handle_agent_request(
     )
 
     assert packet is not None
+
+    # Verify DB task status was persisted as "pulled" (not still "queued")
+    with session_local.begin() as db:
+        task = agent_task_service.get_task_for_agent(db, agent, agent_task["id"])
+        assert task.status == AgentTaskStatus.pulled
+
+
+def test_handle_agent_request_db_task_attributes_accessible_after_expunge(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    agent_task,
+    session_local,
+):
+    """DB-backed ORM task attributes (including deferred input_full) must
+    remain accessible after expunge_all() detaches them from the session.
+
+    _get_queued_agent_tasks loads tasks with include_full_input=True to
+    eagerly load the deferred input_full column. If that option is ever
+    removed, accessing input_full on an expunged object raises
+    DetachedInstanceError — this test catches that regression.
+    """
+    # Reproduce the exact sequence handle_agent_request uses:
+    # load tasks inside a session, flush, expunge, then access attributes
+    # outside the session.
+    with session_local.begin() as db:
+        tasks = agent_communication_service._get_queued_agent_tasks(db, agent)
+        assert len(tasks) > 0
+        db.flush()
+        db.expunge_all()
+
+    # These attribute accesses happen in Phase 2 (outside the session).
+    # If input_full were not eagerly loaded, this would raise
+    # DetachedInstanceError.
+    for task in tasks:
+        assert task.input_full is not None
+        assert task.task_name is not None
+        assert task.id is not None
+
+
+def test_handle_agent_request_no_tasks(agent_communication_service, agent):
+    """When no tasks are queued, handle_agent_request returns None."""
+    packet = agent_communication_service.handle_agent_request(
+        agent, "python", "2c103f2c4ed1e59c0b4e2e01821770fa"
+    )
+    assert packet is None
+
+
+def test_handle_agent_request_releases_session_before_packet_building(
+    agent_task_service, agent_communication_service, agent, agent_task, monkeypatch
+):
+    """The DB session must be closed before expensive packet building begins.
+
+    Creates a connection pool with only 1 slot and monkeypatches
+    build_task_packet to try acquiring a second connection. If the session
+    from handle_agent_request is still held during build_task_packet, the
+    second acquisition fails with a pool timeout — reproducing the root
+    cause of the production pool exhaustion bug.
+    """
+    connect_args = {}
+    if "sqlite" in str(original_engine.url):
+        connect_args["check_same_thread"] = False
+
+    constrained_engine = create_engine(
+        original_engine.url,
+        pool_size=1,
+        max_overflow=0,
+        pool_timeout=2,
+        connect_args=connect_args,
+    )
+    try:
+        ConstrainedSessionLocal = sessionmaker(bind=constrained_engine)
+        monkeypatch.setattr(
+            "empire.server.core.agent_communication_service.SessionLocal",
+            ConstrainedSessionLocal,
+        )
+
+        original_build = packets.build_task_packet
+        pool_was_available = False
+
+        def build_task_packet_checking_pool(*args, **kwargs):
+            nonlocal pool_was_available
+            # If the session is still held, this will time out (pool exhausted)
+            with ConstrainedSessionLocal.begin() as probe:
+                probe.execute(text("SELECT 1"))
+            pool_was_available = True
+            return original_build(*args, **kwargs)
+
+        monkeypatch.setattr(
+            packets, "build_task_packet", build_task_packet_checking_pool
+        )
+
+        agent_task_service.add_temporary_task(agent, "TASK_SHELL", "echo 'hello'")
+
+        packet = agent_communication_service.handle_agent_request(
+            agent, "python", "2c103f2c4ed1e59c0b4e2e01821770fa"
+        )
+
+        assert packet is not None
+        assert pool_was_available, "Session was not released before packet building"
+    finally:
+        constrained_engine.dispose()
 
 
 def test__handle_agent_response():
@@ -275,7 +548,7 @@ def _test_autorun_task(
 
     agent_communication_service.autorun_tasks(db, agent)
 
-    tasks, total = agent_task_service.get_tasks(db, agents=[agent])
+    tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
     assert len(tasks) == 2  # noqa: PLR2004
     assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"

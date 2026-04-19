@@ -15,9 +15,9 @@ description: |
   tasks, and establishing persistence that survives system reboots
   and user sessions.
 software: ''
-tactics: []
+tactics: [TA0002, TA0003, TA0004]
 techniques:
-  - T1168
+  - T1053.003
 background: false
 output_extension: ''
 needs_admin: false

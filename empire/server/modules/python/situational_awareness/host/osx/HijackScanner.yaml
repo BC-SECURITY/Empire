@@ -30,9 +30,9 @@ description: |
   identify potential attack vectors for maintaining elevated privileges through
   library injection techniques.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1157
+  - T1574.004
 background: false
 output_extension:
 needs_admin: false

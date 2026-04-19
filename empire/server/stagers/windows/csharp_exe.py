@@ -151,18 +151,15 @@ class Stager:
             directory = self.mainMenu.stagergenv2.generate_powershell_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
-            with open(directory, "rb") as f:
-                return f.read()
+            return Path(directory).read_bytes()
 
-        elif language.lower() == "csharp":
+        if language.lower() == "csharp":
             return Path(launcher).read_bytes()
 
-        elif language.lower() == "ironpython":
+        if language.lower() == "ironpython":
             directory = self.mainMenu.stagergenv2.generate_python_exe(
                 launcher, dot_net_version=dot_net_version, obfuscate=obfuscate_script
             )
-            with open(directory, "rb") as f:
-                return f.read()
+            return Path(directory).read_bytes()
 
-        else:
-            return "[!] Invalid launcher language."
+        return "[!] Invalid launcher language."

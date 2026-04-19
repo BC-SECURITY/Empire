@@ -14,9 +14,9 @@ description: |
   sensitive email communications, contact information, and
   understanding user communication patterns.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
-  - T1114
+  - T1114.001
 background: false
 output_extension: ''
 needs_admin: false

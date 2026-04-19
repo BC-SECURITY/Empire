@@ -13,9 +13,9 @@ description: |
   and managing the lifecycle of scheduled tasks in cloud-native
   environments.
 software: ''
-tactics: []
+tactics: [TA0002]
 techniques:
-  - T1106
+  - T1059.006
 background: true
 output_extension: ''
 needs_admin: false

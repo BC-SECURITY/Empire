@@ -13,10 +13,9 @@ description: |
   network-wide scanning. Identifies potential low-hanging fruit targets
   that may be misconfigured or running with default credentials.
 software: ''
-tactics: []
+tactics: [TA0011]
 techniques:
   - T1102
-  - T1256
 background: true
 output_extension:
 needs_admin: false

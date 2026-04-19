@@ -21,9 +21,9 @@ description: |
   locations and shared resources within the target environment for data harvesting
   and lateral movement strategies.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1135
 background: false
 output_extension: ''
 needs_admin: false

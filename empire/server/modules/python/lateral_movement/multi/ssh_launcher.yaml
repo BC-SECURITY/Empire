@@ -15,7 +15,7 @@ description: |
   remote systems, and expanding the attack surface through
   legitimate SSH connections.
 software: ''
-tactics: []
+tactics: [TA0008]
 techniques:
   - T1021
 background: true

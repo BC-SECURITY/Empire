@@ -22,7 +22,8 @@ description: |
   during security assessments and penetration testing operations.
 software: ''
 tactics: [TA0010]
-techniques: [T1041]
+techniques:
+  - T1105
 background: true
 output_extension:
 needs_admin: false

@@ -15,7 +15,7 @@ description: |
   user profiling, and identifying potential targets or sensitive
   information accessed through web browsers.
 software: ''
-tactics: []
+tactics: [TA0009, TA0007]
 techniques:
   - T1217
 background: false

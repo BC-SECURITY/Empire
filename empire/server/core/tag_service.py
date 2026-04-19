@@ -60,7 +60,7 @@ class TagService:
             sub.append(db.query(models.credential_tag_assc.c.tag_id.label("tag_id")))
 
         subquery = None
-        if len(sub) > 0:
+        if sub:
             subquery = sub[0]
             if len(sub) > 1:
                 subquery = subquery.union(*sub[1:])
@@ -93,7 +93,7 @@ class TagService:
 
         results = query.all()
 
-        total = 0 if len(results) == 0 else results[0].total
+        total = 0 if not results else results[0].total
         results = [x[0] for x in results]
 
         return results, total

@@ -11,9 +11,8 @@ description: |
   of the file owner or group. Displays detailed file information
   including permissions, owner, group, and file path.
 software: ''
-tactics: []
-techniques:
-  - T1426
+tactics: [TA0004, TA0005]
+techniques: [T1548.001]
 background: true
 output_extension:
 needs_admin: false

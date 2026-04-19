@@ -11,7 +11,7 @@ description: |
   a standalone AlmondRocks server to be configured and running
   for the relay to connect to.
 software: ''
-tactics: []
+tactics: [TA0002, TA0011]
 techniques:
   - T1090
 background: true

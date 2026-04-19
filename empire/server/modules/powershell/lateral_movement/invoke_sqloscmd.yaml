@@ -27,8 +27,10 @@ description: |
   often logged and may trigger alerts in security-conscious environments where
   SQL Server activity is monitored.
 software: ''
-tactics: [TA0002, TA0008]
-techniques: [T1505.001]
+tactics: [TA0002, TA0008, TA0003]
+techniques:
+  - T1105
+  - T1505.001
 background: true
 output_extension:
 needs_admin: false

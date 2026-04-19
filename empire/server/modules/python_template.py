@@ -1,6 +1,6 @@
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
+from empire.server.core.module_service import auto_get_source
 
 
 class Module:
@@ -11,36 +11,23 @@ class Module:
     """
 
     @staticmethod
+    @auto_get_source
     def generate(
         main_menu: MainMenu,
         module: EmpireModule,
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        script: str = "",
     ) -> tuple[str | None, str | None]:
-        # Step 1: Get the module source code
-        # The script should be stripped of comments, with a link to any
-        #   original reference script included in the comments.
-        # If your script is more than a few lines, it's probably best to use
-        #   the first method to source it.
-        #
-        # First method: Read in the source script from module_source
-        # get_module_source will return the source code, getting the obfuscated version if necessary.
-        # (In the case of python, obfuscation is not supported)
-        # It will also return an error message if there was an issue reading the source code.
-        script, err = main_menu.modulesv2.get_module_source(
-            module_name=module.script_path,
-            obfuscate=obfuscate,
-            obfuscate_command=obfuscation_command,
-        )
+        # The @auto_get_source decorator handles loading the module source code
+        # from module.script_path (with obfuscation if needed) and passes it as
+        # the `script` parameter.
 
-        if err:
-            return handle_error_message(err)
+        # Alternative: Use the script from the module's yaml instead of @auto_get_source.
+        # script = module.script
 
-        # Second method: Use the script from the module's yaml.
-        script = module.script
-
-        # Step 2: Parse the module options, and insert them into the script
+        # Parse the module options, and insert them into the script.
         # The params dict contains the validated options that were sent.
         for key, value in params.items():
             if key.lower() != "agent" and key.lower() != "computername":
@@ -48,5 +35,5 @@ class Module:
                     "{{" + key + "}}", value
                 )
 
-        # Step 3: Return the final script
+        # Return the final script directly (no finalize needed for Python modules).
         return script

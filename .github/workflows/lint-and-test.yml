@@ -17,11 +17,11 @@ jobs:
         if: ${{ startsWith(github.head_ref, 'release/') || contains( github.event.pull_request.labels.*.name,
           'run-all-versions') }}
         run: |
-          echo "config={\"python-version\": [\"3.13\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.13\", \"3.14\"]}" >> $GITHUB_OUTPUT
       - id: not-release
         if: ${{ !startsWith(github.head_ref, 'release/') }}
         run: |
-          echo "config={\"python-version\": [\"3.13\"]}" >> $GITHUB_OUTPUT
+          echo "config={\"python-version\": [\"3.14\"]}" >> $GITHUB_OUTPUT
     outputs:
       config: ${{ steps.release.outputs.config || steps.not-release.outputs.config
         }}
@@ -70,11 +70,12 @@ jobs:
         run: |
           poetry env use ${{ matrix.python-version }}
           poetry install
-          sudo apt install -y mono-runtime
+          sudo apt-get update
+          sudo apt-get install -y mono-runtime mingw-w64 perl
       - name: Run test suite - mysql
         run: |
           set -o pipefail
-          if [ "${{ matrix.python-version }}" = "3.13" ]; then
+          if [ "${{ matrix.python-version }}" = "3.14" ]; then
             DATABASE_USE=mysql poetry run pytest -v --runslow --cov=empire/server --junitxml=pytest.xml --cov-report=term-missing:skip-covered . | tee pytest-coverage.txt
           else
             DATABASE_USE=mysql poetry run pytest -v --runslow .
@@ -85,7 +86,7 @@ jobs:
         run: |
           DATABASE_USE=sqlite poetry run pytest . -v --runslow
       - name: Pytest coverage comment
-        if: ${{ matrix.python-version == '3.13' }}
+        if: ${{ matrix.python-version == '3.14' }}
         uses: MishaKav/pytest-coverage-comment@v1.2.0
         with:
           pytest-coverage-path: ./pytest-coverage.txt
@@ -125,15 +126,20 @@ jobs:
           config: .github/cst-config-docker.yaml
   test_install_script:
     needs: test
-    timeout-minutes: 30
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     name: Test Install Script
     strategy:
       matrix:
-        # Because the box runs out of disk space, we can't run all tests on a single docker compose build.
+        # Each image builds individually to avoid running out of disk space.
+        # The OpenSSL cross-compilation for MinGW makes each image too large
+        # to build multiple in parallel on a single runner.
         images:
-          - ['debian11', 'debian12', 'debian13']
-          - ['ubuntu2204', 'ubuntu2404']
+          - ['debian11']
+          - ['debian12']
+          - ['debian13']
+          - ['ubuntu2204']
+          - ['ubuntu2404']
           - ['kalirolling'] # 'parrotrolling'
           # Parrot disabled for now because the apt repo is having some slowness issues.
           # Install is running up way too many minutes.

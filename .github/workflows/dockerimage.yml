@@ -42,3 +42,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: bcsecurity/empire:${{ steps.tag-step.outputs.RELEASE_TAG }}
+          build-args: COMMIT_SHA=${{ github.sha }}

@@ -13,7 +13,7 @@ description: |
   exploitation methods.
 software: ''
 tactics: [TA0007]
-techniques: [T1012, T1518, T11082]
+techniques: [T1012, T1518, T1082]
 background: true
 output_extension:
 needs_admin: false

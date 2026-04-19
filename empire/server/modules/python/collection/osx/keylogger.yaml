@@ -20,9 +20,9 @@ description: |
   analysis. Requires manual termination of the Ruby process when keylogging
   is complete.
 software: ''
-tactics: []
+tactics: [TA0009, TA0006]
 techniques:
-  - T1056
+  - T1056.001
 background: false
 output_extension: ''
 needs_admin: false

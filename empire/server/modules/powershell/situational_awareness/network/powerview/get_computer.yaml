@@ -29,7 +29,7 @@ description: |
   options for precise targeting.
 software: S0194
 tactics: [TA0007]
-techniques: [T1069, T1018, T1615]
+techniques: [T1069, T1018]
 background: true
 output_extension:
 needs_admin: false

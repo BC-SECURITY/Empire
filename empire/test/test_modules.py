@@ -232,6 +232,7 @@ def test_auto_finalize(
         assert execute.data.strip() == "ScriptScriptEnd"
 
 
+@pytest.mark.slow
 def test_ttps(install_path):
     module_dir = Path(install_path) / "modules"
     tactic_pattern = re.compile(r"TA\d{4}")

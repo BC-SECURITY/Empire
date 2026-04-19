@@ -24,9 +24,9 @@ description: |
   privilege escalation, and targeted attacks based on user roles and
   organizational structure using native macOS directory service capabilities.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
-  - T1482
+  - T1087.002
 background: false
 output_extension: ''
 needs_admin: false

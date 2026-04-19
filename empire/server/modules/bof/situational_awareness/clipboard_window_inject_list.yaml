@@ -1,0 +1,27 @@
+name: ClipboardWindow-Inject List
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: List processes with clipboard window class
+software: ''
+tactics: [TA0004]
+techniques: [T1115]
+background: false
+output_extension:
+needs_admin: false
+opsec_safe: true
+language: bof
+min_language_version: ''
+comments:
+  - https://github.com/BronzeTicket/ClipboardWindow-Inject
+options:
+bof:
+  x86: ''
+  x64: bof/ClipboardWindow/ClipboardWindow-Inject.x64.o
+  entry_point: ''
+  format_string: i
+script_path: ''
+script_end: ''
+advanced:
+  custom_generate: true
