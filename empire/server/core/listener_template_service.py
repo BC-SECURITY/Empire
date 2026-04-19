@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import typing
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -29,10 +28,8 @@ class ListenerTemplateService:
     def new_instance(self, template: str):
         instance = type(self._loaded_listener_templates[template])(self.main_menu)
         for value in instance.options.values():
-            if value.get("SuggestedValues") is None:
-                value["SuggestedValues"] = []
-            if value.get("Strict") is None:
-                value["Strict"] = False
+            value.setdefault("SuggestedValues", [])
+            value.setdefault("Strict", False)
 
         return instance
 
@@ -47,7 +44,7 @@ class ListenerTemplateService:
         Load listeners from the install + "/listeners/*" path
         """
 
-        root_path = Path(self.main_menu.installPath) / "listeners"
+        root_path = self.main_menu.install_path / "listeners"
         log.info(f"v2: Loading listener templates from: {root_path}")
 
         for file_path in root_path.rglob("*.py"):
@@ -65,13 +62,9 @@ class ListenerTemplateService:
             listener = mod.Listener(self.main_menu)
 
             for value in listener.options.values():
-                if value.get("SuggestedValues") is None:
-                    value["SuggestedValues"] = []
-                if value.get("Strict") is None:
-                    value["Strict"] = False
-                if value.get("Internal") is None:
-                    value["Internal"] = False
-                if value.get("Depends_on") is None:
-                    value["Depends_on"] = []
+                value.setdefault("SuggestedValues", [])
+                value.setdefault("Strict", False)
+                value.setdefault("Internal", False)
+                value.setdefault("Depends_on", [])
 
             self._loaded_listener_templates[slugify(listener_name)] = listener

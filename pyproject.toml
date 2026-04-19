@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "empire-bc-security-fork"
-version = "6.4.1"
+version = "6.5.0"
 description = ""
 authors = ["BC Security <info@bc-security.org>"]
 readme = "README.md"
@@ -12,29 +12,28 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.13,<3.14"
-urllib3 = "^2.5.0"
+python = ">=3.13,<3.15"
+urllib3 = "^2.6.3"
 requests = "^2.32.5"
-macholib = "^1.16.3"
-pyOpenSSL = "^25.1.0"
+macholib = "^1.16.4"
+pyOpenSSL = "^25.3.0"
 zlib_wrapper = "^0.1.3"
 jinja2 = "^3.1.6"
-pyparsing = "^3.2.3"
+pyparsing = "^3.3.2"
 PyMySQL = "^1.1.2"
-SQLAlchemy = "^2.0.43"
-PyYAML = "^6.0.2"
+SQLAlchemy = "^2.0.46"
+PyYAML = "^6.0.3"
 SQLAlchemy-Utc = "^0.14.0"
-terminaltables = "^3.1.10"
 pycryptodome = "^3.23.0"
-cryptography = "^45.0.7"
-fastapi = "^0.116.1"
-uvicorn = "^0.35.0"
-jq = "^1.10.0"
-aiofiles = "^24.1.0"
-python-multipart = "^0.0.20"
+cryptography = "^46.0.5"
+fastapi = "^0.129.0"
+uvicorn = "^0.41.0"
+jq = "^1.11.0"
+aiofiles = "^25.1.0"
+python-multipart = "^0.0.22"
 python-jose = {version = "^3.5.0", extras = ["cryptography"]}
-python-socketio = "^5.13.0"
-Flask = "^3.1.2"
+python-socketio = "^5.16.1"
+Flask = "^3.1.3"
 pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev = "da5be0e"}
 # The official donut-shellcode release doesn't support arm64
 # and on newer linux kernels, it's starting to fail due to
@@ -42,22 +41,23 @@ pysecretsocks = {git = "https://github.com/BC-SECURITY/PySecretSOCKS.git", rev =
 # https://github.com/TheWover/donut/issues/139
 donut-shellcode = { git = "https://github.com/BC-SECURITY/donut.git", rev = "b361c0d3" }
 python-obfuscator = "^0.0.2"
-pyinstaller = "^6.15.0"
-packaging = "^25.0"
+pyinstaller = "^6.19.0"
+packaging = "^26.0"
 netaddr = "^1.3.0"
-bcrypt = "^4.3.0"
-requests-file = "^2.1.0"
-pydantic-settings = "^2.10.1"
+bcrypt = "^5.0.0"
+requests-file = "^3.0.1"
+pydantic-settings = "^2.13.1"
+prettytable = "^3.17.0"
 
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.28.1" # For starlette TestClient
-pytest = "^8.4.2"
+pytest = "^9.0.2"
 pytest-timeout = "^2.4.0"
-ruff = "^0.12.12"
-pytest-cov = "^6.3.0"
-coverage = {version = "^7.10.6", extras = ["toml"]}
-pytest-env = "^1.1.5"
+ruff = "^0.15.2"
+pytest-cov = "^7.0.0"
+coverage = {version = "^7.13.4", extras = ["toml"]}
+pytest-env = "^1.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -70,7 +70,8 @@ extend-exclude = [
     # This file is a pain to untangle for some of the linting rules
     # it is from a 3rd party library, and its mostly untested.
     'empire/server/common/malleable',
-    "empire/server/Empire-Compiler"
+    "empire/server/Empire-Compiler",
+    ".claude/worktrees",
 ]
 target-version = "py313"
 
@@ -115,15 +116,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 [tool.ruff.lint.per-file-ignores]
 # PLR, PLW: Each individual stager, listener, and module lacks tests, so it is not worth the
 # risk to manually refactor them until there are tests in place for them.
-# PTH: Excluded some files with lower test coverage for PTH so we can enable it for
-# the rest of the files and incrementally increase the coverage.
-"empire/server/listeners/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
-"empire/server/stagers/*" = ["PTH", "PLR0911", "PLR0912", "PLR0915"]
-"empire/server/modules/*" = ["PTH", "PLR0911", "PLR0912", "PLR0913", "PLR0915"]
-"empire/server/utils/bof_packer.py" = ["PTH"]
-"empire/server/core/stager_generation_service.py" = ["PTH"]
-"empire/server/core/agent_communication_service.py" = ["PTH"]
-"empire/server/core/go.py" = ["PTH"]
+"empire/server/listeners/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLW2901"]
+"empire/server/stagers/*" = ["PLR0911", "PLR0912", "PLR0915"]
+"empire/server/modules/*" = ["PLR0911", "PLR0912", "PLR0913", "PLR0915"]
 
 # It's hard to limit arguments on the endpoint functions.
 "empire/server/api/*" = ["PLR0913"]

@@ -1,7 +1,6 @@
 import base64
 import copy
 import logging
-import os
 import random
 
 from empire.server.common import helpers, packets, templating
@@ -340,9 +339,9 @@ class Listener:
             jitter = self.options["DefaultJitter"]["Value"]
             lostLimit = self.options["DefaultLostLimit"]["Value"]
 
-            with open(self.mainMenu.installPath + "/stagers/Sharpire.yaml", "rb") as f:
-                stager_yaml = f.read()
-            stager_yaml = stager_yaml.decode("UTF-8")
+            stager_yaml = (
+                self.mainMenu.install_path / "stagers/Sharpire.yaml"
+            ).read_text(encoding="utf-8")
             stager_yaml = (
                 stager_yaml.replace("{{ REPLACE_ADDRESS }}", self.host_address)
                 .replace("{{ REPLACE_SESSIONKEY }}", stagingKey)
@@ -395,8 +394,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -444,8 +442,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -504,8 +501,9 @@ class Listener:
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == "powershell":
-            with open(self.mainMenu.installPath + "/data/agent/agent.ps1") as f:
-                code = f.read()
+            code = (self.mainMenu.install_path / "data/agent/agent.ps1").read_text(
+                encoding="utf-8"
+            )
 
             # strip out comments and blank lines
             code = helpers.strip_powershell_comments(code)
@@ -538,12 +536,12 @@ class Listener:
             return code
 
         if language == "python":
-            if version == "ironpython":
-                f = self.mainMenu.installPath + "/data/agent/ironpython_agent.py"
-            else:
-                f = self.mainMenu.installPath + "/data/agent/agent.py"
-            with open(f) as f:
-                code = f.read()
+            agent_path = (
+                self.mainMenu.install_path / "data/agent/ironpython_agent.py"
+                if version == "ironpython"
+                else self.mainMenu.install_path / "data/agent/agent.py"
+            )
+            code = agent_path.read_text(encoding="utf-8")
 
             # strip out comments and blank lines
             code = helpers.strip_python_comments(code)
@@ -593,8 +591,7 @@ class Listener:
 
         if language.lower() == "powershell":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
 
             eng = templating.TemplateEngine(template_path)
@@ -609,8 +606,7 @@ class Listener:
 
         if language.lower() == "python":
             template_path = [
-                os.path.join(self.mainMenu.installPath, "/data/agent/stagers"),
-                os.path.join(self.mainMenu.installPath, "./data/agent/stagers"),
+                self.mainMenu.install_path / "data/agent/stagers",
             ]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/comms.py")

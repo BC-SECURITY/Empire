@@ -14,7 +14,7 @@ description: |
   and update titles. Requires administrative privileges and can target local or remote
   systems.
 software: ''
-tactics: [TA0009]
+tactics: [TA0009, TA0007]
 techniques: [T1082]
 background: true
 output_extension:

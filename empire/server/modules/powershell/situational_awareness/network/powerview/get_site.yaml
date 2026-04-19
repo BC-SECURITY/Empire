@@ -19,7 +19,7 @@ description: Enumerates Active Directory sites within a domain to identify the p
   that account for physical network boundaries and site-based security policies.
 software: S0194
 tactics: [TA0007]
-techniques: [T1482, T1069.002, T1615]
+techniques: [T1069.002, T1016]
 background: true
 output_extension:
 needs_admin: false

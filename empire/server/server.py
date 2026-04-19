@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import os
 import shutil
 import signal
 import subprocess
@@ -52,6 +53,37 @@ def shutdown_handler(signum, frame):
 signal.signal(signal.SIGINT, shutdown_handler)
 
 
+def get_commit_sha() -> str:
+    """Return the git commit SHA for the running build.
+
+    In Docker, this is baked in at build time via the EMPIRE_COMMIT_SHA env
+    var (set by --build-arg in the Makefile). At runtime (local dev), falls
+    back to running git. Returns "unknown" when neither source is available.
+    """
+    commit = os.environ.get("EMPIRE_COMMIT_SHA", "").strip()
+    if commit:
+        return commit
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except FileNotFoundError:
+        pass
+
+    return "unknown"
+
+
+def log_version():
+    log.info(f"Starting Empire {empire.VERSION} (commit: {get_commit_sha()})")
+
+
 def check_submodules():
     log.info("Checking submodules...")
     if not Path(".git").exists():
@@ -92,6 +124,7 @@ def run(args):
         sys.exit()
 
     setup_logging(args)
+    log_version()
 
     if empire_config.submodules.auto_update:
         log.info("Submodules auto update enabled. Loading.")

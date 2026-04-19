@@ -1,7 +1,7 @@
 import logging
-import os
 import subprocess
 import time
+from pathlib import Path
 
 """
 
@@ -137,8 +137,8 @@ class Stager:
         imports_str = "\n".join(imports_list)
         launcher = imports_str + "\n" + launcher
 
-        with open(binary_file_str + ".py", "w") as text_file:
-            text_file.write(f"{launcher}")
+        binary_path = Path(binary_file_str)
+        binary_path.with_suffix(".py").write_text(f"{launcher}")
 
         subprocess.run(
             [
@@ -146,16 +146,15 @@ class Stager:
                 "-y",
                 "--clean",
                 "--specpath",
-                os.path.dirname(binary_file_str),
+                str(binary_path.parent),
                 "--distpath",
-                os.path.dirname(binary_file_str),
+                str(binary_path.parent),
                 "--workpath",
                 "/tmp/" + str(time.time()) + "-build/",
                 "--onefile",
-                binary_file_str + ".py",
+                str(binary_path.with_suffix(".py")),
             ],
             check=False,
         )
 
-        with open(binary_file_str, "rb") as f:
-            return f.read()
+        return binary_path.read_bytes()

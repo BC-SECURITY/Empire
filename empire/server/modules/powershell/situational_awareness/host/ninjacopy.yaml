@@ -13,7 +13,7 @@ description: |
   registry hives, or other sensitive files that are actively in use by the system. Requires
   administrative privileges to access raw volume data.
 software: ''
-tactics: [TA0006, TA0005]
+tactics: [TA0006, TA0005, TA0009]
 techniques: [T1003.003, T1005, T1006]
 background: true
 output_extension:

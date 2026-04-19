@@ -12,7 +12,7 @@ description: Returns a list of SQL Server instances discovered by querying a dom
   domain controller can be provided. UDP scanning of management servers is optional.
 software: ''
 tactics: [TA0007]
-techniques: [T1046, T1615]
+techniques: [T1046]
 background: true
 output_extension:
 needs_admin: false

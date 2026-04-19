@@ -3,15 +3,12 @@ from __future__ import absolute_import
 import random
 import string
 
-import six.moves.urllib.error
-import six.moves.urllib.parse
-import six.moves.urllib.request
 from pyparsing import *
 from six.moves import range
 
 from .transaction import MalleableRequest, MalleableResponse, Transaction
-from .transformation import Container, Terminator, Transform
-from .utility import MalleableError, MalleableObject, MalleableUtil
+from .transformation import Container
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # IMPLEMENTATION
@@ -400,10 +397,9 @@ class Stager(Transaction):
         self.client.verb = "GET"
 
         # Having a missing http-stager and '/' in http-get or http-post throws an error
-        # This catches it and generates a random http-stager uri
+        # Use a fixed default uri to avoid collision while remaining consistent across restarts
         if not self.client.uris:
-            self.client.uris = []
-            self.client.uris.append("/" + self.get_random_string(8) + "/")
+            self.client.uris = ["/init/"]
 
     def _clone(self):
         """Deep copy of the Stager Transaction.

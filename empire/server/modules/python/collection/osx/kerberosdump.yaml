@@ -17,9 +17,9 @@ description: |
   Kerberos reconnaissance, and collecting authentication tickets
   for lateral movement in Active Directory environments.
 software: ''
-tactics: []
+tactics: [TA0006]
 techniques:
-  - T1208
+  - T1558.003
 background: false
 output_extension:
 needs_admin: false

@@ -21,7 +21,9 @@ description: |
   can trigger lockouts or alerts.
 software: ''
 tactics: [TA0008]
-techniques: [T1021.004]
+techniques:
+  - T1021.004
+  - T1105
 background: true
 output_extension:
 needs_admin: false

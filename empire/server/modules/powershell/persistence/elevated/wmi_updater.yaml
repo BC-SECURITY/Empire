@@ -30,7 +30,9 @@ description: |
   monitoring tools.
 software: ''
 tactics: [TA0003]
-techniques: [T1546.003]
+techniques:
+  - T1047
+  - T1546.003
 background: false
 output_extension:
 needs_admin: true

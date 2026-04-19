@@ -1,9 +1,9 @@
-import os
+from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
-from empire.server.utils.module_util import handle_error_message
 
 
 class Module:
@@ -84,26 +84,26 @@ class Module:
         if ext_file != "":
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
-            if os.path.exists(ext_file):
-                with open(ext_file) as f:
-                    fileData = f.read()
+            ext_path = Path(ext_file)
+            if ext_path.exists():
+                fileData = ext_path.read_text()
 
                 # unicode-base64 encode the script for -enc launching
                 enc_script = helpers.enc_powershell(fileData)
                 status_msg += "using external file " + ext_file
 
             else:
-                return handle_error_message("[!] File does not exist: " + ext_file)
+                raise ModuleValidationException("File does not exist: " + ext_file)
 
         elif listener_name == "":
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Either an ExtFile or a Listener must be specified"
             )
 
         # if an external file isn't specified, use a listener
         elif not main_menu.listenersv2.get_active_listener_by_name(listener_name):
             # not a valid listener, return nothing for the script
-            return handle_error_message("[!] Invalid listener: " + listener_name)
+            raise ModuleValidationException("Invalid listener: " + listener_name)
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
@@ -124,7 +124,7 @@ class Module:
 
         # sanity check to make sure we haven't exceeded the powershell -enc 8190 char max
         if len(enc_script) > 8190:
-            return handle_error_message(
+            raise ModuleValidationException(
                 "[!] Warning: -enc command exceeds the maximum of 8190 characters."
             )
 
@@ -153,7 +153,9 @@ class Module:
             parts = daily_time.split(":")
 
             if len(parts) < 2:
-                return handle_error_message("[!] Please use HH:mm format for DailyTime")
+                raise ModuleValidationException(
+                    "[!] Please use HH:mm format for DailyTime"
+                )
 
             hour = parts[0]
             minutes = parts[1]
@@ -165,12 +167,12 @@ class Module:
 
             # if those day and day_of_week are combined, return nothing for the script
             if day != "" and day_of_week != "":
-                return handle_error_message("[!] Can not combine Day and DayOfWeek")
+                raise ModuleValidationException("Can not combine Day and DayOfWeek")
 
             # add day or day_of_week to event filter
             if day != "":
                 if (int(day) < 1) or (int(day) > 31):
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] Please stick to range 1-31 for Day"
                     )
                 day_filter = " AND (TargetInstance.Day = " + day + ")"
@@ -178,7 +180,7 @@ class Module:
 
             elif day_of_week != "":
                 if (int(day_of_week) < 0) or (int(day_of_week) > 6):
-                    return handle_error_message(
+                    raise ModuleValidationException(
                         "[!] Please stick to range 0-6 for DayOfWeek"
                     )
                 day_filter = " AND (TargetInstance.DayOfWeek=" + day_of_week + ")"

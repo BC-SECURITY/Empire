@@ -10,7 +10,7 @@ description: |
   command line arguments. Assemblies will be scanned by AMSI and are executed entirely
   in memory.
 software: ''
-tactics: [TA0002]
+tactics: [TA0002, TA0005]
 techniques: [T1620]
 background: true
 output_extension: ''

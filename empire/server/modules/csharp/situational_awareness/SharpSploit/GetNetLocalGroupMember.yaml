@@ -12,7 +12,7 @@ description: |
   enumeration of all local group members.
 software: ''
 tactics: [TA0007]
-techniques: [T1482, T1615, T1069.002]
+techniques: [T1069.002]
 background: false
 output_extension: ''
 needs_admin: false

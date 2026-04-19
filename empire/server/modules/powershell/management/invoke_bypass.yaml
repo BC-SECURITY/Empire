@@ -23,7 +23,9 @@ description: |
   detection by advanced security solutions.
 software: ''
 tactics: [TA0005]
-techniques: [T1562.006]
+techniques:
+  - T1027.010
+  - T1562.006
 background: true
 output_extension:
 needs_admin: false

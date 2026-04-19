@@ -21,7 +21,9 @@ description: |
   providing a reliable and difficult-to-detect persistence mechanism.
 software: ''
 tactics: [TA0004]
-techniques: [T1546.003]
+techniques:
+  - T1070.001
+  - T1546.003
 background: false
 output_extension:
 needs_admin: true

@@ -91,7 +91,7 @@ def test_staging_key_validation(monkeypatch):
     # Invalid preset key (contains punctuation)
     monkeypatch.setenv("STAGING_KEY", "Bad#Key$With!Special")
     with pytest.raises(
-        ValueError, match="Staging key must only contain letters .* and numbers"
+        ValueError, match=r"Staging key must only contain letters .* and numbers"
     ):
         get_staging_key()
 

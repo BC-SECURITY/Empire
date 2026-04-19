@@ -17,9 +17,10 @@ description: |
   security assessments, and identifying privilege escalation
   opportunities on Linux systems.
 software: ''
-tactics: []
+tactics: [TA0004, TA0005]
 techniques:
-  - T1166
+  - T1059.004
+  - T1548.001
 background: true
 output_extension: ''
 needs_admin: false

@@ -11,7 +11,7 @@ description: |
   Provides essential network reconnaissance capabilities for mapping
   hostnames to IP addresses and understanding network topology.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
   - T1018
 background: true

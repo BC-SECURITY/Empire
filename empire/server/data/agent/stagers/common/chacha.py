@@ -301,9 +301,6 @@ class PacketHandler:
 
                 packetOffset += 12 + length
 
-            # send_message() is patched in from the listener module
-            self.send_message(resultPackets)
-
         except Exception as e:
             print(e)
             pass

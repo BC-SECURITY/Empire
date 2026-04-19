@@ -59,6 +59,7 @@ def test_auto_execute_plugins(caplog, monkeypatch, models, empire_config, instal
 
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = str(install_path)
+    main_menu_mock.install_path = Path(install_path)
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
@@ -72,6 +73,7 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
 
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
 
@@ -80,7 +82,7 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
         plugin = plugin_holder.loaded_plugin
         with patch_plugin_execute(plugin, execute):
             req = PluginExecutePostRequest(options={"report": "session"})
-            res, err = plugin_service.execute_plugin("db_session", plugin, req, 1)
+            res, _err = plugin_service.execute_plugin("db_session", plugin, req, 1)
 
     assert res == execute(req.options, db="db_session", user=1)
 
@@ -88,6 +90,7 @@ def test_plugin_execute_with_kwargs(session_local, install_path):
 def test_execute_plugin_file_option_not_found(install_path, session_local):
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
 
     main_menu_mock.downloadsv2 = MagicMock()
     main_menu_mock.downloadsv2.get_by_id.return_value = None
@@ -122,6 +125,7 @@ def test_execute_plugin_file_option_not_found(install_path, session_local):
 def test_execute_plugin_file_option(install_path, session_local, models):
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
 
     download = models.Download(id=9999, filename="test_file", location="/tmp/test_file")
     main_menu_mock.downloadsv2 = MagicMock()
@@ -171,6 +175,7 @@ def test_execute_plugin_file_option(install_path, session_local, models):
 def test_on_start_on_stop_called(install_path):
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
 
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
@@ -195,6 +200,7 @@ def test_on_start_on_stop_called(install_path):
 def test_on_load_on_unload_called(install_path):
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
 
     plugin_service = PluginService(main_menu_mock)
     plugin_service.startup()
@@ -269,6 +275,7 @@ def test__determine_auto_execute(empire_config, plugin_service):
 def test_plugin_load_exception(install_path, session_local):
     main_menu_mock = MagicMock()
     main_menu_mock.installPath = install_path
+    main_menu_mock.install_path = Path(install_path)
 
     plugin_service = PluginService(main_menu_mock)
     plugin_service.plugin_path = Path(install_path).parent / "test/plugin_install"

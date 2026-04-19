@@ -2,7 +2,65 @@ import asyncio
 import logging
 from collections.abc import Callable
 
+from sqlalchemy.orm import Session
+
+from empire.server.core.db.base import SessionLocal
+
 log = logging.getLogger(__name__)
+
+
+def _log_task_exception(task: asyncio.Task, hook: Callable, event: str) -> None:
+    """Log exceptions from fire-and-forget async hook tasks.
+
+    Exceptions raised inside loop.create_task() are not caught by the
+    try/except in run_hooks because the task runs after run_hooks returns.
+    This callback ensures they are logged immediately when the task finishes.
+    """
+    try:
+        task.result()
+    except asyncio.CancelledError:
+        log.debug("Async hook %s for event '%s' was cancelled", hook, event)
+    except Exception as exc:
+        log.error(
+            "Async hook %s failed for event '%s': %s",
+            hook,
+            event,
+            exc,
+            exc_info=True,
+        )
+
+
+async def _run_async_hook(hook: Callable, *args) -> None:
+    """Run an async hook with a fresh, properly scoped DB session.
+
+    Async hooks are dispatched via loop.create_task(), which means they run
+    after the caller's `with SessionLocal.begin() as db:` block has already
+    exited. Passing the caller's session directly is unsafe: any db.query()
+    call inside the hook triggers SQLAlchemy autobegin, re-acquiring a pool
+    connection with no code to release it — exhausting the pool under load.
+
+    Opens a fresh SessionLocal session, merges any ORM objects from the
+    caller's args into it, and calls the hook. The session commits and closes
+    when the hook returns.
+
+    Uses load=False on merge to skip the SELECT lookup. Without load=False,
+    merge issues a SELECT for each ORM object; if the outer transaction has
+    flushed but not yet committed the row, the SELECT finds nothing and marks
+    the object as pending (new). On commit, SQLAlchemy tries to INSERT the
+    row, hitting a 50-second MySQL lock wait on the uncommitted PK.
+
+    If args[0] is not a Session, args are forwarded unchanged.
+    """
+    if args and isinstance(args[0], Session):
+        rest = args[1:]
+        with SessionLocal.begin() as db:
+            merged = [
+                db.merge(arg, load=False) if hasattr(arg, "__mapper__") else arg
+                for arg in rest
+            ]
+            await hook(db, *merged)
+    else:
+        await hook(*args)
 
 
 class Hooks:
@@ -107,13 +165,19 @@ class Hooks:
                         loop = None
 
                     if loop and loop.is_running():
-                        loop.create_task(hook(*args))
+                        # Exceptions from the scheduled task are NOT caught by
+                        # the surrounding try/except — they run after run_hooks
+                        # returns. The done callback handles error logging.
+                        task = loop.create_task(_run_async_hook(hook, *args))
+                        task.add_done_callback(
+                            lambda t, h=hook, e=event: _log_task_exception(t, h, e)
+                        )
                     else:
-                        asyncio.run(hook(*args))
+                        asyncio.run(_run_async_hook(hook, *args))
                 else:
                     hook(*args)
             except Exception as e:
-                log.error(f"Hook {hook} failed: {e}", exc_info=True)
+                log.error(f"Hook {hook} failed for event '{event}': {e}", exc_info=True)
 
     def run_filters(self, event: str, *args):
         """

@@ -11,9 +11,9 @@ description: |
   Marathon API endpoint to create new application definitions and
   immediately start the specified number of instances.
 software: ''
-tactics: []
+tactics: [TA0002]
 techniques:
-  - T1106
+  - T1059.006
 background: true
 output_extension: ''
 needs_admin: false

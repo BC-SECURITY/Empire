@@ -14,10 +14,9 @@ description: |
   sensitive data that users copy and paste, including passwords,
   text snippets, and other confidential information.
 software: ''
-tactics: []
+tactics: [TA0009]
 techniques:
   - T1115
-  - T1414
 background: false
 output_extension: ''
 needs_admin: false

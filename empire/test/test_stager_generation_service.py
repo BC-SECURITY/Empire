@@ -112,6 +112,7 @@ def test_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
         (True, True),
     ],
 )
+@pytest.mark.slow
 def test_obfuscate_generate_exe_oneliner(stager_generation_service, obfuscate, encode):
     launcher = stager_generation_service.generate_exe_oneliner(
         language="powershell",
@@ -137,6 +138,7 @@ def test_generate_dll(stager_generation_service):
         ("net35", True),
     ],
 )
+@pytest.mark.slow
 def test_generate_powershell_exe(stager_generation_service, dot_net_version, obfuscate):
     result = stager_generation_service.generate_powershell_exe(
         "posh_code", dot_net_version, obfuscate
@@ -187,6 +189,7 @@ def test_generate_powershell_shellcode(
         ("net40", True),
     ],
 )
+@pytest.mark.slow
 def test_generate_python_exe(stager_generation_service, dot_net_version, obfuscate):
     result = stager_generation_service.generate_python_exe(
         "python_code", dot_net_version, obfuscate
@@ -216,6 +219,7 @@ def test_generate_python_shellcode(stager_generation_service, arch, dot_net_vers
     assert len(shellcode) > 0, "Generated shellcode is empty"
 
 
+@pytest.mark.slow
 def test_generate_go_stageless(stager_generation_service):
     """
     Test the generate_go_stageless function using a real listener (new-listener-1).
@@ -356,6 +360,7 @@ def test_generate_appbundle(stager_generation_service):
     assert len(result) > 9000  # noqa: PLR2004
 
 
+@pytest.mark.slow
 def test_generate_jar(stager_generation_service):
     launcher_code = "import os; print('Hello, World!')"
     result = stager_generation_service.generate_jar(launcher_code)
@@ -443,3 +448,50 @@ def test_multi_generate_agent_stageless_python(main):
     assert isinstance(result, str), "Expected generated code to be a string"
     assert "def run(" in result
     assert "class Stage" in result
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+@pytest.mark.parametrize(
+    ("arch", "dot_net_version"),
+    [
+        ("x86", "net40"),
+        ("x64", "net40"),
+        ("both", "net40"),
+        ("x86", "net35"),
+        ("x64", "net35"),
+        ("both", "net35"),
+    ],
+)
+def test_generate_csharp_shellcode(stager_generation_service, arch, dot_net_version):
+    shellcode, err = stager_generation_service.generate_csharp_shellcode(
+        listener_name="new-listener-1",
+        arch=arch,
+        dot_net_version=dot_net_version,
+    )
+
+    assert err is None, f"Error occurred: {err}"
+    assert isinstance(shellcode, bytes), (
+        f"Shellcode should be bytes, but got {type(shellcode)}"
+    )
+    assert len(shellcode) > 100, f"Shellcode is too short: {len(shellcode)} bytes"  # noqa: PLR2004
+
+
+@pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
+@pytest.mark.parametrize(
+    "language",
+    [
+        "powershell",
+        "csharp",
+    ],
+)
+def test_generate_shellcode(stager_generation_service, language):
+    shellcode, err = stager_generation_service.generate_shellcode(
+        language=language,
+        listener_name="new-listener-1",
+    )
+
+    assert err is None, f"Error occurred: {err}"
+    assert isinstance(shellcode, bytes), (
+        f"Shellcode should be bytes, but got {type(shellcode)}"
+    )
+    assert len(shellcode) > 100, f"Shellcode is too short: {len(shellcode)} bytes"  # noqa: PLR2004

@@ -15,9 +15,9 @@ description: |
   establishing persistence on Linux desktop systems and maintaining
   access across user sessions and system reboots.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004]
 techniques:
-  - T1165
+  - T1037.005
 background: false
 output_extension:
 needs_admin: false

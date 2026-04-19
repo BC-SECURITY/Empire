@@ -17,10 +17,9 @@ description: |
   triggering user authentication prompts to capture passwords
   and other sensitive credentials.
 software: ''
-tactics: []
+tactics: [TA0006, TA0009]
 techniques:
-  - T1141
-  - T1514
+  - T1056.002
 background: false
 output_extension: ''
 needs_admin: false

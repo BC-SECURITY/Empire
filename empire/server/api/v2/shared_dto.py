@@ -1,5 +1,5 @@
 import typing
-from enum import Enum
+from enum import StrEnum
 from typing import Annotated, Any
 
 from pydantic import (
@@ -20,7 +20,7 @@ class NotFoundResponse(BaseModel):
     detail: str
 
 
-class ValueType(str, Enum):
+class ValueType(StrEnum):
     string = "STRING"
     float = "FLOAT"
     integer = "INTEGER"
@@ -53,7 +53,7 @@ class CustomOptionSchema(BaseModel):
     depends_on: list[DependentOption] = []
 
 
-class OrderDirection(str, Enum):
+class OrderDirection(StrEnum):
     asc = "asc"
     desc = "desc"
 

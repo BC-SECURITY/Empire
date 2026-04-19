@@ -2,7 +2,6 @@ import fnmatch
 import importlib.util
 import logging
 import typing
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -53,7 +52,7 @@ class StagerTemplateService:
         """
         Load stagers from the install + "/stagers/*" path
         """
-        root_path = Path(self.main_menu.installPath) / "stagers"
+        root_path = self.main_menu.install_path / "stagers"
         log.info(f"v2: Loading stager templates from: {root_path}")
 
         for file_path in root_path.rglob("*.py"):

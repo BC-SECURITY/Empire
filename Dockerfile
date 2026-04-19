@@ -9,7 +9,7 @@
 # 2) create volume storage: `docker create -v /empire --name data bcsecurity/empire`
 # 3) run out container: `docker run -it --volumes-from data bcsecurity/empire /bin/bash`
 
-FROM python:3.13.6-bullseye
+FROM python:3.14.3-trixie
 
 LABEL maintainer="bc-security"
 LABEL description="Dockerfile for Empire. https://bc-security.gitbook.io/empire-wiki/quickstart/installation#docker"
@@ -17,6 +17,8 @@ LABEL description="Dockerfile for Empire. https://bc-security.gitbook.io/empire-
 ENV DEBIAN_FRONTEND=noninteractive DOTNET_CLI_TELEMETRY_OPTOUT=1
 
 ARG TARGETARCH
+ARG COMMIT_SHA=""
+ENV EMPIRE_COMMIT_SHA=$COMMIT_SHA
 
 SHELL ["/bin/bash", "-c"]
 
@@ -24,14 +26,19 @@ RUN apt-get update && \
     apt-get install -qq \
     --no-install-recommends \
     apt-transport-https \
+    ca-certificates \
     libicu-dev \
     sudo \
     zip \
     curl \
+    wget \
     git \
     openssh-client \
     default-jdk \
     mono-runtime \
+    build-essential \
+    mingw-w64 \
+    perl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN if [ "$TARGETARCH" = "amd64" ]; then \
@@ -55,6 +62,24 @@ RUN curl -L -o /tmp/go.tar.gz https://go.dev/dl/go1.23.2.linux-${TARGETARCH}.tar
     tar zxf /tmp/go.tar.gz -C /opt && \
     ln -s /opt/go/bin/go /usr/bin/go && \
     rm /tmp/go.tar.gz
+
+# Build OpenSSL for MinGW cross-compilation (for Windows C stagers)
+RUN set -eux; \
+    if [ ! -d /opt/openssl-mingw64/include/openssl ]; then \
+      OPENSSL_VERSION="3.5.4"; \
+      mkdir -p /tmp/openssl-build; \
+      cd /tmp/openssl-build; \
+      wget -q "https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz" -O "openssl-${OPENSSL_VERSION}.tar.gz"; \
+      tar -xzf "openssl-${OPENSSL_VERSION}.tar.gz"; \
+      cd "openssl-${OPENSSL_VERSION}"; \
+      ./Configure mingw64 no-apps no-async no-docs no-shared no-tests \
+        --cross-compile-prefix=x86_64-w64-mingw32- \
+        --prefix=/opt/openssl-mingw64; \
+      make -j"$(nproc)"; \
+      make install_dev; \
+      cd /; \
+      rm -rf /tmp/openssl-build; \
+    fi
 
 WORKDIR /empire
 

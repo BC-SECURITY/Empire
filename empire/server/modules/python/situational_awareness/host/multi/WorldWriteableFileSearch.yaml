@@ -12,7 +12,7 @@ description: |
   placed or where privilege escalation can be achieved through
   file manipulation.
 software: ''
-tactics: []
+tactics: [TA0007]
 techniques:
   - T1083
 background: true

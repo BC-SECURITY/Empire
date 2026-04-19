@@ -14,9 +14,9 @@ description: |
   reliable persistence mechanism that survives user logouts and system
   restarts.
 software: ''
-tactics: []
+tactics: [TA0003, TA0004, TA0005]
 techniques:
-  - T1055
+  - T1543.001
 background: false
 output_extension:
 needs_admin: false

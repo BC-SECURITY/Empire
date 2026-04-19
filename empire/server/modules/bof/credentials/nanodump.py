@@ -10,13 +10,14 @@ class Module:
         params: dict,
         obfuscate: bool = False,
         obfuscation_command: str = "",
+        **kwargs,
     ):
         params_dict = {
             "Architecture": "x64",
-            "ProcessID": params.get("pid") if params.get("pid") else "0",
+            "ProcessID": params.get("pid") or "0",
             "DumpPath": params.get("write", "find_me.dmp"),
             "WriteFile": "1" if params.get("write") else "0",
-            "Chunksize": params.get("chunksize") if params.get("chunksize") else "0",
+            "Chunksize": params.get("chunksize") or "0",
             "ValidSignature": "1" if params.get("valid") == "true" else "0",
             "Fork": "1" if params.get("fork") == "true" else "0",
             "Snapshot": "1" if params.get("snapshot") == "true" else "0",

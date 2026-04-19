@@ -18,7 +18,7 @@ description: |
   the ability to map user identities to their underlying security principals for
   reconnaissance and privilege escalation activities.
 software: ''
-tactics: [TA0007]
+tactics: [TA0007, TA0003, TA0004]
 techniques: [T1098, T1087.002]
 background: false
 output_extension:

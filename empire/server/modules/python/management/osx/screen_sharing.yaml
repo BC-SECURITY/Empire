@@ -14,7 +14,7 @@ description: |
   reconnaissance, and maintaining persistent access through
   legitimate remote management protocols.
 software: ''
-tactics: []
+tactics: [TA0002, TA0008]
 techniques:
   - T1021
 background: false

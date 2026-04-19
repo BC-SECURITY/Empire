@@ -14,9 +14,11 @@ description: |
   user behavior analysis, and collecting sensitive configuration
   data for lateral movement and persistence.
 software: ''
-tactics: []
+tactics: [TA0006]
 techniques:
-  - T1139
+  - T1005
+  - T1552.003
+  - T1552.004
 background: false
 output_extension: ''
 needs_admin: false

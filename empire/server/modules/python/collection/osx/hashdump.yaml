@@ -14,9 +14,10 @@ description: |
   comprehensive user account enumeration including usernames and
   password hashes for all local users on macOS systems.
 software: ''
-tactics: []
+tactics: [TA0009, TA0006]
 techniques:
   - T1003
+  - T1005
 background: false
 output_extension: ''
 needs_admin: true

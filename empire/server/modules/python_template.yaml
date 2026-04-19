@@ -14,8 +14,7 @@ description: |
 software:
 # Techniques that from the MITRE ATT&CK framework (https://attack.mitre.org/techniques/enterprise/)
 techniques:
-  - T1141
-  - T1514
+  - T1056.002
 # True if the module needs to run in the background
 
 background: false

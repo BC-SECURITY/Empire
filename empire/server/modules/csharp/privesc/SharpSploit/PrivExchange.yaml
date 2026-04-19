@@ -12,7 +12,7 @@ description: |
   credentials, allowing the attacker to capture NTLM authentication tokens.
 software: ''
 tactics: [TA0004, TA0006, TA0009]
-techniques: [T1557.0001, T1187]
+techniques: [T1557.001, T1187]
 background: false
 output_extension: ''
 needs_admin: false

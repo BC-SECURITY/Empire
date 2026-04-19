@@ -11,7 +11,9 @@ description: |
   Typical use cases include bulk email collection, mailbox reconnaissance, and preparation for targeted phishing or social engineering campaigns.
 software: ''
 tactics: [TA0009]
-techniques: [T1114]
+techniques:
+  - T1114
+  - T1114.001
 background: true
 output_extension:
 needs_admin: false

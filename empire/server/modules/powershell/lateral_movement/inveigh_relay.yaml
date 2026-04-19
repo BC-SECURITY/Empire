@@ -12,7 +12,7 @@ description: Inveigh's SMB relay function. This module can be used to relay inco
   can be used through Empire's scriptimport and scriptcmd if additional parameters
   are needed.
 software: ''
-tactics: [TA0008]
+tactics: [TA0008, TA0006, TA0007, TA0009]
 techniques: [T1040, T1557.001, T1557.003, T1119]
 background: true
 output_extension:

@@ -2,11 +2,11 @@ import base64
 import contextlib
 import json
 import logging
-import os
 import random
 import string
 import threading
 import typing
+from pathlib import Path
 
 from pydantic import ValidationError
 from sqlalchemy import and_
@@ -66,6 +66,16 @@ class AgentCommunicationService:
     def is_ip_allowed(self, ip_address):
         return self.ip_service.is_ip_allowed(ip_address)
 
+    @staticmethod
+    def _is_path_safe(save_path: Path, download_dir: Path, session_id: str) -> bool:
+        """Check if a file path is safe (not a directory traversal attack)."""
+        if not save_path.resolve().is_relative_to(download_dir.resolve()):
+            log.warning(
+                "Agent %s attempted skywalker exploit! Path: %s", session_id, save_path
+            )
+            return False
+        return True
+
     def _decompress_python_data(self, data, filename, session_id):
         log.info(
             f"Compressed size of {filename} download: {helpers.get_file_size(data)}"
@@ -101,15 +111,11 @@ class AgentCommunicationService:
         # construct the appropriate save path
         download_dir = empire_config.directories.downloads
         save_path = download_dir / session_id / "/".join(parts[0:-1])
-        filename = os.path.basename(parts[-1])
+        filename = Path(parts[-1]).name
         save_file = save_path / filename
 
         with self._lock:
-            # fix for 'skywalker' exploit by @zeroSteiner
-            safe_path = download_dir.absolute()
-            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = f"Agent {session_id} attempted skywalker exploit! Attempted overwrite of {path} with data {data}"
-                log.warning(message)
+            if not self._is_path_safe(save_file, download_dir, session_id):
                 return
 
             if not save_path.exists():
@@ -130,7 +136,7 @@ class AgentCommunicationService:
                 download = models.Download(
                     location=str(location),
                     filename=filename,
-                    size=os.path.getsize(location),
+                    size=location.stat().st_size,
                 )
                 db.add(download)
                 db.flush()
@@ -155,7 +161,7 @@ class AgentCommunicationService:
                     db.flush()
 
         percent = round(
-            int(os.path.getsize(str(save_file))) / int(total_filesize) * 100,
+            save_file.stat().st_size / int(total_filesize) * 100,
             2,
         )
 
@@ -179,16 +185,10 @@ class AgentCommunicationService:
             data = self._decompress_python_data(data, filename, session_id)
 
         with self._lock:
-            # fix for 'skywalker' exploit by @zeroSteiner
-            safe_path = download_dir.absolute()
-            if not str(os.path.normpath(save_file)).startswith(str(safe_path)):
-                message = f"agent {session_id} attempted skywalker exploit!\n[!] attempted overwrite of {path} with data {data}"
-                log.warning(message)
+            if not self._is_path_safe(save_file, download_dir, session_id):
                 return None
 
-            # make the recursive directory structure if it doesn't already exist
-            if not save_path.exists():
-                os.makedirs(save_path)
+            save_path.mkdir(parents=True, exist_ok=True)
 
             # save the file out
 
@@ -199,7 +199,7 @@ class AgentCommunicationService:
         message = f"File {path} from {session_id} saved"
         log.info(message)
 
-        return str(save_file)
+        return save_file
 
     def _remove_agent(self, db: Session, session_id: str):
         """
@@ -368,7 +368,7 @@ class AgentCommunicationService:
             return []
 
         try:
-            tasks, total = self.agent_task_service.get_tasks(
+            tasks, _total = self.agent_task_service.get_tasks(
                 db=db,
                 agents=[session_id],
                 include_full_input=True,
@@ -871,7 +871,7 @@ class AgentCommunicationService:
             routing_packet = routing_packet.encode("UTF-8")
         routing_packet = packets.parse_routing_packet(staging_key, routing_packet)
         if not routing_packet:
-            return [("", "ERROR: invalid routing packet")]
+            return [("", "ERROR: invalid routing packet", "NONE")]
 
         dataToReturn = []
 
@@ -883,7 +883,9 @@ class AgentCommunicationService:
             if not is_valid_session_id(session_id):
                 message = f"handle_agent_data(): invalid sessionID {session_id}"
                 log.error(message)
-                dataToReturn.append(("", f"ERROR: invalid sessionID {session_id}"))
+                dataToReturn.append(
+                    ("", f"ERROR: invalid sessionID {session_id}", "NONE")
+                )
             elif meta in ("STAGE0", "STAGE1", "STAGE2"):
                 message = f"handle_agent_data(): session_id {session_id} issued a {meta} request"
                 log.debug(message)
@@ -906,6 +908,7 @@ class AgentCommunicationService:
                                 listener_options,
                                 client_ip,
                             ),
+                            additional,
                         )
                     )
 
@@ -914,7 +917,7 @@ class AgentCommunicationService:
                 log.warning(message)
 
                 dataToReturn.append(
-                    ("", f"ERROR: session_id {session_id} not in cache!")
+                    ("", f"ERROR: session_id {session_id} not in cache!", "NONE")
                 )
 
             elif meta == "TASKING_REQUEST":
@@ -924,6 +927,7 @@ class AgentCommunicationService:
                     (
                         language,
                         self.handle_agent_request(session_id, language, staging_key),
+                        "NONE",
                     )
                 )
 
@@ -938,6 +942,7 @@ class AgentCommunicationService:
                         self._handle_agent_response(
                             session_id, encData, update_lastseen
                         ),
+                        "NONE",
                     )
                 )
 
@@ -955,6 +960,7 @@ class AgentCommunicationService:
             log.error(message)
             return None
 
+        # Phase 1: DB work only — release the connection ASAP
         with SessionLocal.begin() as db:
             self.agent_service.update_agent_lastseen(db, session_id)
 
@@ -968,45 +974,50 @@ class AgentCommunicationService:
             temp_tasks = self._get_queued_agent_temporary_tasks(session_id)
             tasks.extend(temp_tasks)
 
-            if len(tasks) > 0:
-                all_task_packets = b""
+            # Flush pending changes (e.g. task status → pulled) before
+            # detaching, then expunge so loaded attributes remain
+            # accessible after the session closes.
+            db.flush()
+            db.expunge_all()
 
-                # build tasking packets for everything we have
-                for tasking in tasks:
-                    input_full = tasking.input_full
-                    if tasking.task_name in [
-                        "TASK_CSHARP_CMD_JOB",
-                        "TASK_CSHARP_CMD_WAIT",
-                    ]:
-                        # This is where we read the input file.
-                        # We could change it to use the linked/tagged download.
-                        # But this still works.
-                        with open(tasking.input_full.split("|")[0], "rb") as f:
-                            input_full = f.read()
-                        input_full = base64.b64encode(input_full).decode("UTF-8")
-                        input_full += tasking.input_full.split("|", maxsplit=1)[1]
-                    all_task_packets += packets.build_task_packet(
-                        tasking.task_name, input_full, tasking.id
-                    )
-                # get the session key for the agent
-                session_key = self.agents[session_id]["sessionKey"]
-                with contextlib.suppress(Exception):
-                    session_key = bytes.fromhex(session_key)
+        # Phase 2: file I/O, encryption, packet building (no DB needed)
+        if not tasks:
+            return None
 
-                # encrypt the tasking packets with the agent's session key
-                encrypted_data = AESCipher.encrypt_then_hmac(
-                    session_key, all_task_packets
-                )
+        all_task_packets = b""
 
-                return packets.build_routing_packet(
-                    staging_key,
-                    session_id,
-                    language,
-                    meta="SERVER_RESPONSE",
-                    encData=encrypted_data,
-                )
+        # build tasking packets for everything we have
+        for tasking in tasks:
+            input_full = tasking.input_full
+            if tasking.task_name in [
+                "TASK_CSHARP_CMD_JOB",
+                "TASK_CSHARP_CMD_WAIT",
+            ]:
+                # This is where we read the input file.
+                # We could change it to use the linked/tagged download.
+                # But this still works.
+                with Path(tasking.input_full.split("|")[0]).open("rb") as f:
+                    input_full = f.read()
+                input_full = base64.b64encode(input_full).decode("UTF-8")
+                input_full += tasking.input_full.split("|", maxsplit=1)[1]
+            all_task_packets += packets.build_task_packet(
+                tasking.task_name, input_full, tasking.id
+            )
+        # get the session key for the agent
+        session_key = self.agents[session_id]["sessionKey"]
+        with contextlib.suppress(Exception):
+            session_key = bytes.fromhex(session_key)
 
-        return None
+        # encrypt the tasking packets with the agent's session key
+        encrypted_data = AESCipher.encrypt_then_hmac(session_key, all_task_packets)
+
+        return packets.build_routing_packet(
+            staging_key,
+            session_id,
+            language,
+            meta="SERVER_RESPONSE",
+            encData=encrypted_data,
+        )
 
     def _handle_agent_response(self, session_id, enc_data, update_lastseen=False):
         """
@@ -1202,21 +1213,24 @@ class AgentCommunicationService:
                     architecture=architecture,
                 )
 
-                sysinfo = "{: <18}".format("Listener:") + listener + "\n"
-                sysinfo += "{: <18}".format("Internal IP:") + internal_ip + "\n"
-                sysinfo += "{: <18}".format("Username:") + username + "\n"
-                sysinfo += "{: <18}".format("Hostname:") + hostname + "\n"
-                sysinfo += "{: <18}".format("OS:") + os_details + "\n"
-                sysinfo += (
-                    "{: <18}".format("High Integrity:") + str(high_integrity) + "\n"
+                sysinfo = (
+                    "\n".join(
+                        [
+                            f"{'Listener:':<18}{listener}",
+                            f"{'Internal IP:':<18}{internal_ip}",
+                            f"{'Username:':<18}{username}",
+                            f"{'Hostname:':<18}{hostname}",
+                            f"{'OS:':<18}{os_details}",
+                            f"{'High Integrity:':<18}{high_integrity}",
+                            f"{'Process Name:':<18}{process_name}",
+                            f"{'Process ID:':<18}{process_id}",
+                            f"{'Language:':<18}{language}",
+                            f"{'Language Version:':<18}{language_version}",
+                            f"{'Architecture:':<18}{architecture}",
+                        ]
+                    )
+                    + "\n"
                 )
-                sysinfo += "{: <18}".format("Process Name:") + process_name + "\n"
-                sysinfo += "{: <18}".format("Process ID:") + process_id + "\n"
-                sysinfo += "{: <18}".format("Language:") + language + "\n"
-                sysinfo += (
-                    "{: <18}".format("Language Version:") + language_version + "\n"
-                )
-                sysinfo += "{: <18}".format("Architecture:") + architecture + "\n"
 
                 # update the agent log
                 self.agent_service.save_agent_log(session_id, sysinfo)
@@ -1236,7 +1250,7 @@ class AgentCommunicationService:
             # Close socks client
             self.agent_socks_service.close_socks_client(agent)
 
-        elif response_name in ["TASK_SHELL"]:
+        elif response_name == "TASK_SHELL":
             # shell command response
             # update the agent log
             self.agent_service.save_agent_log(session_id, data)
@@ -1289,7 +1303,7 @@ class AgentCommunicationService:
             self.agent_service.save_agent_log(session_id, data)
 
         elif response_name == "TASK_GETDOWNLOADS":
-            if not data or data.strip().strip() == "":
+            if not data or not data.strip():
                 data = "[*] No active downloads"
 
             # update the agent log
@@ -1304,7 +1318,7 @@ class AgentCommunicationService:
             pass
 
         elif response_name == "TASK_GETJOBS":
-            if not data or data.strip().strip() == "":
+            if not data or not data.strip():
                 data = "[*] No active jobs"
 
             # running jobs
@@ -1332,7 +1346,7 @@ class AgentCommunicationService:
                 for cred in creds:
                     hostname = cred[4]
 
-                    if hostname == "":
+                    if not hostname:
                         hostname = agent.hostname
 
                     os_details = agent.os_details
@@ -1374,15 +1388,18 @@ class AgentCommunicationService:
                 session_id, save_path, file_data, agent.language
             )
 
+            if final_save_path is None:
+                return
+
             # update the agent log
             msg = f"Output saved to .{final_save_path}"
             self.agent_service.save_agent_log(session_id, msg)
 
             # attach file to tasking
             download = models.Download(
-                location=final_save_path,
-                filename=final_save_path.split("/")[-1],
-                size=os.path.getsize(final_save_path),
+                location=str(final_save_path),
+                filename=final_save_path.name,
+                size=final_save_path.stat().st_size,
             )
             db.add(download)
             db.flush()
@@ -1396,16 +1413,12 @@ class AgentCommunicationService:
             # check if this is the powershell keylogging task, if so, write output to file instead of screen
             if key_log_task_id and key_log_task_id == task_id:
                 download_dir = empire_config.directories.downloads
-                safe_path = download_dir.absolute()
                 save_path = download_dir / session_id / "keystrokes.txt"
 
-                # fix for 'skywalker' exploit by @zeroSteiner
-                if not str(os.path.normpath(save_path)).startswith(str(safe_path)):
-                    message = f"agent {session_id} attempted skywalker exploit!"
-                    log.warning(message)
+                if not self._is_path_safe(save_path, download_dir, session_id):
                     return
 
-                with open(save_path, "a+") as f:
+                with save_path.open("a+") as f:
                     if isinstance(data, bytes):
                         data = data.decode("UTF-8")
                     new_results = (
@@ -1426,7 +1439,7 @@ class AgentCommunicationService:
                     for cred in creds:
                         hostname = cred[4]
 
-                        if hostname == "":
+                        if not hostname:
                             hostname = agent.hostname
 
                         os_details = agent.os_details
@@ -1466,7 +1479,7 @@ class AgentCommunicationService:
                     for cred in creds:
                         hostname = cred[4]
 
-                        if hostname == "":
+                        if not hostname:
                             hostname = agent.hostname
 
                         os_details = agent.os_details

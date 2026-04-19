@@ -31,7 +31,7 @@ description: |
   research from @obscuresec and provides a systematic approach to
   network credential harvesting.
 software: ''
-tactics: [TA0008]
+tactics: [TA0008, TA0006, TA0007]
 techniques: [T1135, T1187, T1021.002]
 background: true
 output_extension:

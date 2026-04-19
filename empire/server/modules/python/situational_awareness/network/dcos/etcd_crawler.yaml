@@ -16,9 +16,8 @@ description: |
   data, and understanding the architecture of cloud-native applications
   that use etcd for configuration management.
 software: ''
-tactics: []
-techniques:
-  - T1426
+tactics: [TA0006]
+techniques: [T1552.001]
 background: true
 output_extension: ''
 needs_admin: false

@@ -134,12 +134,12 @@ func (ph PacketHandler) BuildResponsePacket(taskingID int, packetData string, re
 	            |    8      |  1   |  1   |   2   |    4   |
 	            +-----------+------+------+-------+--------+
 */
-func (ph PacketHandler) BuildRoutingPacket(stagingKey []byte, sessionID string, meta int, encData []byte) []byte {
+func (ph PacketHandler) BuildRoutingPacket(stagingKey []byte, sessionID string, meta int, additional uint16, encData []byte) []byte {
 	buf := new(bytes.Buffer)
 	buf.WriteString(sessionID)                                   // 8 bytes - SessionID
 	binary.Write(buf, binary.LittleEndian, uint8(4))             // 1 byte - Lang
 	binary.Write(buf, binary.LittleEndian, uint8(meta))          // 1 byte - Meta
-	binary.Write(buf, binary.LittleEndian, uint16(0))            // 2 bytes - Extra
+	binary.Write(buf, binary.LittleEndian, uint16(additional))   // 2 bytes - Extra
 	binary.Write(buf, binary.LittleEndian, uint32(len(encData))) // 4 bytes - Length
 	data := buf.Bytes()
 

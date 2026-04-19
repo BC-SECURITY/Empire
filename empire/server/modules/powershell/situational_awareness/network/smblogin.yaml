@@ -24,8 +24,8 @@ description: |
   provides detailed output of authentication results for further
   analysis and planning of subsequent operations.
 software: ''
-tactics: [TA0008]
-techniques: [T1012.002]
+tactics: [TA0008, TA0007]
+techniques: [T1012]
 background: false
 output_extension:
 needs_admin: false

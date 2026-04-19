@@ -99,7 +99,9 @@ def patch_install_plugin_from_git(plugin_service):
     plugin_service.install_plugin_from_git = original
 
 
-class IsDict:  # noqa: PLW1641
+class IsDict:
+    __hash__ = None  # not hashable; used only for __eq__ assertions
+
     def __eq__(self, other):
         return isinstance(other, dict)
 

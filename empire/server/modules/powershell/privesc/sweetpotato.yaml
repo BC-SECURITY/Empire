@@ -15,7 +15,7 @@ description: |
   code with the highest privileges. Supports multiple exploitation methods and can
   spawn custom processes or PowerShell stagers.
 software: ''
-tactics: [TA0004]
+tactics: [TA0004, TA0006]
 techniques: [T1068, T1187]
 background: false
 output_extension: ''
