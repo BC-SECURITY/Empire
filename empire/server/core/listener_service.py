@@ -224,19 +224,18 @@ class ListenerService:
                     protocol = "https"
                 else:
                     protocol = "http"
-            if port:
-                return None, "Port cannot be provided in a host name"
-            host_address = f"{protocol}://{host}"
+            if not port:
+                port = listener_options["Port"]["Value"]
+
+            if (port == "443" and protocol == "https") or (
+                port == "80" and protocol == "http"
+            ):
+                host_address = f"{protocol}://{host}/"
+            else:
+                host_address = f"{protocol}://{host}:{port}/"
         except AttributeError:
             return None, "Hostname error in parsing"
 
-        port = listener_options["Port"]["Value"]
-        if (protocol == "https" and port == "443") or (
-            protocol == "http" and port == "80"
-        ):
-            host_address += "/"
-            return host_address, None
-        host_address += f":{port}/"
         return host_address, None
 
     def _validate_listener_options(
