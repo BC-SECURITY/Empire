@@ -1005,10 +1005,10 @@ class MainAgent:
                 self.directory_list(data, result_id)
 
             elif packet_type == 50:
-                self.job_list(result_id)
+                self.task_list(result_id)
 
             elif packet_type == 51:
-                self.stop_job(data, result_id)
+                self.stop_task(data, result_id)
 
             elif packet_type == 60:
                 self.packet_handler.send_message(
