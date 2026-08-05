@@ -26,6 +26,24 @@ LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
 
+def parse_custom_headers(header_entries: list[str]) -> dict[str, str]:
+    """Parse "Key:Value" entries from a profile tail into a dict.
+
+    Entries without a colon are treated as empty-value headers.
+    """
+    result: dict[str, str] = {}
+    for entry in header_entries:
+        if not entry:
+            continue
+        parts = entry.split(":")
+        key = parts[0]
+        if not key or key.lower() == "cookie":
+            continue
+        value = parts[1] if len(parts) >= 2 else ""
+        result[key] = value
+    return result
+
+
 class Listener:
     def __init__(self, mainMenu: MainMenu):
         self.info = {
@@ -530,6 +548,7 @@ class Listener:
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
         customHeaders = profile.split("|")[2:]
+        custom_headers_dict = parse_custom_headers(customHeaders)
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -576,21 +595,9 @@ class Listener:
                 "agent_private_cert_key": private_key_array,
                 "server_public_cert_key": server_public_key_array,
                 "agent_public_cert_key": public_key_array,
+                "custom_headers": custom_headers_dict,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -748,11 +755,14 @@ class Listener:
             )
 
             powershell_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+            profile = self.options["DefaultProfile"]["Value"]
+            custom_headers_dict = parse_custom_headers(profile.split("|")[2:])
             template_options = {
                 "session_cookie": self.session_cookie,
                 "host": self.host_address,
                 "agent_private_cert_key": powershell_array,
                 "agent_public_cert_key": self.agent_public_cert_key,
+                "custom_headers": custom_headers_dict,
             }
 
             return template.render(template_options)
