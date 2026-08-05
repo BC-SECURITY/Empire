@@ -341,7 +341,6 @@ class Listener:
         staging_key = listener.options["StagingKey"]["Value"]
         workingHours = listener.options["WorkingHours"]["Value"]
         killDate = listener.options["KillDate"]["Value"]
-        customHeaders = profile.split("|")[2:]
         session_cookie = listener.options["Cookie"]["Value"]
 
         # select some random URIs for staging from the main profile
@@ -395,19 +394,6 @@ class Listener:
                 "agent_public_cert_key": public_key_array,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(

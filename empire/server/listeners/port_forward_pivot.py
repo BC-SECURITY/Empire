@@ -386,7 +386,6 @@ class Listener:
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
         host = listenerOptions["Host"]["Value"]
-        customHeaders = profile.split("|")[2:]
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -411,19 +410,6 @@ class Listener:
                 "stage_2": stage2,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             stagingKey = stagingKey.encode("UTF-8")
             stager = listener_util.remove_lines_comments(stager)

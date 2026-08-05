@@ -666,7 +666,7 @@ class Listener:
 
             # patch in custom headers
             if profile.stager.client.headers:
-                headers = ",".join(
+                headers = "<HEND>".join(
                     [
                         ":".join([k.replace(":", "%3A"), v.replace(":", "%3A")])
                         for k, v in profile.stager.client.headers.items()
