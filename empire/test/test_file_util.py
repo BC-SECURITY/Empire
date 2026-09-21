@@ -3,8 +3,8 @@
 ``ensure_user_ownership`` (root-only recursive chown) and ``run_as_user``
 (sudo-preserving subprocess wrapper) were largely uncovered. These exercise
 their branches with monkeypatched os/pwd/subprocess so no privileges are
-needed. ``safe_filename`` and ``is_path_within`` are the path-traversal guards
-for untrusted upload filenames.
+needed. ``safe_filename``, ``is_path_within`` and ``resolve_under_root`` are the
+path-traversal guards for operator- and client-supplied paths.
 """
 
 import os
@@ -14,7 +14,11 @@ from types import SimpleNamespace
 import pytest
 
 from empire.server.utils import file_util
-from empire.server.utils.file_util import is_path_within, safe_filename
+from empire.server.utils.file_util import (
+    is_path_within,
+    resolve_under_root,
+    safe_filename,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -306,3 +310,59 @@ class TestIsPathWithin:
         base = tmp_path / "downloads"
         base.mkdir()
         assert is_path_within(tmp_path / "downloads-evil" / "x", base) is False
+
+
+class TestResolveUnderRoot:
+    def test_relative_value_resolves_under_root(self, tmp_path):
+        assert resolve_under_root(tmp_path, "out.ps1") == (tmp_path / "out.ps1")
+
+    def test_nested_relative_value_is_preserved(self, tmp_path):
+        assert resolve_under_root(tmp_path, "a/b/c.ps1") == (tmp_path / "a/b/c.ps1")
+
+    @pytest.mark.parametrize(
+        "operator_path",
+        ["../escape", "a/../../escape", "../../../../etc/cron.d/x"],
+    )
+    def test_traversal_returns_none(self, tmp_path, operator_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        assert resolve_under_root(root, operator_path) is None
+
+    def test_absolute_path_outside_root_returns_none(self, tmp_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        assert resolve_under_root(root, "/etc/cron.d/x") is None
+        assert resolve_under_root(root, str(tmp_path / "sibling" / "x")) is None
+
+    def test_absolute_path_inside_root_is_accepted(self, tmp_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        inside = root / "a" / "b.ps1"
+        assert resolve_under_root(root, str(inside)) == inside.resolve()
+
+    def test_sibling_prefix_of_root_returns_none(self, tmp_path):
+        root = tmp_path / "http_hop"
+        root.mkdir()
+        assert resolve_under_root(root, str(tmp_path / "http_hop-evil" / "x")) is None
+
+    def test_null_byte_returns_none_and_does_not_raise(self, tmp_path):
+        # Path("a\x00b") constructs fine but .resolve() raises ValueError, which
+        # no caller on the four fixed paths catches -- so the byte is rejected
+        # before any Path is built. Assert the return value, not the absence of
+        # an exception: pytest.raises(ValueError) would pass without the guard.
+        assert resolve_under_root(tmp_path, "a\x00b") is None
+
+    def test_empty_value_resolves_to_the_root(self, tmp_path):
+        # Path("") is Path("."), which joins to the root. Benign at every call
+        # site; pinned so tightening it later has to be deliberate.
+        assert resolve_under_root(tmp_path, "") == tmp_path.resolve()
+
+    def test_returned_path_is_resolved(self, tmp_path):
+        # Call sites mkdir/write whatever comes back, and containment was
+        # decided about the resolved form -- returning the raw candidate would
+        # let the checked path and the written path disagree.
+        real = tmp_path / "real"
+        real.mkdir()
+        link = tmp_path / "link"
+        link.symlink_to(real)
+        assert resolve_under_root(link, "a/../b.ps1") == (real / "b.ps1")

@@ -73,6 +73,34 @@ def is_path_within(path: Path, base_dir: Path) -> bool:
     return path.resolve().is_relative_to(base_dir.resolve())
 
 
+def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
+    """Resolve an operator-supplied path under ``root``; None if it escapes.
+
+    A relative value is interpreted under ``root``. An absolute value is taken
+    as-is and accepted only when it already lies inside ``root`` -- note that
+    ``root / "/abs"`` discards ``root`` entirely in pathlib, so the join must
+    not be relied on to confine an absolute operand.
+
+    A value carrying a NUL byte is rejected before any ``Path`` is built:
+    ``Path("a\x00b")`` constructs fine but ``.resolve()`` raises ``ValueError``,
+    and callers of this helper handle a ``None`` return, not an exception. Every
+    rejection -- malformed or merely escaping -- leaves by the same ``None``.
+
+    Returning ``None`` rather than raising keeps the rejection *policy* at the
+    call site, which differs by subsystem: module sinks raise
+    ``ModuleValidationException`` while the http_hop listener must not raise at
+    all (a raise there aborts server startup on the boot path).
+    """
+    if "\x00" in str(operator_path):
+        return None
+    candidate = Path(operator_path)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    if not is_path_within(candidate, root):
+        return None
+    return candidate.resolve()
+
+
 def safe_filename(filename: str | None) -> str | None:
     """Return ``filename`` when it is already a safe basename, else None.
 
