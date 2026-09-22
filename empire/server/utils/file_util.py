@@ -87,18 +87,20 @@ def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
     rejection -- malformed or merely escaping -- leaves by the same ``None``.
 
     Returning ``None`` rather than raising keeps the rejection *policy* at the
-    call site, which differs by subsystem: module sinks raise
-    ``ModuleValidationException`` while the http_hop listener must not raise at
-    all (a raise there aborts server startup on the boot path).
+    call site. Callers do not agree on it: some must surface the rejection as a
+    4xx, while code on the server's boot path must not raise at all.
     """
     if "\x00" in str(operator_path):
         return None
     candidate = Path(operator_path)
     if not candidate.is_absolute():
         candidate = root / candidate
-    if not is_path_within(candidate, root):
+    # Resolve once and check that object: callers mkdir and write what comes
+    # back, so the path that was checked must be the path that is returned.
+    resolved = candidate.resolve()
+    if not is_path_within(resolved, root):
         return None
-    return candidate.resolve()
+    return resolved
 
 
 def safe_filename(filename: str | None) -> str | None:

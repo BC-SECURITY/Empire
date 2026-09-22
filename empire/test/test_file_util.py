@@ -366,3 +366,33 @@ class TestResolveUnderRoot:
         link = tmp_path / "link"
         link.symlink_to(real)
         assert resolve_under_root(link, "a/../b.ps1") == (real / "b.ps1")
+
+    def test_symlinked_component_of_operator_value_returns_none(self, tmp_path):
+        """A symlink *inside* the root must not ferry the write back out.
+
+        The case above symlinks the ``root`` argument, which pins resolution of
+        the server-owned side only. This one pins the operator-supplied side:
+        ``link/x.ps1`` carries no ``..`` at all, so a fully lexical containment
+        check leaves it looking contained while the write lands in ``outside``.
+
+        Note where the defence actually lives. Swapping ``resolve()`` for
+        ``os.path.normpath`` inside ``resolve_under_root`` alone does NOT make
+        this test red -- ``is_path_within`` still resolves, and that weakening
+        is caught by ``test_returned_path_is_resolved`` instead. What this case
+        catches is containment going lexical end to end, with no ``resolve()``
+        on either side. Verified by running both weakenings.
+
+        Operator-reachable in the real deployment: the confinement root is a
+        shared tree under ``downloads/``, and anything that can drop a symlink
+        into it -- another module, an upload, an agent download -- turns every
+        later ``OutFile`` naming it into an arbitrary write.
+        """
+        root = tmp_path / "root"
+        root.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (root / "link").symlink_to(outside)
+
+        assert resolve_under_root(root, "link/x.ps1") is None
+        # Absolute spelling of the same escape, for the branch that skips the join.
+        assert resolve_under_root(root, str(root / "link" / "x.ps1")) is None
