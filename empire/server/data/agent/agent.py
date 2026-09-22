@@ -690,7 +690,24 @@ class MainAgent:
         Task 112
         """
         output_capture = io.StringIO()
-        script_globals = {'print': lambda *a, **k: print(*a, **k, file=output_capture)}
+
+        def _append_job_message(msg):
+            # Built-in modules (e.g. python/collection/linux/xkeylogger) call
+            # job_message_buffer(msg) as a bare name from inside the exec'd script
+            # to stream output. self.job_message_buffer is also the name of a
+            # string instance attribute (the accumulating buffer), which shadows
+            # the like-named method below, so self.job_message_buffer(msg) isn't
+            # callable either. Append straight to the string attribute here
+            # instead of routing through that shadowed method.
+            try:
+                self.job_message_buffer += str(msg)
+            except Exception as e:
+                print("[!] Error adding job output to buffer: %s" % e, file=output_capture)
+
+        script_globals = {
+            'print': lambda *a, **k: print(*a, **k, file=output_capture),
+            'job_message_buffer': _append_job_message,
+        }
 
         try:
             exec(data, script_globals)

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 -   Fixed background jobs for the python agent.
+-   Fixed `NameError: name 'job_message_buffer' is not defined` when a background Python job (e.g. `python/collection/linux/xkeylogger`) streams output via `job_message_buffer(...)`, by exposing it in the exec scope used by `python_job_func`.
 
 ## [7.0.2] - 2026-09-08
 -   Updated Starkiller to v4.0.3
