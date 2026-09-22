@@ -8,10 +8,23 @@ from cryptography.hazmat.primitives import serialization
 
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.core.config import config_manager
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.utils import data_util, listener_util
+from empire.server.utils.file_util import resolve_under_root
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
+
+
+def _out_folder_root() -> Path:
+    """The server-owned directory ``OutFolder`` is interpreted under.
+
+    Resolved per call: ``config/data_manager.py`` rebinds
+    ``config_manager.empire_config``, and this module is cached in
+    ``sys.modules``, so a name bound at import time would freeze a stale config.
+    """
+    return config_manager.empire_config.directories.downloads / "http_hop"
 
 
 class Listener:
@@ -35,7 +48,17 @@ class Listener:
         """
         Validate all options for this listener.
         """
-        pass
+        root = _out_folder_root()
+        if resolve_under_root(root, self.options["OutFolder"]["Value"]) is None:
+            # Rejecting here, before persistence, is what keeps a poisoned
+            # OutFolder out of models.Listener.options -- the boot loop re-runs
+            # every enabled listener, so a stored escape would be replayed at
+            # every startup. It is also the only place the operator gets the
+            # real reason: start() can only answer False.
+            raise ListenerValidationException(
+                f"OutFolder must stay under {root}: give a path relative to it, "
+                f"or an absolute path already inside it."
+            )
 
     def generate_launcher(
         self,
@@ -477,11 +500,60 @@ class Listener:
         hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
         hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
 
-        saveFolder = self.options["OutFolder"]["Value"]
+        # start() must never raise: two of the three routes here do not wrap it,
+        # and one of those is the boot loop that re-runs every enabled listener,
+        # so an exception is a startup abort an operator can plant and walk away
+        # from. Every rejection below is log + return False, matching the
+        # RedirectListener miss above.
+        root = _out_folder_root()
+        save_folder = resolve_under_root(root, self.options["OutFolder"]["Value"])
+        if save_folder is None:
+            log.error(
+                f"listeners/http_hop start(): OutFolder must stay under {root}; "
+                "refusing to write hop redirectors."
+            )
+            return False
+
         for uri in uris:
-            save_path = Path(saveFolder) / uri.lstrip("/")
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-            save_path.write_text(hopCode)
+            # Confine the composed path, not just OutFolder: the URIs come from
+            # the redirect listener's stored DefaultProfile, which is another
+            # row, mutable after this listener was validated, and lstrip("/")
+            # stops an absolute URI but not "..".
+            save_path = resolve_under_root(save_folder, uri.lstrip("/"))
+            if save_path is None:
+                log.error(
+                    f"listeners/http_hop start(): redirect listener URI {uri!r} "
+                    f"escapes {save_folder}; refusing to write hop redirectors."
+                )
+                return False
+
+            # The URI must name a file UNDER the folder, not resolve to the
+            # folder itself. A URI of "/" (or an empty first DefaultProfile
+            # field) collapses onto save_folder, and write_text would then
+            # create that directory as a regular file. With OutFolder="." that
+            # directory is the shared root every hop listener resolves against,
+            # so one operator could wedge every other operator's listener until
+            # someone removed the file by hand.
+            if save_path == save_folder:
+                log.error(
+                    f"listeners/http_hop start(): redirect listener URI {uri!r} "
+                    f"does not name a file under {save_folder}; refusing to "
+                    "write hop redirectors."
+                )
+                return False
+
+            try:
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                save_path.write_text(hopCode)
+            except OSError:
+                # Confined but unwritable: a component already taken by a
+                # regular file, EACCES, ENOSPC. Without this the boot path takes
+                # the exception.
+                log.exception(
+                    f"listeners/http_hop start(): could not write {save_path}"
+                )
+                return False
+
             log.info(
                 f"Hop redirector written to {save_path} . Place this file on the redirect server."
             )
