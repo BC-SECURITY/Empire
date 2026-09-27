@@ -56,8 +56,8 @@ class Listener:
             # every startup. It is also the only place the operator gets the
             # real reason: start() can only answer False.
             raise ListenerValidationException(
-                f"OutFolder must stay under {root}: give a path relative to it, "
-                f"or an absolute path already inside it."
+                f"OutFolder must name a directory under {root}: give a path "
+                f"relative to it, or an absolute path already inside it."
             )
 
     def generate_launcher(
@@ -478,9 +478,25 @@ class Listener:
         redirectListenerOptions = data_util.get_listener_options(redirectListenerName)
         redirectHost = data_util.get_host_address(redirectListenerName)
 
+        # start() must never raise: two of the three routes here do not wrap it,
+        # and one of those is the boot loop that re-runs every enabled listener,
+        # so an exception is a startup abort an operator can plant and walk away
+        # from. Every rejection below is log + return False, matching the
+        # RedirectListener miss above.
         if not redirectListenerOptions:
             log.error(
                 f"Redirect listener name {redirectListenerName} not a valid listener!"
+            )
+            return False
+
+        if not redirectHost:
+            # models.Listener.host_address is nullable, and get_host_address()
+            # swallows every DB failure into None -- so a transient error at boot
+            # is enough. str.replace(x, None) is a TypeError, which would take out
+            # the whole start_existing_listeners loop, not just this listener.
+            log.error(
+                f"listeners/http_hop start(): redirect listener {redirectListenerName} "
+                "has no host address; refusing to write hop redirectors."
             )
             return False
 
@@ -493,27 +509,33 @@ class Listener:
 
         uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
 
-        hopCode = (self.mainMenu.install_path / "data/misc/hop.php").read_text(
-            encoding="utf-8"
-        )
+        try:
+            hopCode = (self.mainMenu.install_path / "data/misc/hop.php").read_text(
+                encoding="utf-8"
+            )
+        except OSError:
+            log.exception(
+                "listeners/http_hop start(): could not read data/misc/hop.php"
+            )
+            return False
 
         hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
         hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
 
-        # start() must never raise: two of the three routes here do not wrap it,
-        # and one of those is the boot loop that re-runs every enabled listener,
-        # so an exception is a startup abort an operator can plant and walk away
-        # from. Every rejection below is log + return False, matching the
-        # RedirectListener miss above.
         root = _out_folder_root()
         save_folder = resolve_under_root(root, self.options["OutFolder"]["Value"])
         if save_folder is None:
             log.error(
-                f"listeners/http_hop start(): OutFolder must stay under {root}; "
-                "refusing to write hop redirectors."
+                f"listeners/http_hop start(): OutFolder must name a directory "
+                f"under {root}; refusing to write hop redirectors."
             )
             return False
 
+        # Resolve every URI before writing any of them. A DefaultProfile whose
+        # second URI escapes would otherwise leave the first redirector on disk
+        # under a listener that then reports failure -- a stale .php carrying the
+        # old REPLACE_SERVER that the operator may still go and deploy.
+        save_paths = []
         for uri in uris:
             # Confine the composed path, not just OutFolder: the URIs come from
             # the redirect listener's stored DefaultProfile, which is another
@@ -523,25 +545,14 @@ class Listener:
             if save_path is None:
                 log.error(
                     f"listeners/http_hop start(): redirect listener URI {uri!r} "
-                    f"escapes {save_folder}; refusing to write hop redirectors."
-                )
-                return False
-
-            # The URI must name a file UNDER the folder, not resolve to the
-            # folder itself. A URI of "/" (or an empty first DefaultProfile
-            # field) collapses onto save_folder, and write_text would then
-            # create that directory as a regular file. With OutFolder="." that
-            # directory is the shared root every hop listener resolves against,
-            # so one operator could wedge every other operator's listener until
-            # someone removed the file by hand.
-            if save_path == save_folder:
-                log.error(
-                    f"listeners/http_hop start(): redirect listener URI {uri!r} "
                     f"does not name a file under {save_folder}; refusing to "
                     "write hop redirectors."
                 )
                 return False
 
+            save_paths.append(save_path)
+
+        for save_path in save_paths:
             try:
                 save_path.parent.mkdir(parents=True, exist_ok=True)
                 save_path.write_text(hopCode)

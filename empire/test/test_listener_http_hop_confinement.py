@@ -60,7 +60,21 @@ def hop(main_menu_mock):
 
     ``build_test_listener`` reads ``Path("empire/server/listeners")/<name>`` --
     a relative path -- so constructing it after ``monkeypatch.chdir`` would fail
-    to load the YAML. ``confined`` depends on this fixture to pin that order.
+    to load the YAML. ``confined`` depends on this fixture (and on
+    ``victim_hop``, for the same reason) to pin that order.
+    """
+    return build_test_listener("http_hop", main_menu_mock)
+
+
+@pytest.fixture
+def victim_hop(main_menu_mock):
+    """A second hop listener on shipped defaults, for the cross-operator case.
+
+    Built here rather than in the test body for the same reason as ``hop``:
+    ``build_test_listener`` resolves its YAML against a relative path, so it
+    cannot run after ``confined`` chdirs. ``confined`` depends on this fixture
+    to pin that order -- signature order in the one test that uses it would
+    work today and break silently the moment someone reorders the arguments.
     """
     return build_test_listener("http_hop", main_menu_mock)
 
@@ -72,7 +86,7 @@ class Confined(NamedTuple):
 
 
 @pytest.fixture
-def confined(hop, tmp_path, monkeypatch) -> Confined:
+def confined(hop, victim_hop, tmp_path, monkeypatch) -> Confined:
     """Pin the confinement root and the cwd to two *distinct* directories.
 
     ``downloads`` is the only patchable handle: the fix computes
@@ -297,15 +311,136 @@ def test_uri_resolving_to_the_folder_itself_is_refused(
 ):
     """A URI that names no file must not turn the folder into a regular file.
 
-    ``OutFolder="."`` resolves to the shared root, and a DefaultProfile URI of
-    ``/`` strips to ``""``, which resolves back onto that same folder. The
-    write then creates the root as a regular file. Because the root is shared
-    by every hop listener, one operator doing this wedges every other
-    operator's listener -- ``validate_options`` still accepts theirs, and only
-    ``start()`` fails -- until someone deletes the file by hand.
+    A DefaultProfile URI of ``/`` strips to ``""``, which resolves back onto
+    ``save_folder`` itself; ``write_text`` would then create that directory as
+    a regular file and every later URI under it would fail its ``mkdir``.
+
+    ``OutFolder`` is a real sub-directory on purpose. Spelling it ``"."`` --
+    which also collapses -- would have this rejected one guard earlier, at the
+    ``OutFolder`` resolve, and the URI clause would go untested. The
+    ``OutFolder`` collapse has its own case below.
     """
-    hop.options["OutFolder"]["Value"] = "."
+    hop.options["OutFolder"]["Value"] = "redirectors"
     redirect_listener("/|Mozilla/5.0|")
 
     assert hop.start() is False
-    assert not confined.root.is_file()
+    assert not (confined.root / "redirectors").is_file()
+
+
+@pytest.mark.parametrize("out_folder", [".", "./", "a/.."], ids=["dot", "slash", "up"])
+def test_out_folder_collapsing_onto_the_root_is_refused(
+    confined, hop, redirect_listener, out_folder
+):
+    """``OutFolder`` must be a sub-directory, never the shared root itself.
+
+    These spellings are perfectly contained, so a containment-only check hands
+    back the root and the URI then names a file one level down -- exactly the
+    level every *other* hop listener's ``OutFolder`` lives at. See the
+    cross-operator case below for what that buys the attacker.
+
+    Rejected at ``validate_options`` too, so it never reaches the stored row.
+    """
+    hop.options["OutFolder"]["Value"] = out_folder
+    redirect_listener("/redirectors|Mozilla/5.0|")
+
+    with pytest.raises(ListenerValidationException):
+        hop.validate_options()
+
+    assert hop.start() is False
+    assert not (confined.root / "redirectors").exists()
+
+
+def test_one_operator_cannot_wedge_another_operators_default_out_folder(
+    confined, hop, victim_hop, redirect_listener
+):
+    """The reason the collapse guard is a security fix and not a tidy-up.
+
+    ``OutFolder`` is confined to a root *shared by every hop listener*, so a
+    write the attacker is allowed to make can still land on top of another
+    operator's directory. With ``OutFolder`` collapsed onto the root, a
+    redirect profile of ``/redirectors`` plants a regular file at precisely the
+    shipped default ``OutFolder`` -- no guessing required. Every other
+    operator's listener then fails ``save_path.parent.mkdir(exist_ok=True)``
+    with ``FileExistsError`` (``exist_ok`` excuses an existing *directory*,
+    not a file), at create and again at every boot, until someone removes the
+    file by hand.
+
+    Verified against the un-guarded code: the attacker's ``start()`` returned
+    ``True``, ``redirectors`` was a regular file, and the victim's ``start()``
+    returned ``False``. All three assertions below flip together.
+    """
+    hop.options["Name"]["Value"] = "attacker-hop"
+    hop.options["OutFolder"]["Value"] = "."
+    redirect_listener("/redirectors|Mozilla/5.0|")
+
+    assert hop.start() is False
+    assert not (confined.root / "redirectors").is_file()
+
+    # A second operator, shipped defaults, nothing unusual.
+    victim_hop.options["Name"]["Value"] = "victim-hop"
+    assert victim_hop.options["OutFolder"]["Value"] == "redirectors"
+    redirect_listener(BENIGN_PROFILE)
+
+    assert victim_hop.start() is True
+
+
+def test_a_rejected_uri_leaves_no_partial_redirectors(hop, confined, redirect_listener):
+    """One escaping URI must not leave the earlier ones written to disk.
+
+    ``start()`` reports failure for the whole listener, so a redirector it
+    wrote before hitting the bad URI is an artifact of a listener that never
+    started -- carrying a ``REPLACE_SERVER`` the operator may still go and
+    deploy. Resolving every URI before writing any of them is what keeps the
+    rejection all-or-nothing.
+
+    The benign URI is deliberately first: with the write interleaved into the
+    resolve loop, ``news.php`` is already on disk by the time the second URI is
+    rejected, so this assertion is what goes red.
+    """
+    redirect_listener("/news.php,/../ESCAPED_VIA_URI/evil.php|Mozilla/5.0|")
+    hop.options["OutFolder"]["Value"] = "redirectors"
+
+    started = hop.start()
+    assert not (confined.root / "redirectors" / "news.php").exists()
+    assert not (confined.tmp_path / "ESCAPED_VIA_URI").exists()
+    assert started is False
+
+
+def test_missing_redirect_host_returns_false_rather_than_raising(
+    hop, confined, redirect_listener, monkeypatch
+):
+    """A redirect listener with no host address must not take down the boot loop.
+
+    ``models.Listener.host_address`` is nullable and ``get_host_address()``
+    swallows every DB failure into ``None``, so this is reachable from a
+    transient error rather than only from a malformed row.
+    ``hopCode.replace("REPLACE_SERVER", None)`` is a ``TypeError``, and
+    ``start_existing_listeners`` does not wrap ``start()`` -- so one such
+    listener would stop every later listener from starting.
+
+    A plain call, not ``pytest.raises``: an escaping exception fails this test
+    as an error, which is the outcome under test.
+    """
+    monkeypatch.setattr(data_util, "get_host_address", lambda name: None)
+
+    assert hop.start() is False
+
+
+def test_unreadable_hop_template_returns_false_rather_than_raising(
+    hop, confined, redirect_listener, main_menu_mock
+):
+    """A missing ``data/misc/hop.php`` must not take down the boot loop either.
+
+    Same contract as the missing-host case, different source: the template is
+    read off ``install_path``, so a failed mount, a bad umask under
+    ``sudo -E``, or an incomplete install is enough. The read sits *above*
+    every confinement guard, so without this ``try`` the whole rejection path
+    below it is unreachable -- ``start_existing_listeners`` takes the
+    ``FileNotFoundError`` and stops starting listeners.
+
+    A plain call, not ``pytest.raises``: an escaping exception fails this test
+    as an error, which is the outcome under test.
+    """
+    main_menu_mock.install_path = confined.tmp_path / "no-such-install"
+
+    assert hop.start() is False

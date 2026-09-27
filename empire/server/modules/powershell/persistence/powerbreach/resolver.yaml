@@ -41,8 +41,8 @@ options:
     value: ''
   - name: OutFile
     description: Output the backdoor to a file instead of tasking to an agent.
-      Interpreted relative to the server's module output directory; a path
-      outside it is rejected.
+      Interpreted relative to the server's downloads/generated-modules
+      directory; a path outside it, or the directory itself, is rejected.
     required: false
     value: ''
   - name: Hostname

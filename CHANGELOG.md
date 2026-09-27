@@ -16,17 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
--   **BREAKING:** The `http_hop` listener's `OutFolder` option is now interpreted relative to the server's `downloads/http_hop` directory and defaults to `redirectors` instead of `/tmp/http_hop/`, so existing hop listeners with an absolute `OutFolder` will fail to start until the option is changed to a path inside that directory.
+-   **BREAKING:** The `http_hop` listener's `OutFolder` is now relative to `downloads/http_hop` and defaults to `redirectors`; hop listeners stored with an absolute path outside it no longer start.
 
 ### Security
 
--   Confined the `OutFolder` option and the redirect listener's profile URIs in the `http_hop` listener to the server's `downloads/http_hop` directory, closing an arbitrary file write (plus arbitrary directory creation and silent truncation) available to any authenticated non-admin operator.
--   Confined the `OutFile` option of the PowerBreach `eventlog`, `deaduser` and `resolver` persistence modules to the server's `downloads/generated-modules` directory, closing an arbitrary file write (plus arbitrary directory creation and silent truncation) available to any authenticated non-admin operator.
+-   Confined the `http_hop` listener's `OutFolder` and the redirect listener's profile URIs to `downloads/http_hop`, closing an arbitrary file write available to any non-admin operator.
+-   Confined the `OutFile` option of the PowerBreach `eventlog`, `deaduser` and `resolver` modules to `downloads/generated-modules`, closing an arbitrary file write available to any non-admin operator.
+-   Rejected an `OutFolder` or `OutFile` that resolves onto the shared output directory itself, which one operator could turn into a regular file and wedge every other operator's writes.
 
 ### Fixed
 
--   Fixed the PowerBreach `eventlog` and `resolver` modules reporting a successful `OutFile` write as "PowerBreach deaduser backdoor written to", and made all three report the resolved path rather than the operator's raw input.
--   Fixed an unwritable `OutFile` in the three PowerBreach persistence modules surfacing as an opaque 500 instead of a 400 naming the output directory.
+-   Fixed the PowerBreach `eventlog` and `resolver` modules reporting a successful `OutFile` write as "PowerBreach deaduser backdoor written to".
+-   Fixed an unwritable PowerBreach `OutFile` surfacing as an opaque 500 instead of a 400 naming the output directory.
 
 ## [7.0.2] - 2026-09-08
 

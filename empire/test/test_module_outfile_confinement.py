@@ -319,3 +319,36 @@ def test_unwritable_confined_path_is_a_validation_error(
         _generate(module_service, obf_disabled, site, "blocker/x.ps1")
 
     assert "[+]" not in str(exc.value)
+
+
+@sites
+@pytest.mark.parametrize(
+    "out_file", [".", "./", "a/.."], ids=["dot", "dot-slash", "up"]
+)
+def test_outfile_collapsing_onto_the_root_is_rejected(
+    module_service, obf_disabled, confined, site, out_file
+):
+    """A value that resolves to the root itself must not turn it into a file.
+
+    Containment alone is not enough here: ``.``, ``./`` and ``a/..`` all stay
+    *inside* the root by resolving onto it, so ``resolve_under_root`` returns a
+    perfectly contained path and ``write_text`` then creates
+    ``generated-modules`` as a regular file. The root is shared by every
+    operator, so the next legitimate ``OutFile`` naming a sub-directory fails
+    its ``mkdir`` with ``NotADirectoryError`` -- and keeps failing until someone
+    removes the file by hand. That is a denial of service one non-admin
+    operator can inflict on all the others, which is why it is checked here and
+    not left to the OSError handler.
+
+    Both halves are asserted: ``is_file()`` catches the write, and the second
+    ``_generate`` proves the root is still usable afterwards.
+    """
+    with pytest.raises(ModuleValidationException) as exc:
+        _generate(module_service, obf_disabled, site, out_file)
+
+    assert "[+]" not in str(exc.value)
+    assert not confined.root.is_file()
+
+    with pytest.raises(ModuleValidationException) as ok:
+        _generate(module_service, obf_disabled, site, "still/works.ps1")
+    assert str(ok.value).startswith("[+]")

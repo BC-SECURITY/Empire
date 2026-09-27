@@ -74,7 +74,7 @@ def is_path_within(path: Path, base_dir: Path) -> bool:
 
 
 def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
-    """Resolve an operator-supplied path under ``root``; None if it escapes.
+    """Resolve an operator-supplied path strictly under ``root``; None if not.
 
     A relative value is interpreted under ``root``. An absolute value is taken
     as-is and accepted only when it already lies inside ``root`` -- note that
@@ -85,6 +85,17 @@ def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
     ``Path("a\x00b")`` constructs fine but ``.resolve()`` raises ``ValueError``,
     and callers of this helper handle a ``None`` return, not an exception. Every
     rejection -- malformed or merely escaping -- leaves by the same ``None``.
+
+    **Strictly** under: a value that resolves onto ``root`` itself is rejected
+    too. ``""``, ``"."``, ``"./"`` and ``"a/.."`` are all perfectly contained,
+    so containment alone lets them through -- and then the caller's
+    ``write_text`` turns a shared confinement root into a regular file. Every
+    root here is shared by every operator, so the next legitimate value naming
+    a sub-directory fails its ``mkdir`` with ``NotADirectoryError`` (or
+    ``FileExistsError`` one level up) and keeps failing until someone removes
+    the file by hand: a denial of service one non-admin operator inflicts on
+    all the others. No caller wants to write *to* the root, so the guard lives
+    here rather than being re-derived -- and forgotten -- at each call site.
 
     Returning ``None`` rather than raising keeps the rejection *policy* at the
     call site. Callers do not agree on it: some must surface the rejection as a
@@ -98,7 +109,7 @@ def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
     # Resolve once and check that object: callers mkdir and write what comes
     # back, so the path that was checked must be the path that is returned.
     resolved = candidate.resolve()
-    if not is_path_within(resolved, root):
+    if not is_path_within(resolved, root) or resolved == root.resolve():
         return None
     return resolved
 

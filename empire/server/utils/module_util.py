@@ -41,7 +41,7 @@ def write_module_outfile(out_file: str, script: str) -> Path:
     out_path = resolve_under_root(root, out_file)
     if out_path is None:
         raise ModuleValidationException(
-            f"OutFile must stay under {root}: give a path relative to it, "
+            f"OutFile must name a file under {root}: give a path relative to it, "
             f"or an absolute path already inside it."
         )
 

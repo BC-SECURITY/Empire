@@ -16,7 +16,7 @@ The hostname/IP and port agents will use to reach the **hop** host (not the back
 
 ### OutFolder
 
-Folder where the generated PHP redirector files are written, interpreted relative to the server's hop output directory, `<downloads>/http_hop/` (default `redirectors`, so the files land in `<downloads>/http_hop/redirectors/`). A value that points outside that directory is rejected, so the listener cannot write anywhere else on the server. Deploy the generated files onto the hop host's web server.
+Folder where the generated PHP redirector files are written, interpreted relative to the server's hop output directory, `<downloads>/http_hop/` (default `redirectors`, so the files land in `<downloads>/http_hop/redirectors/`). A value that points outside that directory -- or at the directory itself, which is shared by every hop listener -- is rejected, so the listener cannot write anywhere else on the server. Deploy the generated files onto the hop host's web server.
 
 ## When to use
 

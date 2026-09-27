@@ -45,6 +45,7 @@ options:
     value: ''
   - name: OutFolder
     description: Folder to output redirectors to. Interpreted relative to the server's
-      hop output directory; a path outside it is rejected.
+      downloads/http_hop directory; a path outside it, or the directory itself,
+      is rejected.
     required: true
     value: redirectors

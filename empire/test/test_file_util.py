@@ -352,10 +352,23 @@ class TestResolveUnderRoot:
         # an exception: pytest.raises(ValueError) would pass without the guard.
         assert resolve_under_root(tmp_path, "a\x00b") is None
 
-    def test_empty_value_resolves_to_the_root(self, tmp_path):
-        # Path("") is Path("."), which joins to the root. Benign at every call
-        # site; pinned so tightening it later has to be deliberate.
-        assert resolve_under_root(tmp_path, "") == tmp_path.resolve()
+    @pytest.mark.parametrize("operator_path", ["", ".", "./", "a/.."])
+    def test_value_collapsing_onto_the_root_returns_none(self, tmp_path, operator_path):
+        """Strictly under: contained is not enough when the value IS the root.
+
+        Every spelling here passes ``is_path_within`` -- the root contains
+        itself -- so containment alone hands the caller the root back and its
+        ``write_text`` turns a directory every operator shares into a regular
+        file. The absolute spelling is asserted too, since it takes the branch
+        that skips the join.
+
+        Red for the right reason only: with the collapse clause removed, all
+        five assertions return the root instead of ``None``. Removing the
+        containment clause instead leaves this test green, which is why the
+        traversal cases above are separate.
+        """
+        assert resolve_under_root(tmp_path, operator_path) is None
+        assert resolve_under_root(tmp_path, str(tmp_path)) is None
 
     def test_returned_path_is_resolved(self, tmp_path):
         # Call sites mkdir/write whatever comes back, and containment was
