@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+-   Fixed command injection through the global obfuscation command: it is no longer passed through a shell, and is validated against the Invoke-Obfuscation command grammar before use.
+-   Fixed command injection through the `MSF_Format` option of the `windows/cmd_exec` stager: msfvenom is now invoked with an argument list instead of a shell command string.
+-   Fixed arbitrary file write through the `BinaryFile` option of the `linux/pyinstaller` stager: the build now runs in a server-owned temporary directory and only the option's file name is used.
+
+### Changed
+
+-   **BREAKING:** The `linux/pyinstaller` stager's `BinaryFile` option is now a bare file name defaulting to `empire` rather than `/tmp/empire` — any directory component is ignored and the built binary is no longer left on the server at that path, though it is still delivered under `OutFile` as before.
+
+### Fixed
+
+-   Fixed a `BinaryFile` with an extension (`agent.bin`) failing the `linux/pyinstaller` stager with an opaque 500, and a `BinaryFile` of `empire.py` returning the plaintext launcher source in place of the compiled binary.
+-   Fixed a failed `pyinstaller`, a missing or unrunnable `msfvenom`, and an unusable `BinaryFile`, `MSF_Format` or `Arch` value surfacing as a 500 instead of a stager-generation error naming the cause.
+
 ## [7.0.2] - 2026-09-08
 
 ### Changed

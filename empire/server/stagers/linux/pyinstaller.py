@@ -1,9 +1,10 @@
 import shutil
 import subprocess
-import time
-from pathlib import Path
+import tempfile
+from pathlib import Path, PureWindowsPath
 
 from empire.server.core.exceptions import StagerGenerationException
+from empire.server.utils.file_util import safe_filename
 
 """
 
@@ -53,9 +54,10 @@ class Stager:
                 "Strict": True,
             },
             "BinaryFile": {
-                "Description": "File to output launcher to.",
+                "Description": "Name for the generated binary. Any directory "
+                "component is ignored; the artifact is delivered via OutFile.",
                 "Required": True,
-                "Value": "/tmp/empire",
+                "Value": "empire",
             },
             "UserAgent": {
                 "Description": "User-agent string to use for the staging request (default, none, or other).",
@@ -135,24 +137,69 @@ class Stager:
         imports_str = "\n".join(imports_list)
         launcher = imports_str + "\n" + launcher
 
-        binary_path = Path(binary_file_str)
-        binary_path.with_suffix(".py").write_text(f"{launcher}")
+        # BinaryFile is a scratch name, not a delivery destination: the bytes are
+        # read back below and delivered under OutFile by stager_service. Dropping
+        # the directory component is therefore lossless, and it is load-bearing --
+        # honoring it gave an operator an arbitrary server-side .py write.
+        # safe_filename() is the shared basename guard (empty, NUL byte, "." and
+        # ".."); PureWindowsPath splits on "\" as well as "/", so a Windows-style
+        # BinaryFile reduces to its last component instead of becoming one long
+        # backslash-laden file name.
+        binary_name = safe_filename(PureWindowsPath(binary_file_str).name)
+        if not binary_name:
+            raise StagerGenerationException("BinaryFile must include a file name.")
 
-        subprocess.run(
-            [
-                "pyinstaller",
-                "-y",
-                "--clean",
-                "--specpath",
-                str(binary_path.parent),
-                "--distpath",
-                str(binary_path.parent),
-                "--workpath",
-                "/tmp/" + str(time.time()) + "-build/",
-                "--onefile",
-                str(binary_path.with_suffix(".py")),
-            ],
-            check=False,
-        )
+        with tempfile.TemporaryDirectory() as build_root:
+            # dist and work must be siblings, not nested. pyinstaller creates
+            # --workpath as a directory, so putting it under --distpath lets a
+            # BinaryFile named after it ("/tmp/build") claim the same path as the
+            # artifact, and the read below dies with IsADirectoryError.
+            dist_dir = Path(build_root) / "dist"
+            work_dir = Path(build_root) / "work"
+            dist_dir.mkdir()
 
-        return binary_path.read_bytes()
+            binary_path = dist_dir / binary_name
+            # ".py" is appended, not substituted: pyinstaller names the onefile
+            # artifact after the source stem, so with_suffix() would build
+            # "agent" from "agent.bin" and the read below would miss it -- and
+            # for a BinaryFile of "empire.py" the source and the artifact would
+            # be the same path, handing the operator the plaintext launcher.
+            source_path = dist_dir / f"{binary_name}.py"
+            try:
+                source_path.write_text(launcher, encoding="utf-8")
+            except OSError as e:
+                # A BinaryFile longer than the filesystem's NAME_MAX still gets
+                # this far (ENAMETOOLONG), and an uncaught OSError here is the
+                # same opaque 500 the build-failure guard below exists to avoid.
+                raise StagerGenerationException(
+                    f"Could not write the pyinstaller source for BinaryFile "
+                    f"'{binary_name}': {e}"
+                ) from e
+
+            result = subprocess.run(
+                [
+                    "pyinstaller",
+                    "-y",
+                    "--clean",
+                    "--specpath",
+                    str(dist_dir),
+                    "--distpath",
+                    str(dist_dir),
+                    "--workpath",
+                    str(work_dir),
+                    "--onefile",
+                    str(source_path),
+                ],
+                check=False,
+            )
+            # Without this, a failed build reaches read_bytes() and raises
+            # FileNotFoundError, which stager_service does not convert -- an
+            # opaque 500 whose evidence the temp directory has already deleted.
+            if result.returncode != 0 or not binary_path.is_file():
+                raise StagerGenerationException(
+                    f"pyinstaller exited with code {result.returncode} and "
+                    f"produced no binary for BinaryFile '{binary_name}'; see the "
+                    "server console for the pyinstaller output."
+                )
+
+            return binary_path.read_bytes()

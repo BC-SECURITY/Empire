@@ -1,3 +1,4 @@
+import shlex
 import subprocess
 
 from empire.server.core.exceptions import StagerGenerationException
@@ -139,8 +140,45 @@ class Stager:
             msf_payload = "windows/x64/exec"
         elif arch == "x86":
             msf_payload = "windows/exec"
+        else:
+            # Arch is Strict, so the API rejects anything else -- but without
+            # this branch msf_payload stays unbound and a direct caller gets an
+            # UnboundLocalError, which stager_service does not convert.
+            raise StagerGenerationException(
+                f"Unsupported Arch '{arch}'; expected 'x64' or 'x86'."
+            )
 
-        msf_command = f'msfvenom -p {msf_payload} -f {msf_format} CMD="{launcher}"'
+        msf_command = [
+            "msfvenom",
+            "-p",
+            msf_payload,
+            "-f",
+            msf_format,
+            f"CMD={launcher}",
+        ]
 
-        print(f"[*] MSF command -> {msf_command}")
-        return subprocess.check_output(msf_command, shell=True)
+        print(f"[*] MSF command -> {shlex.join(msf_command)}")
+        try:
+            return subprocess.check_output(msf_command)
+        except FileNotFoundError as e:
+            # Argv spawning raises here instead of letting the shell exit 127,
+            # and stager_service only converts StagerGenerationException, so
+            # without this a missing toolchain is a bare 500.
+            raise StagerGenerationException(
+                "msfvenom is not installed or is not on the server's PATH; it is "
+                "required by the windows/cmd_exec stager."
+            ) from e
+        except (OSError, ValueError) as e:
+            # The narrower FileNotFoundError above is not the only way an
+            # operator-supplied MSF_Format can break the spawn: a NUL byte in
+            # it raises ValueError("embedded null byte") and an msfvenom that
+            # exists but is not executable raises PermissionError. Both are
+            # bare 500s otherwise.
+            raise StagerGenerationException(
+                f"Could not run msfvenom for MSF_Format '{msf_format}': {e}"
+            ) from e
+        except subprocess.CalledProcessError as e:
+            raise StagerGenerationException(
+                f"msfvenom exited with code {e.returncode} for MSF_Format "
+                f"'{msf_format}'; see the server console for its output."
+            ) from e

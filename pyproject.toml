@@ -179,7 +179,9 @@ extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.
 # subprocess spawns for payload compilers/tooling (S602/S603/S607):
 "empire/server/core/dotnet.py" = ["S603"]
 "empire/server/core/go.py" = ["S603", "S607"]
-"empire/server/core/obfuscation_service.py" = ["S602"]
+# S603: argv (no shell); the only operator-supplied element is checked against
+# _OBFUSCATION_COMMAND_RE before it is interpolated into the PowerShell script.
+"empire/server/core/obfuscation_service.py" = ["S603"]
 "empire/server/core/stager_generation_service.py" = ["S603", "S607"]
 "empire/server/utils/data_util.py" = ["S602", "S607"]
 "empire/server/utils/file_util.py" = ["S603"]
