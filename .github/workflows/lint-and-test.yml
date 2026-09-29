@@ -116,7 +116,7 @@ jobs:
           DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "not mysql"
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.14' }}
-        uses: MishaKav/pytest-coverage-comment@v1.11.0
+        uses: MishaKav/pytest-coverage-comment@v1.12.2
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
