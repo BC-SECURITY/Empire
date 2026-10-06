@@ -10,6 +10,12 @@ If launched with `--secure-api`, https will be used using the certificate locate
 
 The port can be configured in the server `config.yaml` file by the `api.port` property. It can also be set by supplying `--restport <PORT_NUM>` on launch, which will take precedence over the config file.
 
+## Operation IDs
+
+Every operation in the spec is named `{tag}_{route name}` — `agents_read_agent` for `GET /api/v2/agents/{uid}`, `listener_templates_get_listener_templates` for `GET /api/v2/listener-templates`. Each route carries exactly one tag, and anything in a tag that is not alphanumeric is folded to an underscore, so the ids are valid identifiers in every client generator and do not need the spec post-processed before generating. They are stable as long as the route's tag and name are, which means renaming an endpoint function renames the client method that wraps it.
+
+Earlier releases used FastAPI's default, which appended the path and method (`read_agent_api_v2_agents__uid__get`), so a client regenerated across that boundary will have every one of its method names change. The CHANGELOG entry names the release it landed in.
+
 ## API Authentication
 
 API Authentication is handled via JSON Web Tokens (JWT). The default username for the API is `empireadmin` and the default password is `password123`.

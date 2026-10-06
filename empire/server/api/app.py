@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
 from datetime import datetime
 from json import JSONEncoder
@@ -7,6 +8,7 @@ from json import JSONEncoder
 import socketio
 import urllib3
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.routing import WebSocketRoute
 
@@ -39,6 +41,49 @@ from empire.server.core.config.data_manager import (
 from empire.server.core.db import base
 
 log = logging.getLogger(__name__)
+
+
+_NON_ALNUM = re.compile(r"[^a-zA-Z0-9]+")
+
+
+def custom_generate_unique_id(route: APIRoute) -> str:
+    """Name each operation `{tag}_{route name}` so generated clients read well.
+
+    FastAPI's default appends the path and method, which yields names like
+    `read_agent_api_v2_agents__uid__get`. A route name defaults to its endpoint
+    function's name, so routers that mount a shared endpoint under one tag give
+    it a distinct `name=` rather than an explicit operation id -- that keeps the
+    `{tag}_` prefix true by construction.
+
+    The one-tag-per-route convention that makes `tags[0]` lossless is enforced
+    by test_openapi, not here.
+
+    Hyphenated tags (`listener-templates`) are folded to underscores: client
+    generators have to mangle anything that is not a valid identifier, and each
+    one mangles differently. `string_util.slugify` is not reused for that --
+    its character class does not cover every punctuation character, so a tag
+    could slip through and produce an unusable id. The tag and the name are
+    folded separately so that a tag ending in punctuation still leaves a
+    literal `{tag}_` prefix rather than collapsing the separator into it.
+
+    FastAPI hands this an internal per-route object, not the `APIRoute` the
+    annotation claims; it carries the route's resolved state, so `path` is
+    prefixed and `tags` are merged with the router's.
+    """
+    if not route.tags:
+        # Ids are built lazily: when the schema is served, and when a request
+        # walks the route table far enough to reach this route. So an untagged
+        # route registers fine and then breaks the schema plus every route
+        # registered after it, and every 404. That blast radius is the same
+        # without this guard -- `tags[0]` raises there instead -- but as a bare
+        # `IndexError: list index out of range` naming neither the route that
+        # is at fault nor the reason, while the request that surfaces it is
+        # usually for some other route entirely.
+        raise ValueError(
+            f"{route.path} declares no tag, so it cannot be given an operation id"
+        )
+    tag = _NON_ALNUM.sub("_", str(route.tags[0]))
+    return f"{tag}_{_NON_ALNUM.sub('_', route.name)}"
 
 
 class MyJsonWrapper:
@@ -152,7 +197,9 @@ def create_app() -> FastAPI:  # noqa: PLR0915
                 except Exception:
                     log.warning("Error during SocketIO shutdown", exc_info=True)
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(
+        lifespan=lifespan, generate_unique_id_function=custom_generate_unique_id
+    )
 
     app.include_router(admin_api.router)
     app.include_router(agent_file_api.router)

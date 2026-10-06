@@ -40,7 +40,7 @@ ModuleServiceDep = Annotated[ModuleService, Depends(get_module_service)]
 
 router = APIRouter(
     prefix="/api/v2/obfuscation",
-    tags=["keywords"],
+    tags=["obfuscation"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
         400: {"description": "Bad request", "model": BadRequestResponse},
