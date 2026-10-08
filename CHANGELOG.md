@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed a `BinaryFile` with an extension (`agent.bin`) failing the `linux/pyinstaller` stager with an opaque 500, and a `BinaryFile` of `empire.py` returning the plaintext launcher source in place of the compiled binary.
 -   Fixed a failed `pyinstaller`, a missing or unrunnable `msfvenom`, and an unusable `BinaryFile`, `MSF_Format` or `Arch` value surfacing as a 500 instead of a stager-generation error naming the cause.
+-   Fixed `NameError: name 'job_message_buffer' is not defined` when a background Python job (e.g. `python/collection/linux/xkeylogger`) streams output via `job_message_buffer(...)`, by exposing it in the exec scope used by `python_job_func`.
 -   Fixed the PowerBreach `eventlog` and `resolver` modules reporting a successful `OutFile` write as "PowerBreach deaduser backdoor written to".
 -   Fixed an unwritable PowerBreach `OutFile` surfacing as an opaque 500 instead of a 400 naming the output directory.
 
