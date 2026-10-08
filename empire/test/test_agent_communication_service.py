@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import os
 import string
@@ -12,9 +13,14 @@ from sqlalchemy.orm import sessionmaker
 from empire.server.common import encryption, packets
 from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher, DiffieHellman
+from empire.server.core import hooks as hooks_module
 from empire.server.core.agent_communication_service import AgentCommunicationService
 from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 
 
 @pytest.fixture(scope="module")
@@ -405,6 +411,45 @@ def _listener_options(name="test-listener"):
 
 STAGING_KEY = "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
 
+# The session-scoped fixture listener; the agent row used by the autorun tests
+# is registered under this name.
+FIXTURE_LISTENER = "new-listener-1"
+
+
+def _valid_autorun_entry(module_id="powershell_code_execution_invoke_ironpython"):
+    """A minimal, valid autorun module-request dict."""
+    option_key = (
+        "BooSource"
+        if module_id == "powershell_code_execution_invoke_boolang"
+        else "ipyscript"
+    )
+    return {
+        "module_id": module_id,
+        "ignore_language_version_check": False,
+        "ignore_admin_check": False,
+        "options": {option_key: "Hello World"},
+        "modified_input": "",
+    }
+
+
+@contextlib.contextmanager
+def _autorun_configured(db, main, agent_service, agent, entries):
+    """Point the fixture listener's autorun_tasks at `entries` for the block.
+
+    Also points the agent row at the fixture listener. Yields the listener
+    row; resets autorun_tasks on exit.
+    """
+    db_listener = main.listenersv2.get_by_name(db, FIXTURE_LISTENER)
+    db_listener.autorun_tasks = entries
+
+    db_agent = agent_service.get_by_name(db, agent)
+    db_agent.listener = FIXTURE_LISTENER
+
+    try:
+        yield db_listener
+    finally:
+        db_listener.autorun_tasks = None
+
 
 def _stage(
     service,
@@ -431,6 +476,89 @@ def _stage(
         _listener_options(),
         "1.2.3.4",
     )
+
+
+def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
+    """Run a complete STAGE1 → STAGE2 negotiation against the real handler.
+
+    Returns (db_agent, stage2_response). The STAGE2 body is encrypted with
+    the session key derived client-side from the server's returned public key.
+    """
+    client = DiffieHellman()
+
+    # The agent row is registered under this listener name; autorun_tasks()
+    # resolves it via agent.listener (set at STAGE1 from the listener options),
+    # so it must be a listener that exists in the test DB — the session-scoped
+    # fixture listener.
+    listener_options = _listener_options(name=FIXTURE_LISTENER)
+
+    server_priv, server_pub = _ed25519_keypair()
+    stage1_resp = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE1",
+        0,
+        _stage1_body(STAGING_KEY, agent_cert, client.publicKey.to_bytes(768, "big")),
+        STAGING_KEY,
+        agent_pub,
+        server_priv,
+        server_pub,
+        listener_options,
+        "1.2.3.4",
+    )
+    assert isinstance(stage1_resp, bytes)
+
+    # Unwrap the routing packet to get (nonce, server DH pub).
+    parsed = packets.parse_routing_packet(STAGING_KEY, stage1_resp)
+    ((_, (_, _, _, enc_data)),) = parsed.items()
+    payload = AESCipher.decrypt_and_verify(STAGING_KEY.encode("UTF-8"), enc_data)
+    nonce = payload[:16].decode("UTF-8")
+    # payload = nonce(16) || server DH pub (variable nbytes, big-endian) || server_cert (64-byte Ed25519 signature)
+    server_pub_bytes = payload[16:-64]
+
+    # Derive the same session key the server stored (HKDF-SHA256 over the
+    # 768-byte normalized shared secret — see DiffieHellman.gen_key).
+    client.gen_key(int.from_bytes(server_pub_bytes, "big"))
+    session_key = client.getKey()
+
+    # STAGE2 body: nonce+1|listener|domain|user|host|internal_ip|os|high_integrity|process_name|pid|language|lang_version|arch
+    # The listener field here is unused by the handler (the agent's listener
+    # comes from STAGE1), but keep it consistent with the fixture listener.
+    sysinfo = "|".join(
+        [
+            str(int(nonce) + 1),
+            FIXTURE_LISTENER,
+            "",
+            "testuser",
+            "testhost",
+            "10.0.0.5",
+            "Windows 10 x64",
+            "true",
+            "explorer",
+            "4242",
+            language,
+            "3.0",
+            "x64",
+        ]
+    ).encode("UTF-8")
+
+    stage2_resp = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE2",
+        0,
+        AESCipher.encrypt_then_hmac(session_key, sysinfo),
+        STAGING_KEY,
+        agent_pub,
+        server_priv,
+        server_pub,
+        listener_options,
+        "1.2.3.4",
+    )
+    db_agent = service.agent_service.get_by_id(db, session_id)
+    return db_agent, stage2_resp
 
 
 # A 768-byte peer key that is a quadratic non-residue mod the group-17 prime, so
@@ -703,47 +831,161 @@ def test__process_agent_packet():
     pass
 
 
-def _test_autorun_task(
+def test_autorun_tasks_happy_path(
     agent_task_service,
     agent_communication_service,
     agent,
     session_local,
-    db,
-    listener,
     agent_service,
     main: MainMenu,
 ):
     mock_autorun_task = [
-        {
-            "module_id": "powershell_code_execution_invoke_boolang",
-            "ignore_language_version_check": False,
-            "ignore_admin_check": False,
-            "options": {"BooSource": "Hello World"},
-            "modified_input": "",
-        },
-        {
-            "module_id": "powershell_code_execution_invoke_ironpython",
-            "ignore_language_version_check": False,
-            "ignore_admin_check": False,
-            "options": {"ipyscript": "Hello World"},
-            "modified_input": "",
-        },
+        _valid_autorun_entry("powershell_code_execution_invoke_boolang"),
+        _valid_autorun_entry("powershell_code_execution_invoke_ironpython"),
     ]
 
-    db_listener = main.listenersv2.get_by_name(db, "new-listener-1")
-    db_listener.autorun_tasks = mock_autorun_task
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, mock_autorun_task),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)
 
-    db_agent = agent_service.get_by_name(db, agent)
-    db_agent.listener = "new-listener-1"
+        tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
-    agent_communication_service.autorun_tasks(db, agent)
+        assert len(tasks) == 2  # noqa: PLR2004
+        assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"
+        assert tasks[0].module_name == mock_autorun_task[1]["module_id"]
+        assert tasks[0].status == "queued"
 
-    tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
-    assert len(tasks) == 2  # noqa: PLR2004
-    assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"
-    assert tasks[0].module_name == mock_autorun_task[1]["module_id"]
-    assert tasks[0].status == "queued"
+def test_autorun_tasks_survives_malformed_entry(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    session_local,
+    agent_service,
+    main: MainMenu,
+):
+    """A malformed autorun entry (not a valid module request) is skipped;
+    the valid entry after it still queues a task."""
+    mock_autorun_task = [
+        "this-is-not-a-module-request",  # ValidationError from parse_obj
+        _valid_autorun_entry(),
+    ]
+
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, mock_autorun_task),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)  # must not raise
+
+        tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
+        assert len(tasks) == 1
+        assert tasks[0].module_name == "powershell_code_execution_invoke_ironpython"
+        assert tasks[0].status == "queued"
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [ModuleValidationException, ModuleExecutionException],
+)
+def test_autorun_tasks_survives_module_failure(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    session_local,
+    agent_service,
+    main: MainMenu,
+    monkeypatch,
+    exc,
+):
+    """An autorun entry whose module raises at the validation or compile
+    boundary is skipped without propagating. This is the #837 failure class."""
+
+    def raise_exc(*args, **kwargs):
+        raise exc("autorun module failure")
+
+    monkeypatch.setattr(
+        agent_communication_service.agent_task_service,
+        "create_task_module",
+        raise_exc,
+    )
+
+    # create_task_module is monkeypatched to always raise, so there is no
+    # "valid second entry" — the assertion is only that no exception escapes.
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, [_valid_autorun_entry()]),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)  # must not raise
+
+
+def test_stage_full_harness_smoke(
+    agent_communication_service,
+    session_local,
+):
+    """The STAGE1→STAGE2 harness completes a real negotiation."""
+    agent_priv, agent_pub = _ed25519_keypair()
+    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+
+    with session_local.begin() as db:
+        db_agent, resp = _stage_full(
+            agent_communication_service,
+            db,
+            "HARNES01",
+            "powershell",
+            cert,
+            agent_pub,
+        )
+
+        assert resp.startswith("STAGE2: ")
+        assert db_agent.hostname == "testhost"
+        assert db_agent.username == "testuser"
+
+
+def test_handle_agent_staging_fires_checkin_hook_despite_failing_autorun(
+    agent_communication_service,
+    session_local,
+    monkeypatch,
+):
+    """STAGE2 with a failing autorun: hook still fires, agent still exists,
+    staging still returns STAGE2. This is the end-to-end #837 contract."""
+    calls = []
+
+    def spy_hook(db, agent_obj):
+        calls.append(agent_obj.session_id)
+
+    hooks_module.hooks.register_hook(
+        hooks_module.hooks.AFTER_AGENT_CHECKIN_HOOK, "test-spy", spy_hook
+    )
+
+    def failing_autorun(db, session_id):
+        raise RuntimeError("autorun exploded")
+
+    monkeypatch.setattr(agent_communication_service, "autorun_tasks", failing_autorun)
+
+    agent_priv, agent_pub = _ed25519_keypair()
+    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+
+    try:
+        with session_local.begin() as db:
+            db_agent, resp = _stage_full(
+                agent_communication_service,
+                db,
+                "E2EAUTOR",
+                "powershell",
+                cert,
+                agent_pub,
+            )
+
+            assert resp.startswith("STAGE2: ")
+            assert db_agent is not None
+            assert db_agent.hostname == "testhost"
+            assert calls == ["E2EAUTOR"]
+    finally:
+        hooks_module.hooks.unregister_hook(
+            "test-spy", hooks_module.hooks.AFTER_AGENT_CHECKIN_HOOK
+        )
 
 
 class _PoppingDict(dict):

@@ -7,7 +7,6 @@ import string
 import typing
 from pathlib import Path
 
-from pydantic import ValidationError
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
@@ -936,7 +935,10 @@ class AgentCommunicationService:
                 dotnet_version=dotnet_version,
             )
 
-            self.autorun_tasks(db, session_id)
+            try:
+                self.autorun_tasks(db, session_id)
+            except Exception:
+                log.exception("Error in autorun_tasks() during agent staging")
 
             # signal everyone that this agent is now active
             message = f"Initial agent {session_id} from {client_ip} now active"
@@ -1598,8 +1600,8 @@ class AgentCommunicationService:
                     self.agent_task_service.create_task_module(
                         db, agent, module_request
                     )
-                except ValidationError:
-                    log.exception("Error parsing module request")
+                except Exception:
+                    log.exception("Error executing autorun module request")
 
     def generate_sessionid(self):
         return "".join(
