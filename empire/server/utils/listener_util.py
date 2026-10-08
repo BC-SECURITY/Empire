@@ -189,3 +189,22 @@ def generate_random_cipher():
     ]
     shuffled = secrets.SystemRandom().sample(ciphers, len(ciphers))
     return ":".join(shuffled)
+
+
+def parse_custom_headers(default_profile: str) -> dict[str, str]:
+    """Parse the custom headers out of an http ``DefaultProfile``.
+
+    ``DefaultProfile`` is ``uris|user-agent|Header:Value|Header:Value...``.
+    Each header entry is split on its first ``:``. Entries with an empty name
+    are dropped, a ``cookie`` header is dropped because the session cookie is
+    managed separately, and names that differ only in case collapse to the
+    last one seen because a PowerShell hashtable literal rejects case-variant
+    duplicate keys.
+    """
+    by_lower: dict[str, tuple[str, str]] = {}
+    for entry in default_profile.split("|")[2:]:
+        name, _, value = entry.partition(":")
+        if not name or name.lower() == "cookie":
+            continue
+        by_lower[name.lower()] = (name, value)
+    return dict(by_lower.values())

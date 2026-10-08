@@ -186,8 +186,44 @@ def test_create_listener_normalization_preserves_user_defined_ports(
     response = client.post(
         "/api/v2/listeners/", headers=admin_auth_header, json=base_listener
     )
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json()["detail"] == "Port cannot be provided in a host name"
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.json()["host_address"] == "http://localhost:443/"
+    assert response.json()["options"]["Port"] == "1234"
+
+    client.delete(
+        f"/api/v2/listeners/{response.json()['id']}", headers=admin_auth_header
+    )
+
+
+def _validate_address(options):
+    # Imported inside the function on purpose: conftest.py imports this module
+    # before it sets sys.argv to the test config, and a module-level import of
+    # listener_service would bind config_manager to the default config.
+    from empire.server.core.listener_service import ListenerService  # noqa: PLC0415
+
+    return ListenerService.validate_listener_address(options)
+
+
+def test_validate_listener_address_bare_host_with_port():
+    address, err = _validate_address(
+        {"Host": {"Value": "proxy.example.com:8443"}, "Port": {"Value": "80"}}
+    )
+
+    assert err is None
+    assert address == "http://proxy.example.com:8443/"
+
+
+def test_validate_listener_address_elides_default_port_from_host():
+    address, err = _validate_address(
+        {
+            "Host": {"Value": "https://proxy.example.com:443"},
+            "Port": {"Value": "8443"},
+            "CertPath": {"Value": ""},
+        }
+    )
+
+    assert err is None
+    assert address == "https://proxy.example.com/"
 
 
 def test_create_listener_normalization_sets_host_port_as_bind_port(

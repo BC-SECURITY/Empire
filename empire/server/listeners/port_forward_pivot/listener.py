@@ -513,7 +513,6 @@ class Listener:
         workingHours = listenerOptions["WorkingHours"]["Value"]
         killDate = listenerOptions["KillDate"]["Value"]
         host = listenerOptions["Host"]["Value"]
-        customHeaders = profile.split("|")[2:]
 
         # select some random URIs for staging from the main profile
         stage1 = secrets.choice(uris)
@@ -530,6 +529,7 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1.j2")
+            custom_headers = listener_util.parse_custom_headers(profile)
 
             template_options = {
                 "working_hours": workingHours,
@@ -540,22 +540,10 @@ class Listener:
                 "host": host,
                 "stage_1": stage1,
                 "stage_2": stage2,
+                "custom_headers": custom_headers,
                 **cert_key_options,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -739,6 +727,9 @@ class Listener:
             template_options = {
                 "session_cookie": listenerOptions["Cookie"]["Value"],
                 "host": self.host_address,
+                "custom_headers": listener_util.parse_custom_headers(
+                    listenerOptions["DefaultProfile"]["Value"]
+                ),
             }
 
             return template.render(template_options)

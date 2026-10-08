@@ -250,20 +250,16 @@ class ListenerService:
                     protocol = "https"
                 else:
                     protocol = "http"
-            if port:
-                return None, "Port cannot be provided in a host name"
-            host_address = f"{protocol}://{host}"
+            if not port:
+                port = listener_options["Port"]["Value"]
         except AttributeError:
             return None, "Hostname error in parsing"
 
-        port = listener_options["Port"]["Value"]
         if (protocol == "https" and str(port) == "443") or (
             protocol == "http" and str(port) == "80"
         ):
-            host_address += "/"
-            return host_address, None
-        host_address += f":{port}/"
-        return host_address, None
+            return f"{protocol}://{host}/", None
+        return f"{protocol}://{host}:{port}/", None
 
     def _validate_listener_options(
         self, db: Session, template: str, params: dict

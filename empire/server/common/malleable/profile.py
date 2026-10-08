@@ -775,6 +775,7 @@ class Profile(MalleableObject):
                         self.http_config._parse(arg)
                     elif item.lower() == "https-certificate":
                         self.https_certificate._parse(arg)
+        self.stager.add_default_uri()
 
     def _apply_set_directive(self, key: str, raw_value: str) -> None:
         """Classify and apply a top-level `set <key> "<raw_value>";` directive.

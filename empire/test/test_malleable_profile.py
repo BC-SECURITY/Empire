@@ -18,6 +18,8 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
 from empire.server.common.malleable.profile import (
     _AGENT_PROFILE_SCHEMA_VERSION,
     HttpConfig,
@@ -1128,3 +1130,52 @@ class TestCoerceHelpers:
         assert warnings == [], (
             f"happy-path coercion must not WARN, got: {[r.getMessage() for r in warnings]}"
         )
+
+
+class TestStagerDefaultUri:
+    """`/init/` is a fallback for profiles that declare no stager URI. It
+    must not be unioned onto URIs a profile's http-stager block declares."""
+
+    @staticmethod
+    def _profile(content: str) -> Profile:
+        profile = Profile()
+        profile.ingest(content=content)
+        return profile
+
+    def test_stager_block_with_uri_does_not_get_init(self):
+        profile = self._profile(
+            """
+            http-stager {
+                set uri "/stage";
+                client { header "Accept" "*/*"; }
+                server { header "Server" "nginx"; }
+            }
+            """
+        )
+        assert profile.stager.client.uris == ["/stage"]
+
+    def test_no_stager_block_gets_init(self):
+        profile = self._profile(
+            """
+            http-get {
+                set uri "/get";
+                client { header "Accept" "*/*"; }
+                server { header "Server" "nginx"; }
+            }
+            """
+        )
+        assert profile.stager.client.uris == ["/init/"]
+
+    def test_stager_block_without_uri_gets_init(self):
+        profile = self._profile(
+            """
+            http-stager {
+                server { header "Server" "nginx"; }
+            }
+            """
+        )
+        assert profile.stager.client.uris == ["/init/"]
+
+    @pytest.mark.parametrize("content", ["", "# only a comment\n"])
+    def test_empty_profile_gets_init(self, content):
+        assert self._profile(content).stager.client.uris == ["/init/"]

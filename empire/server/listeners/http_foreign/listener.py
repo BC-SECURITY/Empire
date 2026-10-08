@@ -308,6 +308,9 @@ class Listener:
             template_options = {
                 "session_cookie": self.session_cookie,
                 "host": self.host_address,
+                "custom_headers": listener_util.parse_custom_headers(
+                    self.options["DefaultProfile"]["Value"]
+                ),
             }
 
             return template.render(template_options)

@@ -289,7 +289,6 @@ class Listener:
         staging_key = listener.options["StagingKey"]["Value"]
         workingHours = listener.options["WorkingHours"]["Value"]
         killDate = listener.options["KillDate"]["Value"]
-        customHeaders = profile.split("|")[2:]
         session_cookie = listener.options["Cookie"]["Value"]
 
         # select some random URIs for staging from the main profile
@@ -303,6 +302,7 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1.j2")
+            custom_headers = listener_util.parse_custom_headers(profile)
 
             raw_key_bytes = listener.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
@@ -341,21 +341,9 @@ class Listener:
                 "agent_private_cert_key": private_key_array,
                 "server_public_cert_key": server_public_key_array,
                 "agent_public_cert_key": public_key_array,
+                "custom_headers": custom_headers,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -445,6 +433,9 @@ class Listener:
                 "host": self.host_address,
                 "agent_private_cert_key": powershell_array,
                 "agent_public_cert_key": self.agent_public_cert_key,
+                "custom_headers": listener_util.parse_custom_headers(
+                    self.options["DefaultProfile"]["Value"]
+                ),
             }
 
             return template.render(template_options)

