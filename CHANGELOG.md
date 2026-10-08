@@ -19,10 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed command injection through the global obfuscation command: it is no longer passed through a shell, and is validated against the Invoke-Obfuscation command grammar before use.
 -   Fixed command injection through the `MSF_Format` option of the `windows/cmd_exec` stager: msfvenom is now invoked with an argument list instead of a shell command string.
 -   Fixed arbitrary file write through the `BinaryFile` option of the `linux/pyinstaller` stager: the build now runs in a server-owned temporary directory and only the option's file name is used.
+-   Confined the `http_hop` listener's `OutFolder` and the redirect listener's profile URIs to `downloads/http_hop`, closing an arbitrary file write available to any non-admin operator.
+-   Confined the `OutFile` option of the PowerBreach `eventlog`, `deaduser` and `resolver` modules to `downloads/generated-modules`, closing an arbitrary file write available to any non-admin operator.
+-   Rejected an `OutFolder` or `OutFile` that resolves onto the shared output directory itself, which one operator could turn into a regular file and wedge every other operator's writes.
 
 ### Changed
 
 -   **BREAKING:** The `linux/pyinstaller` stager's `BinaryFile` option is now a bare file name defaulting to `empire` rather than `/tmp/empire` — any directory component is ignored and the built binary is no longer left on the server at that path, though it is still delivered under `OutFile` as before.
+-   **BREAKING:** The `http_hop` listener's `OutFolder` is now relative to `downloads/http_hop` and defaults to `redirectors`; hop listeners stored with an absolute path outside it no longer start.
 -   **BREAKING:** OpenAPI operation ids are now `{tag}_{route name}` (e.g. `agents_read_agent`) instead of FastAPI's path-and-method default, which also renames the three generated `Body_*` request schemas — a generated client needs no post-processing of the spec, but every method name it produces changes.
 -   **BREAKING:** The agent-task and plugin-task routes are tagged with only their primary resource, dropping the `tasks` tag group.
 -   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
@@ -31,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   Fixed a `BinaryFile` with an extension (`agent.bin`) failing the `linux/pyinstaller` stager with an opaque 500, and a `BinaryFile` of `empire.py` returning the plaintext launcher source in place of the compiled binary.
 -   Fixed a failed `pyinstaller`, a missing or unrunnable `msfvenom`, and an unusable `BinaryFile`, `MSF_Format` or `Arch` value surfacing as a 500 instead of a stager-generation error naming the cause.
+-   Fixed the PowerBreach `eventlog` and `resolver` modules reporting a successful `OutFile` write as "PowerBreach deaduser backdoor written to".
+-   Fixed an unwritable PowerBreach `OutFile` surfacing as an opaque 500 instead of a 400 naming the output directory.
 
 ## [7.0.2] - 2026-09-08
 

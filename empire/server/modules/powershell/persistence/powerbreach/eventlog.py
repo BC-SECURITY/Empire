@@ -1,9 +1,8 @@
-from pathlib import Path
-
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.module_util import write_module_outfile
 from empire.server.utils.option_util import coerce_legacy_value
 
 
@@ -88,13 +87,9 @@ Invoke-EventLogBackdoor"""
 
         out_file = params["OutFile"]
         if out_file != "":
-            # make the base directory if it doesn't exist
-            out_path = Path(out_file)
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_text(script)
-
+            out_path = write_module_outfile(out_file, script)
             raise ModuleValidationException(
-                "[+] PowerBreach deaduser backdoor written to " + out_file
+                f"[+] PowerBreach eventlog backdoor written to {out_path}"
             )
 
         # transform the backdoor into something launched by powershell.exe
