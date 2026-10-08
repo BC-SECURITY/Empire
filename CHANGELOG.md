@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+-   Fixed the `persistence/osx/LaunchAgent` module staging its plist through a predictable `/tmp` path and running `chown`/`mv` via `subprocess` with `shell=True`; the plist is now written directly to the LaunchAgents directory with no shell ([BC-SECURITY/Empire#828](https://github.com/BC-SECURITY/Empire/issues/828)).
+-   Fixed the `persistence/osx/CreateHijacker` module writing its patched dylib to a predictable, world-writable `/tmp/<dylib name>` path; it now patches a `mkstemp` file in place.
 -   Fixed command injection through the global obfuscation command: it is no longer passed through a shell, and is validated against the Invoke-Obfuscation command grammar before use.
 -   Fixed command injection through the `MSF_Format` option of the `windows/cmd_exec` stager: msfvenom is now invoked with an argument list instead of a shell command string.
 -   Fixed arbitrary file write through the `BinaryFile` option of the `linux/pyinstaller` stager: the build now runs in a server-owned temporary directory and only the option's file name is used.
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+-   `persistence/osx/LaunchAgent` and `persistence/osx/CreateHijacker` now refuse to generate while the shipped Mach-O templates link Apple's removed Python 2.7 framework, instead of planting a binary that cannot load on macOS 12.3 or later; the module descriptions say so, pending a template rebuild.
 -   **BREAKING:** The `linux/pyinstaller` stager's `BinaryFile` option is now a bare file name defaulting to `empire` rather than `/tmp/empire` — any directory component is ignored and the built binary is no longer left on the server at that path, though it is still delivered under `OutFile` as before.
 -   **BREAKING:** The http and http_malleable listeners now serve their default response instead of a Werkzeug 500 page for any error that escapes a view.
 -   **BREAKING:** The `http_hop` listener's `OutFolder` is now relative to `downloads/http_hop` and defaults to `redirectors`; hop listeners stored with an absolute path outside it no longer start.
@@ -40,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed `management/osx/shellcodeinject64` crashing on any real shellcode file (bytes passed to `str.replace`) and on an empty `Shellcode` path (directory read); both now generate or raise a validation error.
+-   Fixed `collection/osx/native_screenshot_mss` embedding a `bytes` repr (`b'...'`) in its emitted script, which the agent-side base64 decode turned into garbage.
+-   Fixed the Python and IronPython agents building but never sending the error packet for a failed foreground Python task, which left the task pending forever with no output.
+-   Fixed `persistence/osx/LaunchAgent`, `persistence/osx/LaunchAgentUserLandPersistence`, `persistence/osx/CreateHijacker` and `privesc/multi/bashdoor` emitting Python 2 code (octal literals, `except E, e`, text-mode binary I/O) that failed to compile or run on the Python 3 agent. `LaunchAgentUserLandPersistence` now launches with an absolute Python 3 path resolved on the agent (its own interpreter, falling back to `python3` on `PATH`) instead of the removed `python`, and `CreateHijacker` raises on failure so a failed hijack no longer reports as a completed task.
 -   Fixed a `BinaryFile` with an extension (`agent.bin`) failing the `linux/pyinstaller` stager with an opaque 500, and a `BinaryFile` of `empire.py` returning the plaintext launcher source in place of the compiled binary.
 -   Fixed a failed `pyinstaller`, a missing or unrunnable `msfvenom`, and an unusable `BinaryFile`, `MSF_Format` or `Arch` value surfacing as a 500 instead of a stager-generation error naming the cause.
 -   Fixed the malleable PowerShell stager splitting custom headers on commas, which broke any profile header value containing a comma, such as a Chrome User-Agent. Header entries are now separated with a dedicated marker. (https://github.com/BC-SECURITY/Empire/issues/829)

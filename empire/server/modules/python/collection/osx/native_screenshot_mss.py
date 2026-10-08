@@ -15,7 +15,7 @@ class Module:
     ) -> tuple[str | None, str | None]:
         path = main_menu.install_path / "data/misc/python_modules/mss.zip"
         module_data = path.read_bytes()
-        module_data = base64.b64encode(module_data)
+        module_data = base64.b64encode(module_data).decode()
         return """
 import os
 import base64

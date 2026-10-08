@@ -19,10 +19,10 @@ class Module:
         shellcodeBinPath = params["Shellcode"]
 
         shellcode_path = confine_to_downloads(shellcodeBinPath, "Shellcode")
-        if not shellcode_path.exists():
+        if not shellcode_path.is_file():
             raise ModuleValidationException("Shellcode bin file not found.")
 
-        shellcode = base64.b64encode(shellcode_path.read_bytes())
+        shellcode = base64.b64encode(shellcode_path.read_bytes()).decode()
 
         script = """
 from ctypes import *

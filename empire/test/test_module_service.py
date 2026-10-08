@@ -589,34 +589,32 @@ def test_execute_module_shellcodeinject64_escape_shapes_are_blocked(
     assert str(downloads_root) in str(exc_info.value)
 
 
-def test_execute_module_shellcodeinject64_inside_downloads_reaches_the_read(
+def test_execute_module_shellcodeinject64_inside_downloads_generates(
     module_service, agent_mock, downloads_root
 ):
-    """Permissive-side pin for the ``Shellcode`` guard.
+    """Permissive-side pin for the ``Shellcode`` guard: a path inside the downloads
+    root is accepted and its bytes reach the generated script.
 
-    This pins a bug, not a feature. ``shellcodeinject64`` crashes unconditionally
-    at ``script.replace("[SC]", shellcode)`` -- ``shellcode`` is ``bytes`` out of
-    ``b64encode`` where ``str`` is required -- so an accepted path still fails,
-    with ``ModuleExecutionException`` rather than ``ModuleValidationException``.
-    That is what proves the guard let the path through. When the ``TypeError`` is
-    fixed, re-point this at a success assertion; do not delete it, or the guard
-    loses its only permissive-side test and can be inverted unnoticed.
+    Do not delete this, or the guard loses its only permissive-side test and can be
+    inverted unnoticed.
     """
     agent_mock.language = "python"
     payload = downloads_root / "sc.bin"
     payload.write_bytes(b"\x90\x90R9-MARKER")
 
     params = {"Agent": agent_mock.session_id, "PID": "1234", "Shellcode": str(payload)}
-    with pytest.raises(ModuleExecutionException):
-        module_service.execute_module(
-            None,
-            agent_mock,
-            "python_management_osx_shellcodeinject64",
-            params,
-            True,
-            True,
-            None,
-        )
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        "python_management_osx_shellcodeinject64",
+        params,
+        True,
+        True,
+        None,
+    )
+
+    assert err is None
+    assert base64.b64encode(b"\x90\x90R9-MARKER").decode() in res.data
 
 
 def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agent_mock):

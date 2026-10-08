@@ -800,21 +800,21 @@ class StagerGenerationService:
         log.error("Unable to patch MachO binary")
         return None
 
-    def generate_dylib(self, launcher_code, arch, hijacker):  # noqa: PLR0912
+    @staticmethod
+    def dylib_template_name(arch, hijacker):
+        """Template under data/misc that generate_dylib patches for this arch."""
+        suffix = "" if arch == "x86" else "64"
+        if hijacker:
+            return f"hijackers/template{suffix}.dylib"
+        return f"templateLauncher{suffix}.dylib"
+
+    def generate_dylib(self, launcher_code, arch, hijacker):
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
         MH_DYLIB = 6
         misc_dir = self.main_menu.install_path / "data/misc"
-        if hijacker:
-            if arch == "x86":
-                dylib_path = misc_dir / "hijackers/template.dylib"
-            else:
-                dylib_path = misc_dir / "hijackers/template64.dylib"
-        elif arch == "x86":
-            dylib_path = misc_dir / "templateLauncher.dylib"
-        else:
-            dylib_path = misc_dir / "templateLauncher64.dylib"
+        dylib_path = misc_dir / self.dylib_template_name(arch, hijacker)
 
         with dylib_path.open("rb") as f:
             macho = macholib.MachO.MachO(f.name)

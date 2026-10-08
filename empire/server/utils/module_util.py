@@ -5,6 +5,8 @@ from empire.server.core.config import config_manager
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.utils.file_util import resolve_under_root
 
+PY27_FRAMEWORK_MARKER = b"Python.framework/Versions/2.7"
+
 
 def handle_validate_message(
     msg: str = "", print_to_server: bool = True
@@ -19,6 +21,29 @@ def handle_validate_message(
     if print_to_server:
         print(helpers.color(msg))
     return False, msg
+
+
+def ensure_python3_macho_template(binary: bytes, template_name: str) -> None:
+    """
+    Refuse a generated Mach-O binary whose template links Apple's Python 2.7 framework.
+
+    Called on the generated binary; the dyld load command is copied verbatim
+    from the template, so the marker survives patching.
+
+    macOS 12.3 removed that framework, so a binary built from such a template
+    fails in dyld on every supported macOS. The guard lifts itself the moment a
+    rebuilt template no longer contains the marker.
+    """
+    if not binary:
+        raise ModuleValidationException(
+            f"The Mach-O template '{template_name}' could not be patched; see the server log."
+        )
+    if PY27_FRAMEWORK_MARKER in binary:
+        raise ModuleValidationException(
+            f"The shipped Mach-O template '{template_name}' links Apple's Python 2.7 "
+            "framework, which macOS 12.3 removed, so the planted binary cannot load on "
+            "any supported macOS. Refusing to generate until the templates are rebuilt."
+        )
 
 
 def write_module_outfile(out_file: str, script: str) -> Path:

