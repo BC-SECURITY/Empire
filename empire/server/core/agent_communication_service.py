@@ -560,7 +560,13 @@ class AgentCommunicationService:
 
                 # Continue DH as usual
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)
@@ -639,7 +645,13 @@ class AgentCommunicationService:
                     log.exception("Agent cert parse/verify error")
                     return f"Error: Invalid agent certificate from {session_id}"
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
 
                 nonce = helpers.random_string(16, charset=string.digits)
@@ -713,7 +725,13 @@ class AgentCommunicationService:
 
                 # client posts PUBc key
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)
@@ -795,7 +813,13 @@ class AgentCommunicationService:
 
                 # client posts PUBc key
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)

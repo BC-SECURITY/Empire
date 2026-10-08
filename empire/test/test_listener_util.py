@@ -2,12 +2,15 @@ import ssl
 
 import pytest
 
+from empire.server.core.exceptions import ModuleExecutionException
 from empire.server.utils.listener_util import (
     decimals_to_bytes,
     ensure_raw_bytes,
     generate_random_cipher,
     looks_like_decimal_blob,
+    read_stager_artifact,
     remove_lines_comments,
+    sanitize_log_value,
 )
 
 
@@ -84,3 +87,50 @@ class TestGenerateRandomCipher:
     def test_cipher_usable_by_openssl(self):
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ctx.set_ciphers(generate_random_cipher())
+
+
+class TestReadStagerArtifact:
+    def test_returns_bytes_and_removes_the_artifact(self, tmp_path):
+        artifact = tmp_path / "stager_abc.exe"
+        artifact.write_bytes(b"MZ\x00\x01")
+
+        assert read_stager_artifact(str(artifact)) == b"MZ\x00\x01"
+        assert not artifact.exists()
+
+    def test_unremovable_artifact_still_returns_its_bytes(self, tmp_path, monkeypatch):
+        """The load-bearing half of the docstring: AV quarantine and a
+        read-only tempdir both fail the unlink, and a compile that just
+        succeeded must not be thrown away over it."""
+        artifact = tmp_path / "stager_abc.exe"
+        artifact.write_bytes(b"MZ\x00\x01")
+
+        def _refuse(self, **kwargs):
+            raise PermissionError("read-only tempdir")
+
+        monkeypatch.setattr("pathlib.Path.unlink", _refuse)
+
+        assert read_stager_artifact(str(artifact)) == b"MZ\x00\x01"
+        assert artifact.exists()
+
+    @pytest.mark.parametrize("path", ["", None])
+    def test_empty_path_is_rejected_by_name(self, path):
+        """generate_launcher() returns "" for an inactive listener and None for
+        an empty launcher. Path("") is Path("."), so without the guard those
+        surface as a bare IsADirectoryError/TypeError from inside a read."""
+        with pytest.raises(ModuleExecutionException, match="returned no path"):
+            read_stager_artifact(path)
+
+
+class TestSanitizeLogValue:
+    def test_escapes_newlines_so_a_value_cannot_forge_a_record(self):
+        assert "\n" not in sanitize_log_value("go\r\n2026-01-01 INFO forged")
+
+    def test_caps_length(self):
+        capped = sanitize_log_value("A" * 5000, max_length=64)
+        assert capped == repr("A" * 64 + "...")
+
+    def test_keeps_ordinary_values_readable(self):
+        assert sanitize_log_value("go") == "'go'"
+
+    def test_missing_value_is_not_quoted(self):
+        assert sanitize_log_value(None) == "None"

@@ -1,3 +1,4 @@
+import logging
 import os
 import string
 import struct
@@ -379,11 +380,14 @@ def _ed25519_keypair():
     return private_raw, encryption.publickey_unsafe(private_raw)
 
 
-def _stage1_body(staging_key: str, agent_cert: bytes) -> bytes:
+def _stage1_body(
+    staging_key: str, agent_cert: bytes, client_pub_bytes: bytes | None = None
+) -> bytes:
     """Build a STAGE1 payload: 768-byte DH public key || 64-byte agent cert."""
-    client_pub = DiffieHellman().publicKey.to_bytes(768, "big")
+    if client_pub_bytes is None:
+        client_pub_bytes = DiffieHellman().publicKey.to_bytes(768, "big")
     return AESCipher.encrypt_then_hmac(
-        staging_key.encode("UTF-8"), client_pub + agent_cert
+        staging_key.encode("UTF-8"), client_pub_bytes + agent_cert
     )
 
 
@@ -402,7 +406,16 @@ def _listener_options(name="test-listener"):
 STAGING_KEY = "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
 
 
-def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub):
+def _stage(
+    service,
+    db,
+    session_id,
+    language,
+    staging_key,
+    agent_cert,
+    agent_pub,
+    client_pub_bytes=None,
+):
     server_priv, server_pub = _ed25519_keypair()
     return service._handle_agent_staging(
         db,
@@ -410,7 +423,7 @@ def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub
         language,
         "STAGE1",
         0,
-        _stage1_body(staging_key, agent_cert),
+        _stage1_body(staging_key, agent_cert, client_pub_bytes),
         staging_key,
         agent_pub,
         server_priv,
@@ -418,6 +431,18 @@ def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub
         _listener_options(),
         "1.2.3.4",
     )
+
+
+# A 768-byte peer key that is a quadratic non-residue mod the group-17 prime, so
+# check_public_key() rejects it. Chosen by its bytes rather than by its integer
+# value: the go branch gates on len(str(message)), and a small integer encodes to
+# mostly-zero bytes whose repr is far past that ceiling.
+DH_PUBLIC_KEY_REJECTED = b"A" * 768
+
+# Same shape, but a residue, so check_public_key() accepts it. The go accept-side
+# row pins this instead of a random DiffieHellman() key because a random key's
+# repr length overflows the same gate for ~0.6% of values.
+DH_PUBLIC_KEY_ACCEPTED = b"B" * 768
 
 
 @pytest.mark.parametrize("language", ["powershell", "csharp"])
@@ -472,9 +497,21 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
     assert "Invalid agent certificate" in result
 
 
-@pytest.mark.parametrize("language", ["powershell", "csharp"])
+@pytest.mark.parametrize(
+    ("language", "client_pub_bytes"),
+    [
+        ("powershell", None),
+        ("csharp", None),
+        ("python", None),
+        # go alone pins the key: its length gate measures repr(message), so a
+        # random DiffieHellman() public key overflows the ceiling for ~0.6% of
+        # values and would flake CI. See DH_PUBLIC_KEY_ACCEPTED.
+        ("go", DH_PUBLIC_KEY_ACCEPTED),
+    ],
+    ids=["powershell", "csharp", "python", "go"],
+)
 def test__handle_agent_staging_accepts_valid_agent_cert(
-    agent_communication_service, session_local, language
+    agent_communication_service, session_local, language, client_pub_bytes
 ):
     """The happy path still completes and returns a routing packet."""
     staging_key = STAGING_KEY
@@ -485,16 +522,53 @@ def test__handle_agent_staging_accepts_valid_agent_cert(
         result = _stage(
             agent_communication_service,
             db,
-            "GOOD" + language[:4].upper(),
+            f"GOOD{language[:4].upper().ljust(4, 'X')}",
             language,
             staging_key,
             cert,
             agent_pub,
+            client_pub_bytes,
         )
 
     # A successful stage returns the raw routing packet, not an error string.
     assert isinstance(result, bytes)
     assert len(result) > 0
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
+def test__handle_agent_staging_rejects_invalid_dh_public_key(
+    agent_communication_service, session_local, language, caplog
+):
+    """A peer DH public key that fails validation is an error string, not a raise.
+
+    gen_key() raises a bare Exception out of gen_secret() for any key that is not
+    a quadratic residue. Unguarded, that escaped _handle_agent_staging entirely
+    and became a Werkzeug 500 on the listener.
+    """
+    staging_key = STAGING_KEY
+    agent_priv, agent_pub = _ed25519_keypair()
+    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+
+    with (
+        caplog.at_level(
+            logging.ERROR, logger="empire.server.core.agent_communication_service"
+        ),
+        session_local.begin() as db,
+    ):
+        result = _stage(
+            agent_communication_service,
+            db,
+            f"BADK{language[:4].upper().ljust(4, 'X')}",
+            language,
+            staging_key,
+            cert,
+            agent_pub,
+            DH_PUBLIC_KEY_REJECTED,
+        )
+
+    assert isinstance(result, str)
+    assert "DH public key" in result
+    assert "DH public key from BADK" in caplog.text
 
 
 def test_handle_agent_data():

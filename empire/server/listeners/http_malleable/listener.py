@@ -743,7 +743,7 @@ class Listener:
                 self.instance_log.error(msg)
                 log.error(msg)
                 raise ModuleExecutionException(msg)
-            return Path(binary_path).read_bytes()
+            return listener_util.read_stager_artifact(binary_path)
 
         log.error(
             "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
@@ -1458,6 +1458,13 @@ class ExtendedPacketHandler(PacketHandler):
                     response.headers.setdefault(name, value)
                 return response
 
+        # 404 rather than 200, matching the plain http listener and every other
+        # default-response return in this file: default.html *is* an IIS "404 -
+        # File or directory not found" body, so pairing it with a 200 is itself
+        # an anomaly, and a launcher one-liner that DownloadData()s a stager URI
+        # must see the failure rather than Assembly.Load() an HTML page.
+        listener_util.register_default_response_error_handler(app, self, 404)
+
         @app.route("/", methods=["GET", "POST"])
         @app.route("/<path:request_uri>", methods=["GET", "POST"])
         def handle_request(request_uri="", tempListenerOptions=None):
@@ -1891,7 +1898,7 @@ class ExtendedPacketHandler(PacketHandler):
                         )
 
                 else:
-                    # If no agentinfo then attempt to send ironpython agent
+                    # If no agentinfo then attempt to send ironpython agent.
                     with SessionLocal.begin() as db:
                         obfuscation_config = (
                             self.mainMenu.obfuscationv2.get_obfuscation_config(
@@ -1899,17 +1906,23 @@ class ExtendedPacketHandler(PacketHandler):
                             )
                         )
                         obfuscation = obfuscation_config.enabled
-                        launcher = self.mainMenu.stagergenv2.generate_launcher(
-                            listener_name=listenerName,
-                            language="python",
-                            encode=False,
-                            obfuscate=obfuscation,
-                        )
+
+                    # Outside the session on purpose: generate_launcher() opens
+                    # its own SessionLocal.begin(), so calling it from inside
+                    # this one holds two pooled connections per unauthenticated
+                    # request and 13 concurrent peers exhaust the whole
+                    # process's pool (pool_size 10 + max_overflow 15).
+                    launcher = self.mainMenu.stagergenv2.generate_launcher(
+                        listener_name=listenerName,
+                        language="python",
+                        encode=False,
+                        obfuscate=obfuscation,
+                    )
 
                     directory = self.mainMenu.stagergenv2.generate_python_exe(
                         launcher, dot_net_version="net40", obfuscate=obfuscation
                     )
-                    return Path(directory).read_bytes()
+                    return listener_util.read_stager_artifact(directory)
 
                 # log invalid request
                 message = (

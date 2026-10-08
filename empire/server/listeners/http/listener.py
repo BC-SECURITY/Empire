@@ -25,6 +25,8 @@ from empire.server.utils import cert_util, data_util, listener_util, log_util
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
+STAGER_LANGUAGES = frozenset({"powershell", "python", "csharp", "ironpython", "go"})
+
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
@@ -680,18 +682,17 @@ class Listener:
 
         def generate_stager_response(stager, hop=None):
             stager = stager.lower()
-            with SessionLocal.begin() as db:
-                if stager == "ironpython":
+            obfuscation = False
+            obfuscation_command = ""
+            # The go builder carries no obfuscation config, so it must not
+            # check a connection out of the shared pool on this
+            # unauthenticated path just to do nothing with it.
+            if stager != "go":
+                with SessionLocal.begin() as db:
                     obfuscation_config = (
-                        self.mainMenu.obfuscationv2.get_obfuscation_config(db, "csharp")
-                    )
-                    obfuscation = obfuscation_config.enabled
-                    obfuscation_command = obfuscation_config.command
-                elif stager == "go":
-                    pass
-                else:
-                    obfuscation_config = (
-                        self.mainMenu.obfuscationv2.get_obfuscation_config(db, stager)
+                        self.mainMenu.obfuscationv2.get_obfuscation_config(
+                            db, "csharp" if stager == "ironpython" else stager
+                        )
                     )
                     obfuscation = obfuscation_config.enabled
                     obfuscation_command = obfuscation_config.command
@@ -742,7 +743,7 @@ class Listener:
                 directory = self.mainMenu.stagergenv2.generate_python_exe(
                     launcher, dot_net_version="net40", obfuscate=obfuscation
                 )
-                return Path(directory).read_bytes()
+                return listener_util.read_stager_artifact(directory)
 
             if stager == "csharp":
                 path = self.mainMenu.stagergenv2.generate_launcher(
@@ -754,12 +755,12 @@ class Listener:
                     proxy=proxy,
                     proxy_creds=proxyCreds,
                 )
-                return Path(path).read_bytes()
+                return listener_util.read_stager_artifact(path)
             if stager == "go":
                 directory = self.mainMenu.stagergenv2.generate_go_stageless(
                     self.options, listenerName
                 )
-                return Path(directory).read_bytes()
+                return listener_util.read_stager_artifact(directory)
 
             return make_response(self.default_response(), 404)
 
@@ -807,6 +808,10 @@ class Listener:
             """
             return render_template("method_not_allowed.html"), 405
 
+        # Anything that escapes a view serves the IIS 7.5 404 page instead of
+        # Flask's stock 500, which is this listener's loudest tell.
+        listener_util.register_default_response_error_handler(app, self, 404)
+
         @app.route("/")
         @app.route("/iisstart.htm")
         def serve_index():
@@ -831,6 +836,9 @@ class Listener:
                 static_dir = self.mainMenu.install_path / "data/misc"
                 return send_from_directory(static_dir, "welcome.png")
 
+            clientIP = request.remote_addr
+            listenerName = self.options["Name"]["Value"]
+
             stager = request.args.get("stager")
             if stager:
                 try:
@@ -839,12 +847,25 @@ class Listener:
                     stager_id = None
                 if stager_id is not None:
                     stager = packets.LANGUAGE_IDS.get(stager_id, stager)
+                stager = stager.lower()
                 hop = request.args.get("hop")
+
+                # Both values are still unvalidated here and reach the log
+                # ahead of the allowlist, so they are escaped and capped:
+                # query strings arrive percent-decoded, and the instance log
+                # has no rotation.
+                message = (
+                    f"{listenerName}: "
+                    f"{listener_util.sanitize_log_value(stager)} stager request "
+                    f"(hop: {listener_util.sanitize_log_value(hop)}) from {clientIP}"
+                )
+                self.instance_log.info(message)
+
+                if stager not in STAGER_LANGUAGES:
+                    return make_response(self.default_response(), 404)
+
                 return generate_stager_response(stager, hop)
 
-            clientIP = request.remote_addr
-
-            listenerName = self.options["Name"]["Value"]
             message = f"{listenerName}: GET request for {request.host}/{request_uri} from {clientIP}"
             self.instance_log.info(message)
 
@@ -856,7 +877,6 @@ class Listener:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a parameter, another cookie value, etc.
                     if self.session_cookie in cookie:
-                        listenerName = self.options["Name"]["Value"]
                         message = f"{listenerName}: GET cookie value from {clientIP} : {cookie}"
                         self.instance_log.info(message)
                         cookieParts = cookie.split(";")
@@ -870,7 +890,6 @@ class Listener:
                     pass
 
             if not routingPacket:
-                listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: {request_uri} requested by {clientIP} with no routing packet."
                 self.instance_log.error(message)
                 return make_response(self.default_response(), 404)
@@ -974,7 +993,6 @@ class Listener:
                     return make_response(stage, 200)
 
                 if results.startswith(b"ERROR:"):
-                    listenerName = self.options["Name"]["Value"]
                     message = f"{listenerName}: Error from agents.handle_agent_data() for {request_uri} from {clientIP}: {results}"
                     self.instance_log.error(message)
 
@@ -987,7 +1005,6 @@ class Listener:
                     return make_response(self.default_response(), 200)
 
                 # actual taskings
-                listenerName = self.options["Name"]["Value"]
                 message = f"{listenerName}: Agent from {clientIP} retrieved taskings"
                 self.instance_log.info(message)
                 return make_response(results, 200)

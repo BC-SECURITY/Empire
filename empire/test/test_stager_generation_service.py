@@ -1291,3 +1291,100 @@ def test_launcher_bat_go_embeds_ps_bypass(main):
     decoded = _decode_ps_enc(bat)
     assert "Expect100Continue=0" in decoded
     assert "DownloadFile(" in decoded
+
+
+class TestShellcodeArtifactCleanup:
+    """The two donut sinks compile an EXE, keep only the shellcode, and used to
+    leave the EXE behind.
+
+    Both are reachable from the STAGE0 ``additional == "shellcode"`` branch,
+    which needs only the staging key, so an unreclaimed multi-megabyte artifact
+    per request is the durable half of the same DoS the listeners' cleanup
+    closes. The compile and donut are both stubbed: this pins the cleanup, not
+    EmpireCompiler or donut, so it runs on ARM and on a box with neither.
+    """
+
+    @pytest.fixture
+    def artifact(self, tmp_path):
+        exe = tmp_path / "stager_abc123.exe"
+        exe.write_bytes(b"MZ" + b"\x00" * 64)
+        return exe
+
+    @pytest.mark.parametrize(
+        ("donut_result", "case"),
+        [(b"\x90\x90shellcode", "success"), (None, "donut-failed")],
+        ids=["success", "donut-failed"],
+    )
+    def test_python_shellcode_removes_the_compiled_exe(
+        self, stager_generation_service, artifact, monkeypatch, donut_result, case
+    ):
+        """Both arms: the ``donut_result is None`` branch returns early, so a
+        cleanup placed after it would leak on exactly the failure an attacker
+        can provoke repeatedly."""
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        monkeypatch.setattr(
+            stager_generation_service, "generate_python_exe", lambda *a, **kw: artifact
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: donut_result,
+        )
+
+        stager_generation_service.generate_python_shellcode("posh", "x64", "net40")
+
+        assert not artifact.exists()
+
+    def test_csharp_shellcode_removes_the_compiled_exe(
+        self, stager_generation_service, artifact, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        active = MagicMock()
+        active.generate_launcher.return_value = str(artifact)
+        monkeypatch.setattr(
+            stager_generation_service.listener_service,
+            "get_active_listener",
+            lambda _id: active,
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: b"\x90\x90shellcode",
+        )
+
+        _shellcode, err = stager_generation_service.generate_csharp_shellcode(
+            listener_name="new-listener-1", arch="x64"
+        )
+
+        assert err is None, err
+        assert not artifact.exists()
+
+    def test_an_unremovable_artifact_does_not_lose_the_shellcode(
+        self, stager_generation_service, artifact, monkeypatch
+    ):
+        """Cleanup is best-effort: a compile that just succeeded must not be
+        thrown away because the temp file could not be unlinked."""
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        monkeypatch.setattr(
+            stager_generation_service, "generate_python_exe", lambda *a, **kw: artifact
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: b"\x90\x90shellcode",
+        )
+
+        def _refuse(self, **kwargs):
+            raise PermissionError("read-only tempdir")
+
+        monkeypatch.setattr("pathlib.Path.unlink", _refuse)
+
+        shellcode, err = stager_generation_service.generate_python_shellcode(
+            "posh", "x64", "net40"
+        )
+
+        assert err is None
+        assert shellcode == b"\x90\x90shellcode"

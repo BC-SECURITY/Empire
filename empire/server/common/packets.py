@@ -360,7 +360,13 @@ def parse_routing_packet(stagingKey, data):
             )
             return None
 
-        sessionID = routingPacket[0:8].decode("UTF-8")
+        try:
+            sessionID = routingPacket[0:8].decode("UTF-8")
+        except UnicodeDecodeError:
+            log.warning(
+                "parse_agent_data(): session ID is not valid UTF-8, discarding packet"
+            )
+            return None
 
         # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
         (language, meta, additional, length) = struct.unpack("=BBHL", routingPacket[8:])

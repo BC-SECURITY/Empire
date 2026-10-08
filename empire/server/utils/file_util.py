@@ -125,6 +125,26 @@ def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
     return resolved
 
 
+def remove_stager_artifact(path) -> None:
+    """Drop a temp file a stager compiler left behind, best-effort on purpose.
+
+    Every compiled-stager path writes a multi-megabyte artifact to a temp
+    directory and only some of them read it back, so removal has to be
+    separable from the read. It never raises: the compile has already
+    succeeded by the time this runs, and throwing that away because the file
+    could not be unlinked -- AV quarantine and a read-only tempdir both
+    produce exactly that -- is worse than leaving the file.
+    """
+    try:
+        Path(path).unlink()
+    except OSError:
+        log.warning(
+            "Could not remove compiled stager %s; it will persist on disk",
+            path,
+            exc_info=True,
+        )
+
+
 def safe_filename(filename: str | None) -> str | None:
     """Return ``filename`` when it is already a safe basename, else None.
 

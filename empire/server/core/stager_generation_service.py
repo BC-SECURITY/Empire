@@ -25,6 +25,7 @@ from empire.server.core.exceptions import (
 )
 from empire.server.utils import data_util
 from empire.server.utils.donut_util import donut_create
+from empire.server.utils.file_util import remove_stager_artifact
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -636,7 +637,15 @@ class StagerGenerationService:
             return None, err
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
-        shellcode = donut_create(file=str(directory), arch=arch_type)
+        # donut reads the EXE and we keep only the shellcode, so the compiled
+        # file is pure temp. In a finally because the None branch below returns
+        # early: this path is reachable unauthenticated through the STAGE0
+        # shellcode branch, and a few megabytes per request never reclaimed is
+        # the durable half of the same DoS the listeners' cleanup closes.
+        try:
+            shellcode = donut_create(file=str(directory), arch=arch_type)
+        finally:
+            remove_stager_artifact(directory)
         if shellcode is None:
             return (
                 None,
@@ -681,8 +690,12 @@ class StagerGenerationService:
         if not exe_path:
             return None, "Failed to generate C# EXE for shellcode"
 
-        # Create shellcode from the EXE
-        shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        # Create shellcode from the EXE, then drop it -- see the note in
+        # generate_python_shellcode; same sink, same unauthenticated reach.
+        try:
+            shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        finally:
+            remove_stager_artifact(exe_path)
         if shellcode is None:
             return (
                 None,
