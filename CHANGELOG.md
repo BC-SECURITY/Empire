@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -   **BREAKING:** The `linux/pyinstaller` stager's `BinaryFile` option is now a bare file name defaulting to `empire` rather than `/tmp/empire` — any directory component is ignored and the built binary is no longer left on the server at that path, though it is still delivered under `OutFile` as before.
 -   **BREAKING:** The `http_hop` listener's `OutFolder` is now relative to `downloads/http_hop` and defaults to `redirectors`; hop listeners stored with an absolute path outside it no longer start.
+-   **BREAKING:** OpenAPI operation ids are now `{tag}_{route name}` (e.g. `agents_read_agent`) instead of FastAPI's path-and-method default, which also renames the three generated `Body_*` request schemas — a generated client needs no post-processing of the spec, but every method name it produces changes.
+-   **BREAKING:** The agent-task and plugin-task routes are tagged with only their primary resource, dropping the `tasks` tag group.
+-   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
 
 ### Fixed
 

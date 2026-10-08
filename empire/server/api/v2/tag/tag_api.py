@@ -124,7 +124,13 @@ def delete_tag(tag_id: int, db: CurrentSession, tag_service: TagServiceDep):
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
-def add_endpoints_to_taggable(router, path, get_taggable):
+# app.custom_generate_unique_id names a route after its tag and its route name,
+# leaving these two as `{tag}_add_tag` / `{tag}_delete_tag`. That only reads
+# correctly when the taggable is the tag's namesake; anywhere else, and
+# certainly where two taggables share a tag and would collide outright, the
+# caller names the taggable and both the operation id and the rendered summary
+# pick it up.
+def add_endpoints_to_taggable(router, path, get_taggable, taggable_name=None):
     def add_tag(
         uid: int | str,
         tag_req: TagAttachRequest,
@@ -147,13 +153,15 @@ def add_endpoints_to_taggable(router, path, get_taggable):
         tag_service.detach_tag(db, db_taggable, tag_id)
         return Response(status_code=HTTP_204_NO_CONTENT)
 
+    noun = f"{taggable_name}_tag" if taggable_name else "tag"
+
     # POST attaches an existing tag by id (200, or 404 if unknown). Editing a tag
     # is global via PUT /api/v2/tags/{id}; there is no per-entity edit route.
-    router.add_api_route(path, endpoint=add_tag, methods=["POST"])
+    router.add_api_route(path, endpoint=add_tag, methods=["POST"], name=f"add_{noun}")
     router.add_api_route(
         path + "/{tag_id}",
         endpoint=detach_tag_route,
         methods=["DELETE"],
         status_code=HTTP_204_NO_CONTENT,
-        name="delete_tag",
+        name=f"delete_{noun}",
     )
