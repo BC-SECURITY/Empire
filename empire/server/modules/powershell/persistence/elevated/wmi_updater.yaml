@@ -69,7 +69,8 @@ options:
     value: AutoUpdater
   - name: ExtFile
     description: Path to external file containing the payload (leave blank to use
-      WebFile).
+      WebFile). Must be a path inside the server's downloads directory - upload it
+      via the Downloads API and use the returned location.
     required: false
     value: ''
   - name: Cleanup

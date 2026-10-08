@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from empire.server.core.config.config_manager import empire_config
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
@@ -56,6 +57,32 @@ def agent_mock():
     agent_mock.session_id = "ABC123"
     agent_mock.process_id = None
     return agent_mock
+
+
+@pytest.fixture
+def downloads_root(monkeypatch, tmp_path):
+    """Point the downloads directory at a scratch root for path-confinement tests."""
+    root = tmp_path / "downloads"
+    root.mkdir()
+    monkeypatch.setattr(empire_config.directories, "downloads", root)
+    return root
+
+
+# Every module whose ExtFile option feeds a read_text() sink, with the extra
+# required options each one needs. Shared by the ExtFile encoding test and the
+# confinement tests so the two lists cannot drift apart.
+EXTFILE_MODULES = [
+    ("powershell_persistence_userland_registry", {}),
+    ("powershell_persistence_userland_schtasks", {}),
+    (
+        "powershell_persistence_userland_backdoor_lnk",
+        {"Listener": "http", "LNKPath": "C:\\Users\\test\\test.lnk"},
+    ),
+    ("powershell_persistence_elevated_registry", {}),
+    ("powershell_persistence_elevated_schtasks", {}),
+    ("powershell_persistence_elevated_wmi", {"Listener": "http"}),
+    ("powershell_persistence_elevated_wmi_updater", {}),
+]
 
 
 def test_execute_module_with_script_in_yaml_modified_python_agent(
@@ -176,23 +203,9 @@ def test_execute_module_custom_generate_native_bool_gates_branch(
     assert "Get-ComputerDetails -Limit 100" not in res.data
 
 
-@pytest.mark.parametrize(
-    ("module_id", "extra_params"),
-    [
-        ("powershell_persistence_userland_registry", {}),
-        ("powershell_persistence_userland_schtasks", {}),
-        (
-            "powershell_persistence_userland_backdoor_lnk",
-            {"Listener": "http", "LNKPath": "C:\\Users\\test\\test.lnk"},
-        ),
-        ("powershell_persistence_elevated_registry", {}),
-        ("powershell_persistence_elevated_schtasks", {}),
-        ("powershell_persistence_elevated_wmi", {"Listener": "http"}),
-        ("powershell_persistence_elevated_wmi_updater", {}),
-    ],
-)
+@pytest.mark.parametrize(("module_id", "extra_params"), EXTFILE_MODULES)
 def test_execute_persistence_module_extfile_mode(
-    module_service, agent_mock, tmp_path, module_id, extra_params
+    module_service, agent_mock, downloads_root, module_id, extra_params
 ):
     """ExtFile mode must base64-encode the external payload into the script.
 
@@ -204,9 +217,13 @@ def test_execute_persistence_module_extfile_mode(
     the negative assertion below catches that corruption, while ``err is None`` and
     the positive assertion catch the crash. ``main_menu`` is a truthy ``Mock``, so
     the listener checks pass and the test isolates the ExtFile encoding path.
+
+    The payload lives under ``downloads_root`` because ExtFile is confined to the
+    downloads directory; this doubles as the permissive-side pin for all seven
+    guards -- a guard that rejects too much takes every case here red.
     """
     agent_mock.language = "powershell"
-    payload = tmp_path / "payload.ps1"
+    payload = downloads_root / "payload.ps1"
     payload_content = "Write-Host 'persist-check'"
     payload.write_text(payload_content)
     expected_b64 = base64.b64encode(payload_content.encode("UTF-16LE")).decode("UTF-8")
@@ -225,6 +242,381 @@ def test_execute_persistence_module_extfile_mode(
     assert expected_b64 in res.data
     # ...and not as a Python bytes repr (the backdoor_lnk silent-corruption form).
     assert f"b'{expected_b64}'" not in res.data
+
+
+@pytest.mark.parametrize(("module_id", "extra_params"), EXTFILE_MODULES)
+def test_execute_persistence_module_extfile_outside_downloads_is_blocked(
+    module_service, agent_mock, tmp_path, downloads_root, module_id, extra_params
+):
+    """ExtFile outside the downloads root is rejected, and the rejection is
+    identical whether or not the target exists.
+
+    The existing-target case is the disclosure proof: unfixed code reads the
+    decoy and returns its base64 in the script, so it never raises. The decoy
+    must really exist -- against unfixed code a missing target raises
+    ``ModuleValidationException`` too, which would make the assertion vacuous.
+
+    The missing-target case pins the file-existence oracle shut: unfixed code
+    answers ``"File does not exist: <path>"`` for a missing file and hands back a
+    script for an existing one, so the two are distinguishable. After the fix the
+    messages must be byte-identical.
+    """
+    agent_mock.language = "powershell"
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    decoy = outside / "decoy.txt"
+    decoy.write_text("H5-LEAK-MARKER")
+    params = {"Agent": agent_mock.session_id, "ExtFile": str(decoy), **extra_params}
+
+    with pytest.raises(ModuleValidationException) as exists_exc:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    decoy.unlink()
+    with pytest.raises(ModuleValidationException) as missing_exc:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    assert str(downloads_root) in str(exists_exc.value)
+    assert "H5-LEAK-MARKER" not in str(exists_exc.value)
+    assert str(missing_exc.value) == str(exists_exc.value)
+
+
+@pytest.mark.parametrize(("module_id", "extra_params"), EXTFILE_MODULES)
+def test_execute_persistence_module_extfile_traversal_back_inside_is_allowed(
+    module_service, agent_mock, downloads_root, module_id, extra_params
+):
+    """A path containing ``..`` that resolves back inside the root is allowed.
+
+    Permissive-side pin, and the proof that the guard resolves rather than
+    string-matching on ``".."``.
+    """
+    agent_mock.language = "powershell"
+    payload_dir = downloads_root / "uploads" / "op"
+    payload_dir.mkdir(parents=True)
+    payload_content = "Write-Host 'traversal-check'"
+    (payload_dir / "payload.ps1").write_text(payload_content)
+    ext_file = downloads_root / "uploads" / ".." / "uploads" / "op" / "payload.ps1"
+    expected_b64 = base64.b64encode(payload_content.encode("UTF-16LE")).decode("UTF-8")
+
+    params = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file), **extra_params}
+    res, err = module_service.execute_module(
+        None, agent_mock, module_id, params, True, True, None
+    )
+
+    assert err is None
+    assert expected_b64 in res.data
+
+
+@pytest.mark.parametrize(("module_id", "extra_params"), EXTFILE_MODULES)
+def test_execute_persistence_module_extfile_nul_byte_is_a_validation_error(
+    module_service, agent_mock, downloads_root, module_id, extra_params
+):
+    """An embedded NUL in ExtFile stays a clean 400, not a 500.
+
+    Green against unfixed code on purpose: ``Path("a\\x00b").exists()`` is False,
+    so unfixed code raises ``ModuleValidationException``. What this pins is the
+    *wrong* fix -- ``Path.resolve()`` raises ``ValueError`` on an embedded null,
+    which ``_generate_script`` turns into ``ModuleExecutionException`` (a 500). A
+    confinement check without an explicit NUL clause takes this red.
+    """
+    agent_mock.language = "powershell"
+    params = {"Agent": agent_mock.session_id, "ExtFile": "a\x00b", **extra_params}
+
+    with pytest.raises(ModuleValidationException):
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+
+def test_execute_module_reflectivepeinjection_file_outside_downloads_is_blocked(
+    module_service, agent_mock, tmp_path, downloads_root
+):
+    """invoke_reflectivepeinjection's ``File`` option is confined to downloads.
+
+    The decoy is binary: this sink uses ``read_bytes()``, so unlike the ExtFile
+    sites it is not bounded by ``read_text()``'s text constraint. Unfixed code
+    base64s the bytes into ``script_end`` and returns a script, so it never
+    raises.
+
+    The rejection also has to be raised *outside* the module's own ``try``: the
+    bare ``except Exception`` in there only prints, so a guard placed inside it
+    would be swallowed and the operator would get a 201 with no ``-PEBytes``.
+    """
+    agent_mock.language = "powershell"
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    decoy = outside / "payload.dll"
+    decoy.write_bytes(b"\x00\x01\x02R8-BINARY-MARKER\xff\xfe\x00")
+
+    params = {"Agent": agent_mock.session_id, "File": str(decoy)}
+    with pytest.raises(ModuleValidationException) as exc_info:
+        module_service.execute_module(
+            None,
+            agent_mock,
+            "powershell_code_execution_invoke_reflectivepeinjection",
+            params,
+            True,
+            True,
+            None,
+        )
+
+    assert str(downloads_root) in str(exc_info.value)
+
+
+# Escape shapes that discriminate a resolving confinement check from a weakened
+# one. The blocked-case decoys above sit in a plain sibling directory, which
+# even a naive ``str.startswith`` rejects -- so on their own they leave the
+# resolution behaviour untested. Each shape here defeats a different plausible
+# weakening: ``dot_segment`` a lexical prefix comparison, ``sibling_prefix`` a
+# string-prefix comparison that ignores path components, and ``symlink`` any
+# check that normalises without resolving.
+ESCAPE_SHAPES = ["dot_segment", "sibling_prefix", "symlink"]
+
+
+def _escape_path(shape, downloads_root, tmp_path, write_decoy):
+    """Return (path_to_pass, decoy) for ``shape``; ``write_decoy`` fills the file."""
+    outside = tmp_path / "outside"
+    outside.mkdir(exist_ok=True)
+
+    if shape == "dot_segment":
+        decoy = outside / "decoy.bin"
+        write_decoy(decoy)
+        # Lexically prefixed by the root, resolves outside it.
+        return downloads_root / ".." / "outside" / "decoy.bin", decoy
+
+    if shape == "sibling_prefix":
+        sibling = tmp_path / f"{downloads_root.name}_evil"
+        sibling.mkdir(exist_ok=True)
+        decoy = sibling / "decoy.bin"
+        write_decoy(decoy)
+        # str(decoy).startswith(str(downloads_root)) is True; it is not inside.
+        return decoy, decoy
+
+    decoy = outside / "decoy.bin"
+    write_decoy(decoy)
+    link = downloads_root / "escape_link"
+    if not link.is_symlink():
+        link.symlink_to(outside, target_is_directory=True)
+    # Every component lexically inside the root; the symlink leaves it.
+    return link / "decoy.bin", decoy
+
+
+@pytest.mark.parametrize("shape", ESCAPE_SHAPES)
+@pytest.mark.parametrize(("module_id", "extra_params"), EXTFILE_MODULES)
+def test_execute_persistence_module_extfile_escape_shapes_are_blocked(
+    module_service,
+    agent_mock,
+    tmp_path,
+    downloads_root,
+    module_id,
+    extra_params,
+    shape,
+):
+    """Each escape shape is rejected as a confinement failure at every site.
+
+    The decoy exists in all three shapes, so a guard that compares strings
+    instead of resolving returns a script with the marker in it rather than
+    raising -- which is what makes these red where the sibling-decoy case is
+    green. Asserting the root appears in the message also separates a
+    confinement rejection from the unrelated "File does not exist" one.
+    """
+    agent_mock.language = "powershell"
+    ext_file, _ = _escape_path(
+        shape, downloads_root, tmp_path, lambda d: d.write_text("H5-LEAK-MARKER")
+    )
+    params = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file), **extra_params}
+
+    with pytest.raises(ModuleValidationException) as exc_info:
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+    assert str(downloads_root) in str(exc_info.value)
+    assert "H5-LEAK-MARKER" not in str(exc_info.value)
+
+
+@pytest.mark.parametrize("shape", ESCAPE_SHAPES)
+def test_execute_module_reflectivepeinjection_escape_shapes_are_blocked(
+    module_service, agent_mock, tmp_path, downloads_root, shape
+):
+    """Same shapes against the ``read_bytes()`` sink, which discloses binary."""
+    agent_mock.language = "powershell"
+    marker = b"\x00\x01\x02R8-BINARY-MARKER\xff\xfe\x00"
+    file_path, _ = _escape_path(
+        shape, downloads_root, tmp_path, lambda d: d.write_bytes(marker)
+    )
+
+    params = {"Agent": agent_mock.session_id, "File": str(file_path)}
+    with pytest.raises(ModuleValidationException) as exc_info:
+        module_service.execute_module(
+            None,
+            agent_mock,
+            "powershell_code_execution_invoke_reflectivepeinjection",
+            params,
+            True,
+            True,
+            None,
+        )
+
+    assert str(downloads_root) in str(exc_info.value)
+
+
+def test_execute_module_reflectivepeinjection_file_inside_downloads_is_allowed(
+    module_service, agent_mock, downloads_root
+):
+    """Permissive-side pin for the ``File`` guard."""
+    agent_mock.language = "powershell"
+    payload = downloads_root / "payload.dll"
+    payload_bytes = b"\x00\x01\x02R8-BINARY-MARKER\xff\xfe\x00"
+    payload.write_bytes(payload_bytes)
+
+    params = {"Agent": agent_mock.session_id, "File": str(payload)}
+    res, err = module_service.execute_module(
+        None,
+        agent_mock,
+        "powershell_code_execution_invoke_reflectivepeinjection",
+        params,
+        True,
+        True,
+        None,
+    )
+
+    assert err is None
+    assert base64.b64encode(payload_bytes).decode("UTF-8") in res.data
+
+
+@pytest.mark.parametrize(
+    ("module_id", "language", "extra_params"),
+    [
+        (
+            "powershell_code_execution_invoke_reflectivepeinjection",
+            "powershell",
+            {"File": "a\x00b"},
+        ),
+        (
+            "python_management_osx_shellcodeinject64",
+            "python",
+            {"PID": "1234", "Shellcode": "a\x00b"},
+        ),
+    ],
+)
+def test_execute_module_nul_byte_in_path_option_is_a_validation_error(
+    module_service, agent_mock, downloads_root, module_id, language, extra_params
+):
+    """An embedded NUL in a confined path option stays a clean 400, not a 500.
+
+    Same trap as the ExtFile case: ``Path.resolve()`` raises ``ValueError`` on an
+    embedded null, which ``_generate_script`` turns into
+    ``ModuleExecutionException``. A confinement check without the explicit NUL
+    clause takes this red.
+    """
+    agent_mock.language = language
+    params = {"Agent": agent_mock.session_id, **extra_params}
+
+    with pytest.raises(ModuleValidationException):
+        module_service.execute_module(
+            None, agent_mock, module_id, params, True, True, None
+        )
+
+
+def test_execute_module_shellcodeinject64_outside_downloads_is_blocked(
+    module_service, agent_mock, tmp_path, downloads_root
+):
+    """shellcodeinject64's ``Shellcode`` option is confined to downloads.
+
+    Unfixed code reads the file and then dies at the pre-existing ``TypeError``
+    in ``script.replace("[SC]", shellcode)``, which surfaces as
+    ``ModuleExecutionException`` -- a different exception class, so this goes red.
+    """
+    agent_mock.language = "python"
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    decoy = outside / "sc.bin"
+    decoy.write_bytes(b"\x90\x90R9-MARKER")
+
+    params = {"Agent": agent_mock.session_id, "PID": "1234", "Shellcode": str(decoy)}
+    with pytest.raises(ModuleValidationException) as exc_info:
+        module_service.execute_module(
+            None,
+            agent_mock,
+            "python_management_osx_shellcodeinject64",
+            params,
+            True,
+            True,
+            None,
+        )
+
+    assert str(downloads_root) in str(exc_info.value)
+
+
+@pytest.mark.parametrize("shape", ESCAPE_SHAPES)
+def test_execute_module_shellcodeinject64_escape_shapes_are_blocked(
+    module_service, agent_mock, tmp_path, downloads_root, shape
+):
+    """Same shapes against the ``Shellcode`` guard.
+
+    The plain-sibling decoy above is rejected even by a ``str.startswith``
+    rewrite, so without these the third guard's resolution behaviour is the one
+    of the three left untested. ``ModuleValidationException`` is the
+    discriminator: a weakened guard lets the path through to the pre-existing
+    ``TypeError`` at ``script.replace("[SC]", shellcode)``, which surfaces as
+    ``ModuleExecutionException`` instead.
+    """
+    agent_mock.language = "python"
+    shellcode_path, _ = _escape_path(
+        shape, downloads_root, tmp_path, lambda d: d.write_bytes(b"\x90\x90R9-MARKER")
+    )
+
+    params = {
+        "Agent": agent_mock.session_id,
+        "PID": "1234",
+        "Shellcode": str(shellcode_path),
+    }
+    with pytest.raises(ModuleValidationException) as exc_info:
+        module_service.execute_module(
+            None,
+            agent_mock,
+            "python_management_osx_shellcodeinject64",
+            params,
+            True,
+            True,
+            None,
+        )
+
+    assert str(downloads_root) in str(exc_info.value)
+
+
+def test_execute_module_shellcodeinject64_inside_downloads_reaches_the_read(
+    module_service, agent_mock, downloads_root
+):
+    """Permissive-side pin for the ``Shellcode`` guard.
+
+    This pins a bug, not a feature. ``shellcodeinject64`` crashes unconditionally
+    at ``script.replace("[SC]", shellcode)`` -- ``shellcode`` is ``bytes`` out of
+    ``b64encode`` where ``str`` is required -- so an accepted path still fails,
+    with ``ModuleExecutionException`` rather than ``ModuleValidationException``.
+    That is what proves the guard let the path through. When the ``TypeError`` is
+    fixed, re-point this at a success assertion; do not delete it, or the guard
+    loses its only permissive-side test and can be inverted unnoticed.
+    """
+    agent_mock.language = "python"
+    payload = downloads_root / "sc.bin"
+    payload.write_bytes(b"\x90\x90R9-MARKER")
+
+    params = {"Agent": agent_mock.session_id, "PID": "1234", "Shellcode": str(payload)}
+    with pytest.raises(ModuleExecutionException):
+        module_service.execute_module(
+            None,
+            agent_mock,
+            "python_management_osx_shellcodeinject64",
+            params,
+            True,
+            True,
+            None,
+        )
 
 
 def test_execute_module_dcsync_hashdump_native_bool_toggles(module_service, agent_mock):
@@ -495,7 +887,7 @@ def test_execute_module_fodhelper_custom_command_without_listener(
 
 
 def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
-    module_service, agent_mock, tmp_path
+    module_service, agent_mock, downloads_root
 ):
     """schtasks selects the ONLOGON trigger only when the ``OnLogon`` bool is set.
 
@@ -507,7 +899,7 @@ def test_execute_module_schtasks_onlogon_native_bool_selects_trigger(
     """
     agent_mock.language = "powershell"
     module_id = "powershell_persistence_elevated_schtasks"
-    ext_file = tmp_path / "payload.ps1"
+    ext_file = downloads_root / "payload.ps1"
     ext_file.write_text("Write-Output hi")
     base = {"Agent": agent_mock.session_id, "ExtFile": str(ext_file)}
 

@@ -28,7 +28,9 @@ options:
     required: false
     value: ''
   - name: File
-    description: (Attacker) local path for the PE/DLL to load.
+    description: (Attacker) local path for the PE/DLL to load. Must be a path inside
+      the server's downloads directory - upload it via the Downloads API and use
+      the returned location.
     required: false
     value: ''
   - name: PEUrl

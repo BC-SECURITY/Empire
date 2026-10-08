@@ -1,9 +1,8 @@
-from pathlib import Path
-
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.option_util import confine_to_downloads
 
 
 class Module:
@@ -86,7 +85,7 @@ class Module:
         if ext_file != "":
             # read in an external file as the payload and build a
             #   base64 encoded version as encScript
-            ext_path = Path(ext_file)
+            ext_path = confine_to_downloads(ext_file, "ExtFile")
             if ext_path.exists():
                 fileData = ext_path.read_text()
 

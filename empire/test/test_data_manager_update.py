@@ -21,6 +21,24 @@ from empire.server.core.config import data_manager
 from empire.server.utils.git_util import GitOperationException
 
 
+@pytest.fixture(autouse=True)
+def _restore_empire_config():
+    """Undo `run_update`'s rebinding of the process-global `empire_config`.
+
+    `run_update` reloads config by rebinding
+    `config_manager.empire_config` to a fresh `EmpireConfig`
+    (data_manager.py:881). Modules that did `from ... import empire_config`
+    before that point keep the old object while anything imported afterwards
+    -- notably the Empire modules that `ModuleService` imports lazily -- gets
+    the new one, so a later test monkeypatching the config it holds a
+    reference to silently fails to affect the code under test.
+    """
+    config_manager = data_manager.config_manager
+    original = config_manager.empire_config
+    yield
+    config_manager.empire_config = original
+
+
 @pytest.fixture
 def fake_repo_root(tmp_path):
     """Lay out a minimal repo tree: `.git/` + `setup/checkout-latest-tag.sh`.

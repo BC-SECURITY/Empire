@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Confined the `http_hop` listener's `OutFolder` and the redirect listener's profile URIs to `downloads/http_hop`, closing an arbitrary file write available to any non-admin operator.
 -   Confined the `OutFile` option of the PowerBreach `eventlog`, `deaduser` and `resolver` modules to `downloads/generated-modules`, closing an arbitrary file write available to any non-admin operator.
 -   Rejected an `OutFolder` or `OutFile` that resolves onto the shared output directory itself, which one operator could turn into a regular file and wedge every other operator's writes.
+-   Confined the `ExtFile`, `File` and `Shellcode` module path options to the downloads directory, closing an arbitrary file read available to any enabled operator.
+-   Anchored the upload directory to the downloads root in `_secure_upload_location`, so a traversing `user.username` or `subdirectory` cannot place a file outside it.
 
 ### Changed
 
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** OpenAPI operation ids are now `{tag}_{route name}` (e.g. `agents_read_agent`) instead of FastAPI's path-and-method default, which also renames the three generated `Body_*` request schemas — a generated client needs no post-processing of the spec, but every method name it produces changes.
 -   **BREAKING:** The agent-task and plugin-task routes are tagged with only their primary resource, dropping the `tasks` tag group.
 -   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
+-   **BREAKING:** The `ExtFile`, `File` and `Shellcode` module options must now name a path inside the server's downloads directory; saved workflows pointing elsewhere are rejected until the file is uploaded through the API.
 
 ### Fixed
 

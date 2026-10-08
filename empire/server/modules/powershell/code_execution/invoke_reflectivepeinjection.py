@@ -1,12 +1,11 @@
 import base64
-from pathlib import Path
 
 from empire.server.common import helpers
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
 from empire.server.core.module_service import auto_finalize, auto_get_source
-from empire.server.utils.option_util import coerce_legacy_value
+from empire.server.utils.option_util import coerce_legacy_value, confine_to_downloads
 
 
 class Module:
@@ -31,8 +30,12 @@ class Module:
             if option.lower() != "agent":
                 if option.lower() == "file":
                     if values != "":
+                        # Confined outside the try below: its bare except only
+                        # prints, so a rejection raised in there is swallowed and
+                        # the operator gets a script with no -PEBytes.
+                        pe_path = confine_to_downloads(values, "File")
                         try:
-                            dllbytes = Path(values).read_bytes()
+                            dllbytes = pe_path.read_bytes()
 
                             base64bytes = base64.b64encode(dllbytes).decode("UTF-8")
 

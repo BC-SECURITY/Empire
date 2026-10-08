@@ -69,8 +69,19 @@ def is_path_within(path: Path, base_dir: Path) -> bool:
 
     Blocks directory traversal: a path containing ``..`` that escapes
     ``base_dir`` resolves outside it and returns False.
+
+    An unresolvable path is not within anything, so it returns False rather
+    than raising. ``Path.resolve()`` raises ``ValueError`` on an embedded null
+    byte (where ``exists()`` merely returns False), and callers reach this with
+    operator-supplied strings -- a module option, an upload ``subdirectory``, a
+    ``user.username``. Swallowing it here is what keeps every one of those a
+    clean rejection instead of an uncaught 500; do not push the null check back
+    out to the call sites.
     """
-    return path.resolve().is_relative_to(base_dir.resolve())
+    try:
+        return path.resolve().is_relative_to(base_dir.resolve())
+    except ValueError:
+        return False
 
 
 def resolve_under_root(root: Path, operator_path: str | Path) -> Path | None:
