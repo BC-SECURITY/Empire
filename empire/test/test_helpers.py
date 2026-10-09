@@ -490,3 +490,40 @@ class TestPowershellLauncher:
         assert result.startswith(launcher_prefix)
         encoded_cmd = result.split(" ")[-1]
         assert base64.b64decode(encoded_cmd).decode("UTF-16LE") == raw
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("10.0.0.5", "http://10.0.0.5"),
+        ("https://c2.example", "https://c2.example"),
+        ("HTTPS://C2.example", "https://C2.example"),
+        ("[::1]", "http://[::1]"),
+        ("münchen.de", "http://münchen.de"),
+    ],
+)
+def test_normalize_http_host_accepts(raw, expected):
+    assert helpers.normalize_http_host(raw) == expected
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "",
+        "10.0.0.5:8080",
+        "http://c2.example:",
+        "https://c2.example/stagers",
+        "10.0.0.5?x=1",
+        "10.0.0.5#f",
+        "u:p@10.0.0.5",
+        "ftp://10.0.0.5",
+        "http://",
+        ".",
+        "[::1",
+        "c2.exa\tmple",
+        "10.0.0\n.5",
+        "\x01http://c2.example",
+    ],
+)
+def test_normalize_http_host_rejects(raw):
+    assert helpers.normalize_http_host(raw) is None

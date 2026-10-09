@@ -41,11 +41,14 @@ options:
     required: true
     value: ''
   - name: Stager
-    description: Stager file that you have hosted.
+    description: Path of the hosted stager. It must be a PowerShell script (such
+      as multi/launcher output), since it is run with IEX; a .bat stager will not
+      work.
     required: true
     value: update.php
   - name: Host
-    description: Host or IP where stager is served.
+    description: Hostname, IP, or http(s)://host where the stager is served (http://
+      is assumed when no scheme is given). Do not include a port or path.
     required: true
     value: ''
   - name: Port

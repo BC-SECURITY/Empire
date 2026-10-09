@@ -45,6 +45,7 @@ import string
 import sys
 import threading
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import click
 
@@ -78,6 +79,47 @@ def validate_ip(IP):
         return False
     else:
         return True
+
+
+# A DNS/IDN name or IPv4 address, or the inside of a bracketed IPv6 literal.
+_HTTP_HOSTNAME_RE = re.compile(r"[\w.-]+|[0-9a-f:.]+")
+
+
+def normalize_http_host(raw: str) -> str | None:
+    """Return ``scheme://host`` for a bare host or an http(s) URL, else None.
+
+    Rejects userinfo, a port, a path, a query, or a fragment, and any
+    whitespace or control character. The returned base is rebuilt from the
+    parsed scheme and netloc, so the value that was validated is the value the
+    caller emits: urlsplit silently drops tab, newline, and leading control
+    characters, so validating the parsed host but emitting the raw string would
+    let those through. Non-ASCII letters are kept so an IDN host still works.
+    """
+    if "://" not in raw:
+        raw = "http://" + raw
+    # Every whitespace character except the ASCII space is non-printable, so
+    # this pair rejects the characters urlsplit would otherwise strip.
+    if " " in raw or not raw.isprintable():
+        return None
+    try:
+        parts = urlsplit(raw)
+    except ValueError:  # e.g. an unclosed IPv6 bracket
+        return None
+    hostname = parts.hostname or ""
+    # Comparing netloc to the bare hostname rejects userinfo, a port, and a
+    # trailing ':' in one check; urlsplit lowercases hostname, so lower netloc.
+    expected_netloc = f"[{hostname}]" if ":" in hostname else hostname
+    if (
+        parts.scheme not in ("http", "https")
+        or parts.netloc.lower() != expected_netloc
+        or parts.path
+        or parts.query
+        or parts.fragment
+        or _HTTP_HOSTNAME_RE.fullmatch(hostname) is None
+        or hostname.strip(".") == ""
+    ):
+        return None
+    return f"{parts.scheme}://{parts.netloc}"
 
 
 def validate_ntlm(data):
