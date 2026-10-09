@@ -65,7 +65,7 @@ class Stager:
                 ],
             },
             "Bypasses": {
-                "Description": "Bypasses as a space separated list to be prepended to the launcher",
+                "Description": "Bypasses as a space separated list to be prepended to the launcher. When stageless, they are prepended to the agent itself, so AMSI and logging bypasses only cover code the agent later runs.",
                 "Required": False,
                 "Value": "",
             },

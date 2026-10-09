@@ -11,3 +11,9 @@ The `multi_generate_agent` stager is designed specifically for **Python, IronPyt
 ## How It Works
 
 The `multi_generate_agent` stager generates a self-contained Empire agent file that incorporates all required stages. Upon execution, the agent **performs a full key exchange** with the Empire server but does **not execute the passed code immediately**, allowing operators to trigger execution when needed. This design makes it ideal for debugging or scenarios where an agent needs to be prestaged without requiring additional network requests to retrieve code.
+
+## Bypasses
+
+Bypasses listed in the `Bypasses` option are prepended to the generated agent when their language matches it: PowerShell bypasses for a `powershell` agent and Python bypasses for a `python` agent. IronPython agents drop Python bypasses with a warning, the same as staged generation. A PowerShell agent with bypasses starts with `$ErrorActionPreference = "SilentlyContinue";`, and a Python agent with bypasses starts with `import sys`, matching the staged launchers.
+
+Because the bypasses and the agent are one script, PowerShell submits the whole agent to AMSI and script block logging before any bypass runs. AMSI and logging bypasses therefore only cover code the agent runs later, such as module tasking, not the agent body itself.

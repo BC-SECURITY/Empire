@@ -1126,13 +1126,27 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             listener_name
         )
 
-        if language.lower() in ["python", "ironpython"]:
-            return self.generate_python_stageless(active_listener, language)
+        if language in ["python", "ironpython"]:
+            full_agent = self.generate_python_stageless(active_listener, language)
+            # The staged python launcher also leads with `import sys`; bypasses
+            # may call sys.exit().
+            prefix = "import sys\n"
+        elif language == "powershell":
+            full_agent = self.generate_powershell_stageless(active_listener, language)
+            # As in the staged powershell launcher, this applies to everything
+            # after it, including the agent, not just the bypasses.
+            prefix = '$ErrorActionPreference = "SilentlyContinue";\n'
+        else:
+            return None
 
-        if language.lower() == "powershell":
-            return self.generate_powershell_stageless(active_listener, language)
-
-        return None
+        bypasses = options.get("Bypasses", {}).get("Value", "")
+        bypass_codes = self._load_bypass_codes(bypasses, language)
+        if not bypass_codes:
+            return full_agent
+        # Bypasses share the agent's script block, so AMSI/logging bypasses only
+        # cover code the agent later runs. Newline-join: API-created bypasses
+        # need not end in a newline.
+        return prefix + "\n".join(bypass_codes) + "\n" + full_agent
 
     def _build_template_vars(self, active_listener):
         session_id = "00000000"

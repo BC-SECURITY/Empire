@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Fixed `multi/generate_agent` ignoring the `Bypasses` option when generating a stageless agent; bypasses matching the agent's language are now prepended to it, and IronPython drops Python bypasses as staged generation does ([BC-SECURITY/Empire#778](https://github.com/BC-SECURITY/Empire/issues/778)).
 -   Fixed `management/osx/shellcodeinject64` crashing on any real shellcode file (bytes passed to `str.replace`) and on an empty `Shellcode` path (directory read); both now generate or raise a validation error.
 -   Fixed `collection/osx/native_screenshot_mss` embedding a `bytes` repr (`b'...'`) in its emitted script, which the agent-side base64 decode turned into garbage.
 -   Fixed the Python and IronPython agents building but never sending the error packet for a failed foreground Python task, which left the task pending forever with no output.
