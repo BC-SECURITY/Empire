@@ -14,6 +14,7 @@ from empire.server.common import packets
 from empire.server.common.empire import MainMenu
 from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
@@ -69,6 +70,22 @@ def compiled_dotnet_exe(stager_generation_service):
         return cache[key]
 
     return _get
+
+
+def test_write_unique_launcher_reports_unavailable_compiler_clearly(
+    tmp_path, monkeypatch
+):
+    """With the compiler missing (cold cache + offline at boot), a C# stager
+    request must fail with the "not available" message that stager_service
+    turns into a 400 -- not a TypeError from `None / "Data/..."`."""
+    monkeypatch.setattr(
+        "empire.server.core.dotnet.sync_empire_compiler", lambda *_a, **_k: None
+    )
+    service = StagerGenerationService.__new__(StagerGenerationService)
+    service.dotnet_compiler = DotnetCompiler(install_path=tmp_path)
+
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        service._write_unique_launcher("code")
 
 
 def test_compiler(main, empire_config):

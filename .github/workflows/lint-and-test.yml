@@ -82,8 +82,9 @@ jobs:
           restore-keys: |
             empire-test-deps-v1-${{ runner.os }}-
       - name: Run test suite - mysql
-        # Authenticate the Empire Compiler download against the GitHub API so it
-        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        # Authenticate the Empire Compiler release lookup so it isn't throttled
+        # by GitHub's per-IP API limit on shared runners (the asset download is
+        # CDN traffic that auth doesn't affect; retries cover it).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # On release branches / the run-all-versions label, run the full suite
@@ -165,8 +166,9 @@ jobs:
           restore-keys: |
             empire-perf-deps-${{ runner.os }}-
       - name: Run performance test suite - mysql
-        # Authenticate the Empire Compiler download against the GitHub API so it
-        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        # Authenticate the Empire Compiler release lookup so it isn't throttled
+        # by GitHub's per-IP API limit on shared runners (the asset download is
+        # CDN traffic that auth doesn't affect; retries cover it).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

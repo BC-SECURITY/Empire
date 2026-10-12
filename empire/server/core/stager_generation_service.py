@@ -106,7 +106,7 @@ class StagerGenerationService:
         as ``launcher.txt`` ensures the compiled manifest resource name matches
         the hardcoded ``GetManifestResourceStream("launcher.txt")`` in the C#.
         """
-        common_dir = self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/common"
+        common_dir = self.dotnet_compiler.embedded_resources_dir()
         common_dir.mkdir(parents=True, exist_ok=True)
         unique_dir = Path(tempfile.mkdtemp(dir=common_dir))
         try:

@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+-   Empire Compiler downloads now retry transient GitHub failures with backoff and are installed atomically; a failed or corrupt download no longer crashes server startup.
 -   Fixed `multi/generate_agent` ignoring the `Bypasses` option when generating a stageless agent; bypasses matching the agent's language are now prepended to it, and IronPython drops Python bypasses as staged generation does ([BC-SECURITY/Empire#778](https://github.com/BC-SECURITY/Empire/issues/778)).
 -   Fixed `powershell/privesc/bypassuac_tokenmanipulation` always emitting an empty `-enc` argument, so the elevated process never fetched the stager; it now encodes the cradle as UTF-16LE, assumes `http://` for a bare `Host`, and rejects at generation time a `Host` carrying userinfo, a port, a path, control characters, or a non-http(s) scheme, an invalid `Port`, and a `Stager` that is empty or could break out of the single-quoted cradle ([BC-SECURITY/Empire#547](https://github.com/BC-SECURITY/Empire/issues/547)).
 -   Fixed `management/osx/shellcodeinject64` crashing on any real shellcode file (bytes passed to `str.replace`) and on an empty `Shellcode` path (directory read); both now generate or raise a validation error.

@@ -15,7 +15,6 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import requests
 
 from empire.server.core.config import data_manager
 from empire.server.utils.git_util import GitOperationException
@@ -538,7 +537,14 @@ def test_update_empire_compiler_already_on_ref_returns_true(tmp_path, monkeypatc
     monkeypatch.setattr(
         data_manager, "_resolve_compiler_platform", lambda: ("linux", "x64")
     )
-    (compiler_dir / "EmpireCompiler-linux-x64-v1.2.3").mkdir()
+    binary = (
+        compiler_dir
+        / "EmpireCompiler-linux-x64-v1.2.3"
+        / "EmpireCompiler"
+        / "EmpireCompiler"
+    )
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"#!/bin/sh\n")
     monkeypatch.setattr(data_manager.config_manager, "DATA_DIR", tmp_path)
 
     def fake_sync(_cfg):
@@ -548,6 +554,36 @@ def test_update_empire_compiler_already_on_ref_returns_true(tmp_path, monkeypatc
 
     cfg = data_manager.EmpireCompilerConfig(repo="r", ref="v1.2.3")
     assert data_manager.update_empire_compiler(cfg, assume_yes=True) is True
+
+
+def test_update_empire_compiler_redownloads_dir_without_binary(
+    tmp_path, monkeypatch, capsys
+):
+    """`update` is the tool operators are told to run to repair the cache, so
+    it must agree with the server about what counts as installed: a directory
+    on the right ref but without the binary is an interrupted extract, not
+    "up to date"."""
+    compiler_dir = tmp_path / "empire-compiler"
+    (compiler_dir / "EmpireCompiler-linux-x64-v1.2.3" / "EmpireCompiler").mkdir(
+        parents=True
+    )
+    monkeypatch.setattr(
+        data_manager, "_resolve_compiler_platform", lambda: ("linux", "x64")
+    )
+    monkeypatch.setattr(data_manager.config_manager, "DATA_DIR", tmp_path)
+    synced = []
+    monkeypatch.setattr(
+        data_manager, "sync_empire_compiler", lambda cfg: synced.append(cfg) or object()
+    )
+    monkeypatch.setattr(
+        data_manager, "_confirm", lambda *_a, **_k: pytest.fail("no migration prompt")
+    )
+
+    cfg = data_manager.EmpireCompilerConfig(repo="r", ref="v1.2.3")
+    assert data_manager.update_empire_compiler(cfg, assume_yes=True) is True
+
+    assert synced == [cfg]
+    assert "up to date" not in capsys.readouterr().out
 
 
 def test_update_plugin_registry_no_git_url_returns_true(tmp_path):
@@ -614,23 +650,27 @@ def test_update_empire_compiler_sync_returns_none_is_failure(
 def test_update_empire_compiler_request_failure_returns_false(
     tmp_path, monkeypatch, capsys
 ):
-    """A `requests.RequestException` mid-download (DNS failure, timeout,
-    connection reset) must be caught and reported via `[x]`, not propagate."""
+    """A sync failure (DNS failure, timeout, connection reset, disk) must be
+    caught and its operator-facing message reported via `[x]`, not propagate."""
     monkeypatch.setattr(data_manager.config_manager, "DATA_DIR", tmp_path)
     monkeypatch.setattr(
         data_manager, "_resolve_compiler_platform", lambda: ("linux", "x64")
     )
 
     def boom(_cfg):
-        raise requests.ConnectionError("simulated DNS failure")
+        raise data_manager.CompilerSyncError(
+            "network error fetching the release (simulated DNS failure); "
+            "re-run './ps-empire setup' once GitHub is reachable"
+        )
 
     monkeypatch.setattr(data_manager, "sync_empire_compiler", boom)
 
     cfg = data_manager.EmpireCompilerConfig(repo="r", ref="v1.2.3")
     assert data_manager.update_empire_compiler(cfg, assume_yes=True) is False
     out = capsys.readouterr().out
-    assert "Empire Compiler: download/extract failed" in out
+    assert "[x] Empire Compiler: network error" in out
     assert "simulated DNS failure" in out
+    assert "once GitHub is reachable" in out
 
 
 def test_update_plugin_registry_clone_failure_returns_false(
@@ -1112,7 +1152,10 @@ def test_run_setup_compiler_request_exception_marks_failure(
     update-path fix."""
 
     def boom(_cfg):
-        raise requests.ConnectionError("simulated DNS failure")
+        raise data_manager.CompilerSyncError(
+            "network error fetching the release (simulated DNS failure); "
+            "re-run './ps-empire setup' once GitHub is reachable"
+        )
 
     monkeypatch.setattr(data_manager, "sync_starkiller", lambda _cfg: object())
     monkeypatch.setattr(data_manager, "sync_empire_compiler", boom)
@@ -1123,7 +1166,7 @@ def test_run_setup_compiler_request_exception_marks_failure(
 
     assert results["Empire Compiler"] is False
     out = capsys.readouterr().out
-    assert "Empire Compiler: download/extract failed" in out
+    assert "[x] Empire Compiler: network error" in out
     assert "simulated DNS failure" in out
 
 

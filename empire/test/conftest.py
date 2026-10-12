@@ -44,6 +44,10 @@ def _warm_external_caches():
     the shared base; sync_* are idempotent (they short-circuit when the cache
     already exists), so every worker after the first is a fast no-op. Without
     xdist this is just a direct warm call.
+
+    A failed compiler sync is deliberately left to raise here: one loud
+    session-setup error beats hundreds of "Empire Compiler is not available"
+    failures once the server has degraded.
     """
     # config_manager / data_manager are imported lazily here (as elsewhere in this
     # file): importing config_manager before this module sets sys.argv to the test

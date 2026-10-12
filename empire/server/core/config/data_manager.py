@@ -2,11 +2,17 @@ import logging
 import os
 import platform
 import pwd
+import shutil
 import subprocess
 import tarfile
+import tempfile
+import time
 from pathlib import Path
 
 import requests
+import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from empire.server.core.config import config_manager, paths
 from empire.server.core.config.config_manager import (
@@ -171,27 +177,89 @@ def _resolve_compiler_platform():
     return os_, arch
 
 
-def _github_api_headers() -> dict[str, str]:
-    """Headers for the GitHub REST API.
+class CompilerSyncError(Exception):
+    """`sync_empire_compiler` could not install the compiler.
 
-    Adds bearer auth when ``GITHUB_TOKEN``/``GH_TOKEN`` is present so requests
-    aren't subject to GitHub's 60 req/hr unauthenticated limit. That limit is
-    keyed on the egress IP, which CI runners share, so unauthenticated calls
-    routinely 403 during test runs.
+    The message is operator-facing and names the cause and what to do; the
+    library error that triggered it is `__cause__`. Every failure the sync can
+    hit once it starts talking to GitHub or touching disk is wrapped in this,
+    so the three callers that must not die on a failed sync (the server's
+    DotnetCompiler, `setup`, `update`) catch one name and print the message.
     """
-    headers = {"Accept": "application/vnd.github+json"}
+
+
+class CompilerArchiveError(CompilerSyncError):
+    """The release archive unpacked cleanly but does not contain the compiler.
+
+    A bad or mislaid release asset, not a transient failure: downloading it
+    again would fetch the same archive.
+    """
+
+
+# Library errors a sync wraps. The urllib3 base class is here because a
+# connection dropped *while streaming the body* surfaces from
+# `resp.raw.read()` as a urllib3 ProtocolError, which requests only wraps on
+# its own iterators.
+_SYNC_LIBRARY_ERRORS = (
+    requests.RequestException,
+    urllib3.exceptions.HTTPError,
+    tarfile.TarError,
+    OSError,
+)
+_GITHUB_API_HEADERS = {"Accept": "application/vnd.github+json"}
+_USER_AGENT = "Empire-Server (+https://github.com/BC-SECURITY/Empire)"
+# Whole download-and-extract attempts; see `_download_compiler` for what is
+# and is not retried.
+_DOWNLOAD_ATTEMPTS = 3
+_STREAM_ERRORS = (urllib3.exceptions.HTTPError, tarfile.ReadError)
+# Relative to an installed compiler root. Installs made by `_download_compiler`
+# are renamed into place only once this file exists, so for them its presence
+# means "complete". For directories left by the pre-atomic code it is a
+# best-effort marker: the binary is not the last archive entry.
+_COMPILER_BINARY = Path("EmpireCompiler") / "EmpireCompiler"
+
+
+def _github_session() -> requests.Session:
+    """A session for both the release lookup and the asset download.
+
+    GitHub rate-limits anonymous API traffic per source IP, and CI runners
+    share IP ranges, so the token matters for the release lookup. It also goes
+    on the first hop of the asset download, which is harmless (`requests`
+    drops `Authorization` on the cross-host redirect to the asset CDN) but
+    buys nothing measurable there: the download is protected by the retries,
+    not by auth. Retries cover dropped connections, timeouts before the
+    response headers arrive, 429 (honouring a bounded Retry-After) and 5xx
+    with exponential backoff; any other 4xx is returned as-is so a real 404
+    fails once, not five times.
+    """
+    session = requests.Session()
+    session.headers["User-Agent"] = _USER_AGENT
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
     if token:
-        headers["Authorization"] = f"Bearer {token}"
-    return headers
+        session.headers["Authorization"] = f"Bearer {token}"
+    retry = Retry(
+        total=4,
+        backoff_factor=1,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset({"GET"}),
+        raise_on_status=False,
+        respect_retry_after_header=True,
+        # GitHub's secondary limits can ask for minutes; the server is booting.
+        retry_after_max=60,
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
 
 
 def _resolve_compiler_download_url(
-    compiler_config: EmpireCompilerConfig, platform_str: str
+    compiler_config: EmpireCompilerConfig,
+    platform_str: str,
+    session: requests.Session | None = None,
 ) -> str | None:
     """Resolve the download URL for the compiler archive.
 
-    Queries the GitHub Releases API using ``repo`` and ``ref``.
+    Queries the GitHub Releases API using ``repo`` and ``ref`` over
+    ``session`` (a fresh `_github_session()` when not supplied).
     """
     if not compiler_config.repo or not compiler_config.ref:
         log.error("Empire Compiler: 'repo' and 'ref' must be configured")
@@ -199,7 +267,9 @@ def _resolve_compiler_download_url(
 
     api_url = f"https://api.github.com/repos/{compiler_config.repo}/releases/tags/{compiler_config.ref}"
     log.info(f"Empire Compiler: querying GitHub release {api_url}")
-    resp = requests.get(api_url, timeout=30, headers=_github_api_headers())
+    if session is None:
+        session = _github_session()
+    resp = session.get(api_url, timeout=30, headers=_GITHUB_API_HEADERS)
     if not resp.ok:
         log.error(
             f"Empire Compiler: failed to fetch release info ({resp.status_code}): {resp.text}"
@@ -251,7 +321,170 @@ def _configure_compiler(
     return extracted_folder
 
 
+def _is_complete_install(root: Path) -> bool:
+    return (root / _COMPILER_BINARY).is_file()
+
+
+def _cached_compiler_names(compiler_dir: Path) -> list[str]:
+    if not compiler_dir.exists():
+        return []
+    return sorted(
+        d.name
+        for d in compiler_dir.iterdir()
+        if d.is_dir() and not d.name.startswith(".")
+    )
+
+
+def _find_install(compiler_dir: Path, expected_suffix: str) -> Path | None:
+    """The cached directory for this platform+ref, complete or not."""
+    for name in _cached_compiler_names(compiler_dir):
+        if expected_suffix in name:
+            return compiler_dir / name
+    return None
+
+
+def _remove_incomplete_install(root: Path) -> None:
+    """Drop what an interrupted extract left behind (the pre-atomic code
+    streamed straight into the final path). Serving it would fail obscurely
+    at first compile; leaving it in place would let the download step mistake
+    it for a finished install, so a failed removal is an error, not a warning.
+    """
+    log.warning(
+        f"Empire Compiler: removing incomplete install {root.name} "
+        f"(no {_COMPILER_BINARY}); it will be downloaded again"
+    )
+    shutil.rmtree(root)
+
+
+def _cached_compiler_refs(compiler_dir: Path, platform_str: str) -> list[str]:
+    """Refs of the complete installs for this platform, in the form
+    `empire_compiler.ref` needs (the cache scan matches `{platform}-{ref}`).
+    """
+    prefix = f"EmpireCompiler-{platform_str}-"
+    return [
+        name.removeprefix(prefix)
+        for name in _cached_compiler_names(compiler_dir)
+        if name.startswith(prefix) and _is_complete_install(compiler_dir / name)
+    ]
+
+
+def _describe_sync_failure(error: BaseException, compiler_dir: Path) -> str:
+    """Operator-facing cause for a failed sync, so the advice fits it."""
+    if isinstance(error, tarfile.TarError):
+        return f"the release archive is corrupt or truncated ({error})"
+    if isinstance(error, requests.RequestException | urllib3.exceptions.HTTPError):
+        return (
+            f"network error fetching the release ({error}); re-run "
+            "'./ps-empire setup' once GitHub is reachable"
+        )
+    return (
+        f"could not update {compiler_dir} ({error}); check permissions and free space"
+    )
+
+
+def _extract_compiler_stream(resp, scratch: Path, name: str) -> Path:
+    with tarfile.open(fileobj=resp.raw, mode="r|gz") as tar:
+        # filter="data" guards against path traversal in the downloaded archive.
+        tar.extractall(scratch, filter="data")
+    extracted = scratch / name
+    if not _is_complete_install(extracted):
+        raise CompilerArchiveError(
+            f"the release asset {name}.tgz does not contain "
+            f"{name}/{_COMPILER_BINARY.as_posix()}; check the release on GitHub"
+        )
+    return extracted
+
+
+def _download_compiler_once(
+    session: requests.Session, url: str, compiler_dir: Path, name: str
+) -> Path | None:
+    target = compiler_dir / name
+    with session.get(url, stream=True, timeout=(30, 300)) as resp:
+        if not resp.ok:
+            log.error(f"Empire Compiler: download failed ({resp.status_code}): {url}")
+            return None
+        scratch_root = compiler_dir / ".partial"
+        scratch_root.mkdir(parents=True, exist_ok=True)
+        scratch = Path(tempfile.mkdtemp(dir=scratch_root))
+        try:
+            extracted = _extract_compiler_stream(resp, scratch, name)
+            # Another process may have installed it while we streamed.
+            if _is_complete_install(target):
+                log.info(
+                    f"Empire Compiler: {name} was installed by another process; using it"
+                )
+            else:
+                extracted.rename(target)
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+    return target
+
+
+def _download_compiler(
+    session: requests.Session, url: str, compiler_dir: Path, name: str
+) -> Path | None:
+    """Fetch and unpack the release archive into ``compiler_dir / name``.
+
+    The archive streams into a scratch directory under ``.partial/`` and is
+    renamed into place only once the binary is present, so a crash or a
+    dropped connection never leaves a half-populated directory that the cache
+    scan could mistake for an install. Returns None on any non-OK final status
+    (a 4xx, or a 429/5xx after the session's own retries are spent).
+
+    Only failures a second download might fix are retried here: a mid-body
+    drop (urllib3 raises it from `resp.raw.read()`) or a truncated / corrupt
+    gzip stream. Connect-level and status failures were already retried
+    inside the session, so they are not retried again; neither are a wrong
+    archive, a path-traversal entry, or a disk error.
+    """
+    for attempt in range(1, _DOWNLOAD_ATTEMPTS + 1):
+        try:
+            return _download_compiler_once(session, url, compiler_dir, name)
+        except _STREAM_ERRORS as e:
+            if attempt == _DOWNLOAD_ATTEMPTS:
+                raise
+            delay = 2**attempt
+            log.warning(
+                f"Empire Compiler: download attempt {attempt}/{_DOWNLOAD_ATTEMPTS} "
+                f"failed ({e}); retrying in {delay}s"
+            )
+            time.sleep(delay)
+    return None  # pragma: no cover - the loop always returns or raises
+
+
+def _sync_compiler_release(
+    compiler_config: EmpireCompilerConfig, platform_str: str, compiler_dir: Path
+) -> Path | None:
+    expected_suffix = f"{platform_str}-{compiler_config.ref}"
+    # Check for an existing directory matching this platform *and* version
+    # before hitting the GitHub API, so cached compilers don't require
+    # network access.
+    found = _find_install(compiler_dir, expected_suffix)
+    if found is not None and _is_complete_install(found):
+        log.info(f"Empire Compiler: using cached {found.name}")
+        return _configure_compiler(compiler_config, found)
+    if found is not None:
+        _remove_incomplete_install(found)
+
+    with _github_session() as session:
+        url = _resolve_compiler_download_url(compiler_config, platform_str, session)
+        if url is None:
+            return None
+        name = url.split("/")[-1].removesuffix(".tgz")
+        log.info(f"Empire Compiler: directory not found. Downloading {url}")
+        target = _download_compiler(session, url, compiler_dir, name)
+    if target is None:
+        return None
+    return _configure_compiler(compiler_config, target)
+
+
 def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
+    """Install the configured compiler release if it is not cached.
+
+    Returns the compiler root, or None when nothing could be resolved
+    (unsupported platform, missing repo/ref, a non-OK GitHub status, no
+    matching asset). Raises CompilerSyncError for everything else.
+    """
     # Allow a local directory override so developers can test without
     # publishing a GitHub release. A stale path falls back to downloading the
     # published release, which is safe because this override is a developer
@@ -271,36 +504,22 @@ def sync_empire_compiler(compiler_config: EmpireCompilerConfig):
 
     platform_str = f"{os_}-{arch}"
     compiler_dir = config_manager.DATA_DIR / "empire-compiler"
-
-    # Check for an existing directory matching this platform *and* version
-    # before hitting the GitHub API, so cached compilers don't require
-    # network access.
-    expected_suffix = f"{platform_str}-{compiler_config.ref}"
-    if compiler_dir.exists():
-        for d in compiler_dir.iterdir():
-            if d.is_dir() and expected_suffix in d.name:
-                log.info(f"Empire Compiler: using cached {d.name}")
-                return _configure_compiler(compiler_config, d)
-
-    url = _resolve_compiler_download_url(compiler_config, platform_str)
-    if url is None:
-        return None
-
-    name = url.split("/")[-1].removesuffix(".tgz")
-
-    if not Path(compiler_dir / name).exists():
-        log.info("Empire Compiler: directory not found. Downloading Empire Compiler")
-        log.info(f"Empire Compiler: fetching and unarchiving {url}")
-        compiler_dir.mkdir(parents=True, exist_ok=True)
-        with (
-            requests.get(url, stream=True, timeout=(30, 300)) as resp,
-            tarfile.open(fileobj=resp.raw, mode="r|gz") as tar,
-        ):
-            # filter="data" guards against path traversal in the downloaded archive.
-            tar.extractall(compiler_dir, filter="data")
-
-    extracted_folder = compiler_dir / name
-    return _configure_compiler(compiler_config, extracted_folder)
+    try:
+        return _sync_compiler_release(compiler_config, platform_str, compiler_dir)
+    except _SYNC_LIBRARY_ERRORS as e:
+        # Deliberately no fallback to another cached version: a compiler that
+        # doesn't match the configured ref can silently miscompile against the
+        # module YAML. Tell the operator which refs would work instead.
+        refs = _cached_compiler_refs(compiler_dir, platform_str)
+        hint = (
+            f" Cached for this platform: set empire_compiler.ref to one of: "
+            f"{', '.join(refs)}."
+            if refs
+            else ""
+        )
+        raise CompilerSyncError(
+            f"{_describe_sync_failure(e, compiler_dir)}.{hint}"
+        ) from e
 
 
 def _banner(msg: str) -> None:
@@ -586,16 +805,24 @@ def update_empire_compiler(
     compiler_dir = config_manager.DATA_DIR / "empire-compiler"
     expected_suffix = f"{platform_str}-{compiler_config.ref}"
 
-    cached_names = []
-    if compiler_dir.exists():
-        for d in compiler_dir.iterdir():
-            if d.is_dir():
-                cached_names.append(d.name)
-                if expected_suffix in d.name:
-                    _banner(
-                        f"Empire Compiler: already on '{compiler_config.ref}' ({d.name}); up to date"
-                    )
-                    return True
+    # Same test as the server's sync: a directory on the right ref but without
+    # the binary is an interrupted extract, which this command exists to repair
+    # (the sync itself removes it, inside the error handling below).
+    found = _find_install(compiler_dir, expected_suffix)
+    if found is not None and _is_complete_install(found):
+        _banner(
+            f"Empire Compiler: already on '{compiler_config.ref}' ({found.name}); up to date"
+        )
+        return True
+    if found is not None:
+        _warn(
+            f"Empire Compiler: {found.name} is incomplete (no {_COMPILER_BINARY}); it will be replaced"
+        )
+    cached_names = [
+        name
+        for name in _cached_compiler_names(compiler_dir)
+        if compiler_dir / name != found
+    ]
 
     if cached_names:
         _banner(
@@ -610,17 +837,18 @@ def update_empire_compiler(
 
     _banner(f"Empire Compiler: downloading '{compiler_config.ref}'")
     # sync_empire_compiler returns None (without raising) for unsupported
-    # OS/arch, missing repo/ref config, GitHub API non-OK (rate limit,
-    # 404, DNS), and no asset matching the resolved platform — and raises
-    # on network/disk/extract failures. Without this check the aggregator
+    # OS/arch, missing repo/ref config, a non-OK GitHub API or asset-download
+    # status (rate limit, 404), and no asset matching the resolved platform —
+    # and raises CompilerSyncError, whose message is operator-facing, for
+    # network/disk/extract failures. Without this check the aggregator
     # prints "[*] Update complete." and the user hits the actual error
     # several layers downstream. Funnel both cases through a single error
     # path to keep the return count under PLR0911's threshold.
     error_detail: str | None = None
     try:
         result = sync_empire_compiler(compiler_config)
-    except (requests.RequestException, tarfile.TarError, OSError) as e:
-        error_detail = f"download/extract failed ({e})."
+    except CompilerSyncError as e:
+        error_detail = str(e)
     else:
         if result is None:
             error_detail = (
@@ -1016,15 +1244,16 @@ def run_setup(args) -> dict[str, bool] | None:
     _banner("Empire Compiler: syncing")
     # Mirrors the failure model in update_empire_compiler:
     # sync_empire_compiler returns None (without raising) for unsupported
-    # OS/arch, missing repo/ref config, GitHub API non-OK, or no asset
-    # matching the resolved platform — and raises on network / disk /
-    # extract failures. Funnel both into a single error path so the
-    # banner is uniform regardless of which surface failed.
+    # OS/arch, missing repo/ref config, a non-OK GitHub API or asset-download
+    # status, or no asset matching the resolved platform — and raises
+    # CompilerSyncError, whose message is operator-facing, for network / disk /
+    # extract failures. Funnel both into a single error path so the banner is
+    # uniform regardless of which surface failed.
     error_detail: str | None = None
     try:
         result = sync_empire_compiler(config_manager.empire_config.empire_compiler)
-    except (requests.RequestException, tarfile.TarError, OSError) as e:
-        error_detail = f"download/extract failed ({e})."
+    except CompilerSyncError as e:
+        error_detail = str(e)
     else:
         if result is None:
             error_detail = (
