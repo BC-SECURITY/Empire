@@ -342,6 +342,13 @@ class Listener:
                 )
             )
             public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+            server_public_key_array = ",".join(
+                f"0x{b:02x}"
+                for b in self.server_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
 
             stager_yaml = (
                 self.mainMenu.install_path / "stagers/Sharpire.yaml"
@@ -363,6 +370,7 @@ class Listener:
                 )
                 .replace("{{ agent_private_cert_key }}", private_key_array)
                 .replace("{{ agent_public_cert_key }}", public_key_array)
+                .replace("{{ server_public_cert_key }}", server_public_key_array)
             )
 
             return str(

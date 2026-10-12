@@ -14,6 +14,7 @@ from empire.server.common import encryption, packets
 from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher, DiffieHellman
 from empire.server.core import hooks as hooks_module
+from empire.server.core import protocol_constants as proto
 from empire.server.core.agent_communication_service import AgentCommunicationService
 from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
@@ -386,14 +387,22 @@ def _ed25519_keypair():
     return private_raw, encryption.publickey_unsafe(private_raw)
 
 
-def _stage1_body(
-    staging_key: str, agent_cert: bytes, client_pub_bytes: bytes | None = None
-) -> bytes:
+def _client_pub() -> bytes:
+    """A fresh client DH public key, fixed-width big-endian."""
+    return DiffieHellman().publicKey.to_bytes(proto.DH_PUBLIC_KEY_BYTES, "big")
+
+
+def _bound_cert(private_raw: bytes, public_raw: bytes, client_pub: bytes) -> bytes:
+    """An agent certificate signing the STAGE1 transcript for `client_pub`."""
+    return encryption.signature_unsafe(
+        encryption.stage1_agent_transcript(client_pub), private_raw, public_raw
+    )
+
+
+def _stage1_body(staging_key: str, client_pub: bytes, agent_cert: bytes) -> bytes:
     """Build a STAGE1 payload: 768-byte DH public key || 64-byte agent cert."""
-    if client_pub_bytes is None:
-        client_pub_bytes = DiffieHellman().publicKey.to_bytes(768, "big")
     return AESCipher.encrypt_then_hmac(
-        staging_key.encode("UTF-8"), client_pub_bytes + agent_cert
+        staging_key.encode("UTF-8"), client_pub + agent_cert
     )
 
 
@@ -452,14 +461,7 @@ def _autorun_configured(db, main, agent_service, agent, entries):
 
 
 def _stage(
-    service,
-    db,
-    session_id,
-    language,
-    staging_key,
-    agent_cert,
-    agent_pub,
-    client_pub_bytes=None,
+    service, db, session_id, language, staging_key, client_pub, agent_cert, agent_pub
 ):
     server_priv, server_pub = _ed25519_keypair()
     return service._handle_agent_staging(
@@ -468,7 +470,7 @@ def _stage(
         language,
         "STAGE1",
         0,
-        _stage1_body(staging_key, agent_cert, client_pub_bytes),
+        _stage1_body(staging_key, client_pub, agent_cert),
         staging_key,
         agent_pub,
         server_priv,
@@ -478,7 +480,7 @@ def _stage(
     )
 
 
-def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
+def _stage_full(service, db, session_id, language, agent_priv, agent_pub):
     """Run a complete STAGE1 → STAGE2 negotiation against the real handler.
 
     Returns (db_agent, stage2_response). The STAGE2 body is encrypted with
@@ -492,6 +494,9 @@ def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
     # fixture listener.
     listener_options = _listener_options(name=FIXTURE_LISTENER)
 
+    client_pub = client.publicKey.to_bytes(proto.DH_PUBLIC_KEY_BYTES, "big")
+    agent_cert = _bound_cert(agent_priv, agent_pub, client_pub)
+
     server_priv, server_pub = _ed25519_keypair()
     stage1_resp = service._handle_agent_staging(
         db,
@@ -499,7 +504,7 @@ def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
         language,
         "STAGE1",
         0,
-        _stage1_body(STAGING_KEY, agent_cert, client.publicKey.to_bytes(768, "big")),
+        _stage1_body(STAGING_KEY, client_pub, agent_cert),
         STAGING_KEY,
         agent_pub,
         server_priv,
@@ -514,7 +519,7 @@ def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
     ((_, (_, _, _, enc_data)),) = parsed.items()
     payload = AESCipher.decrypt_and_verify(STAGING_KEY.encode("UTF-8"), enc_data)
     nonce = payload[:16].decode("UTF-8")
-    # payload = nonce(16) || server DH pub (variable nbytes, big-endian) || server_cert (64-byte Ed25519 signature)
+    # payload = nonce(16) || server DH pub (768 bytes, big-endian) || server_cert (64-byte Ed25519 signature)
     server_pub_bytes = payload[16:-64]
 
     # Derive the same session key the server stored (HKDF-SHA256 over the
@@ -562,15 +567,37 @@ def _stage_full(service, db, session_id, language, agent_cert, agent_pub):
 
 
 # A 768-byte peer key that is a quadratic non-residue mod the group-17 prime, so
-# check_public_key() rejects it. Chosen by its bytes rather than by its integer
-# value: the go branch gates on len(str(message)), and a small integer encodes to
-# mostly-zero bytes whose repr is far past that ceiling.
+# check_public_key() rejects it.
 DH_PUBLIC_KEY_REJECTED = b"A" * 768
 
-# Same shape, but a residue, so check_public_key() accepts it. The go accept-side
-# row pins this instead of a random DiffieHellman() key because a random key's
-# repr length overflows the same gate for ~0.6% of values.
-DH_PUBLIC_KEY_ACCEPTED = b"B" * 768
+
+def _sid(prefix, language):
+    """A stable 8-char [A-Z0-9] session id, unique per (prefix, language)."""
+    base = "".join(c for c in (prefix + language).upper() if c.isalnum())
+    return (base + "00000000")[:8]
+
+
+def _stage_capturing_server_key(
+    service, db, session_id, language, staging_key, client_pub, agent_cert, agent_pub
+):
+    """Like _stage, but also returns the server's public cert key so the test
+    can verify the server certificate the server produced."""
+    server_priv, server_pub = _ed25519_keypair()
+    result = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE1",
+        0,
+        _stage1_body(staging_key, client_pub, agent_cert),
+        staging_key,
+        agent_pub,
+        server_priv,
+        server_pub,
+        _listener_options(),
+        "1.2.3.4",
+    )
+    return result, server_pub
 
 
 @pytest.mark.parametrize("language", ["powershell", "csharp"])
@@ -592,6 +619,7 @@ def test__handle_agent_staging_rejects_zeroed_agent_cert(
             "ZERO" + language[:4].upper(),
             language,
             staging_key,
+            _client_pub(),
             b"\x00" * 64,
             agent_pub,
         )
@@ -608,7 +636,8 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
     staging_key = STAGING_KEY
     attacker_priv, attacker_pub = _ed25519_keypair()
     _expected_priv, expected_pub = _ed25519_keypair()
-    forged = encryption.signature_unsafe(b"SIGNATURE", attacker_priv, attacker_pub)
+    client_pub = _client_pub()
+    forged = _bound_cert(attacker_priv, attacker_pub, client_pub)
 
     with session_local.begin() as db:
         result = _stage(
@@ -617,6 +646,7 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
             "WRNG" + language[:4].upper(),
             language,
             staging_key,
+            client_pub,
             forged,
             expected_pub,
         )
@@ -625,42 +655,60 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
     assert "Invalid agent certificate" in result
 
 
-@pytest.mark.parametrize(
-    ("language", "client_pub_bytes"),
-    [
-        ("powershell", None),
-        ("csharp", None),
-        ("python", None),
-        # go alone pins the key: its length gate measures repr(message), so a
-        # random DiffieHellman() public key overflows the ceiling for ~0.6% of
-        # values and would flake CI. See DH_PUBLIC_KEY_ACCEPTED.
-        ("go", DH_PUBLIC_KEY_ACCEPTED),
-    ],
-    ids=["powershell", "csharp", "python", "go"],
-)
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
 def test__handle_agent_staging_accepts_valid_agent_cert(
-    agent_communication_service, session_local, language, client_pub_bytes
+    agent_communication_service, session_local, language
 ):
-    """The happy path still completes and returns a routing packet."""
-    staging_key = STAGING_KEY
+    """The happy path completes for every language, registers the agent, and
+    returns a server certificate that is bound to the STAGE1 transcript.
+
+    This is the server->agent half of the handshake: an agent verifies exactly
+    this signature, so a regression that signed the wrong bytes, reverted to the
+    constant b"SIGNATURE", emitted a short/variable-width pubkey, or dropped the
+    C# server cert must fail here rather than silently returning bytes.
+    """
+    sid = _sid("GOOD", language)
     agent_priv, agent_pub = _ed25519_keypair()
-    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+    client_pub = _client_pub()
+    cert = _bound_cert(agent_priv, agent_pub, client_pub)
 
     with session_local.begin() as db:
-        result = _stage(
+        result, server_pub = _stage_capturing_server_key(
             agent_communication_service,
             db,
-            f"GOOD{language[:4].upper().ljust(4, 'X')}",
+            sid,
             language,
-            staging_key,
+            STAGING_KEY,
+            client_pub,
             cert,
             agent_pub,
-            client_pub_bytes,
         )
 
     # A successful stage returns the raw routing packet, not an error string.
     assert isinstance(result, bytes)
     assert len(result) > 0
+    # ...and the agent is actually registered under our session id.
+    assert sid in agent_communication_service.agents
+
+    # Decrypt the server reply the way an agent does: staging-key AES/HMAC over
+    # nonce(16) || server_pub(768, big-endian) || server_cert(64).
+    parsed = packets.parse_routing_packet(STAGING_KEY, result)
+    assert sid in parsed
+    data = AESCipher.decrypt_and_verify(STAGING_KEY.encode("UTF-8"), parsed[sid][3])
+    nonce, server_dh_pub, server_cert = data[:16], data[16:784], data[784:848]
+    assert len(server_dh_pub) == proto.DH_PUBLIC_KEY_BYTES  # fixed width, not variable
+    assert len(server_cert) == proto.AGENT_CERT_SIZE
+
+    # The server certificate must verify against the transcript it signed, and
+    # must NOT verify once any transcript field is perturbed.
+    transcript = encryption.stage1_server_transcript(sid, nonce, server_dh_pub)
+    assert encryption.checkvalid(server_cert, transcript, server_pub)
+    tampered_pub = server_dh_pub[:-1] + bytes([server_dh_pub[-1] ^ 0x01])
+    assert not encryption.checkvalid(
+        server_cert,
+        encryption.stage1_server_transcript(sid, nonce, tampered_pub),
+        server_pub,
+    )
 
 
 @pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
@@ -675,7 +723,7 @@ def test__handle_agent_staging_rejects_invalid_dh_public_key(
     """
     staging_key = STAGING_KEY
     agent_priv, agent_pub = _ed25519_keypair()
-    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+    cert = _bound_cert(agent_priv, agent_pub, DH_PUBLIC_KEY_REJECTED)
 
     with (
         caplog.at_level(
@@ -689,9 +737,9 @@ def test__handle_agent_staging_rejects_invalid_dh_public_key(
             f"BADK{language[:4].upper().ljust(4, 'X')}",
             language,
             staging_key,
+            DH_PUBLIC_KEY_REJECTED,
             cert,
             agent_pub,
-            DH_PUBLIC_KEY_REJECTED,
         )
 
     assert isinstance(result, str)
@@ -926,15 +974,13 @@ def test_stage_full_harness_smoke(
 ):
     """The STAGE1→STAGE2 harness completes a real negotiation."""
     agent_priv, agent_pub = _ed25519_keypair()
-    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
-
     with session_local.begin() as db:
         db_agent, resp = _stage_full(
             agent_communication_service,
             db,
             "HARNES01",
             "powershell",
-            cert,
+            agent_priv,
             agent_pub,
         )
 
@@ -965,8 +1011,6 @@ def test_handle_agent_staging_fires_checkin_hook_despite_failing_autorun(
     monkeypatch.setattr(agent_communication_service, "autorun_tasks", failing_autorun)
 
     agent_priv, agent_pub = _ed25519_keypair()
-    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
-
     try:
         with session_local.begin() as db:
             db_agent, resp = _stage_full(
@@ -974,7 +1018,7 @@ def test_handle_agent_staging_fires_checkin_hook_despite_failing_autorun(
                 db,
                 "E2EAUTOR",
                 "powershell",
-                cert,
+                agent_priv,
                 agent_pub,
             )
 
@@ -1025,3 +1069,52 @@ def test_generate_sessionid_shape(agent_communication_service):
         sid = agent_communication_service.generate_sessionid()
         assert len(sid) == 8  # noqa: PLR2004
         assert set(sid) <= valid
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
+def test__handle_agent_staging_rejects_replayed_cert_with_substituted_key(
+    agent_communication_service, session_local, language
+):
+    """A captured certificate must not validate against a different DH key.
+
+    This is the MitM the transcript binding exists to stop: previously the
+    signature covered the constant b"SIGNATURE", so a certificate observed in
+    any handshake stayed valid forever and an attacker could swap in their own
+    DH public key while replaying it verbatim.
+    """
+    agent_priv, agent_pub = _ed25519_keypair()
+
+    # A legitimate certificate, captured from an earlier exchange over pub_a.
+    pub_a = _client_pub()
+    captured_cert = _bound_cert(agent_priv, agent_pub, pub_a)
+
+    # Positive control: that same cert IS accepted in its own exchange (pub_a),
+    # so the rejection below is specifically the substitution, not a dud cert.
+    with session_local.begin() as db:
+        ok = _stage(
+            agent_communication_service,
+            db,
+            _sid("RPOK", language),
+            language,
+            STAGING_KEY,
+            pub_a,
+            captured_cert,
+            agent_pub,
+        )
+    assert isinstance(ok, bytes)
+
+    # Replayed against a DH public key the attacker controls (pub_b != pub_a).
+    with session_local.begin() as db:
+        result = _stage(
+            agent_communication_service,
+            db,
+            _sid("RPLY", language),
+            language,
+            STAGING_KEY,
+            _client_pub(),
+            captured_cert,
+            agent_pub,
+        )
+
+    assert isinstance(result, str)
+    assert "Invalid agent certificate" in result

@@ -69,16 +69,8 @@ func sign_with_hash(message []byte, privKeyBytes []byte) []byte {
 func valid_signature(message []byte, certBytes []byte, publicKeyBytes []byte) bool {
 	publicKey := ed25519.PublicKey(publicKeyBytes)
 
-	valid := ed25519.Verify(publicKey, []byte("SIGNATURE"), certBytes)
+	valid := ed25519.Verify(publicKey, message, certBytes)
 	return valid
-}
-
-func floorDiv(a, b int) int {
-	result := a / b
-	if (a%b != 0) && ((a < 0) != (b < 0)) {
-		result -= 1
-	}
-	return result
 }
 
 // Perform DH Key Exchange (stagingKey encrypts header, sessionKey encrypts payload).
@@ -91,12 +83,13 @@ func PerformDHKeyExchange(server string, stage1URI string, sessionID string, sta
 		return nil, "", nil, fmt.Errorf("error generating DH keys: %v", err)
 	}
 
-	// Encrypt the public key before sending (matches Python's HMAC-AES encryption)
-	nbytes := floorDiv((publicKey.BitLen() + 7), 8)
-	clientPubBytes := publicKey.FillBytes(make([]byte, nbytes))
+	// Fixed-width (768B) so the server reads exactly the bytes we sign.
+	clientPubBytes := publicKey.FillBytes(make([]byte, 768))
 
-	//sign the word "SIGNATURE"
-	agentCert := sign_with_hash([]byte("SIGNATURE"), agent_private_cert_key)
+	// Sign the STAGE1 transcript (label || our DH public key), not a constant,
+	// so the signature cannot be replayed with a substituted DH key.
+	agentTranscript := append([]byte("empire-stage1-agent"), clientPubBytes...)
+	agentCert := sign_with_hash(agentTranscript, agent_private_cert_key)
 
 	// send our public key and agentCert to the server to verify.
 	message := append(clientPubBytes, agentCert...)
@@ -141,8 +134,11 @@ func PerformDHKeyExchange(server string, stage1URI string, sessionID string, sta
 	serverPub := data[16:784]
 	serverCert := data[784:848]
 
-	// verify the server's authenticity with its cert and public cert key
-	valid := valid_signature([]byte("SIGNATURE"), serverCert, server_public_cert_key)
+	// Verify the server signed this exchange: label || session id || nonce || pub.
+	serverTranscript := append([]byte("empire-stage1-server"), []byte(newSessionID)...)
+	serverTranscript = append(serverTranscript, nonce...)
+	serverTranscript = append(serverTranscript, serverPub...)
+	valid := valid_signature(serverTranscript, serverCert, server_public_cert_key)
 	if !valid {
 		log.Fatal("invalid signature")
 	}

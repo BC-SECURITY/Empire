@@ -297,12 +297,36 @@ def aes_encrypt(key, data):
     CBC = CBCenc(aes, data)
     return IV + CBC
 
+ENC_SUBKEY_LABEL = b"empire-enc"
+MAC_SUBKEY_LABEL = b"empire-mac"
+
+
+def _hkdf_sha256(ikm, info):
+    """HKDF-SHA256 (RFC 5869), single 32-byte output block.
+
+    Must stay byte-for-byte identical to the server's
+    HKDF(SHA256, length=32, salt=None, info=info). A salt of None means a
+    hash-length block of zeros.
+    """
+    if isinstance(ikm, str):
+        ikm = ikm.encode('UTF-8')
+    prk = hmac.new(b"\x00" * 32, ikm, hashlib.sha256).digest()
+    return hmac.new(prk, info + b"\x01", hashlib.sha256).digest()
+
+
+def derive_subkeys(key):
+    """Split a shared key into independent (cipher, MAC) subkeys."""
+    return _hkdf_sha256(key, ENC_SUBKEY_LABEL), _hkdf_sha256(key, MAC_SUBKEY_LABEL)
+
+
 def aes_encrypt_then_hmac(key, data):
     """
     Encrypt the data then calculate HMAC over the ciphertext.
+    The cipher and MAC keys are derived independently from `key`.
     """
-    data = aes_encrypt(key, data)
-    mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
+    k_enc, k_mac = derive_subkeys(key)
+    data = aes_encrypt(k_enc, data)
+    mac = hmac.new(k_mac, data, digestmod=hashlib.sha256).digest()
     return data + mac[0:16]
 
 
@@ -323,10 +347,11 @@ def verify_hmac(key, data):
     if len(data) > 32:
         mac = data[-16:]
         data = data[:-16]
-        expected = hmac.new(key, data, digestmod=hashlib.sha256).digest()[0:16]
+        _k_enc, k_mac = derive_subkeys(key)
+        expected = hmac.new(k_mac, data, digestmod=hashlib.sha256).digest()[0:16]
         # Double HMAC to prevent timing attacks. hmac.compare_digest() is
         # preferable, but only available since Python 2.7.7.
-        return hmac.new(key, expected, digestmod=hashlib.sha256).digest() == hmac.new(key, mac, digestmod=hashlib.sha256).digest()
+        return hmac.new(k_mac, expected, digestmod=hashlib.sha256).digest() == hmac.new(k_mac, mac, digestmod=hashlib.sha256).digest()
     else:
         return False
 
@@ -336,5 +361,6 @@ def aes_decrypt_and_verify(key, data):
     Decrypt the data, but only if it has a valid MAC.
     """
     if len(data) >= 48 and verify_hmac(key, data):
-        return aes_decrypt(key, data[:-16])
+        k_enc, _k_mac = derive_subkeys(key)
+        return aes_decrypt(k_enc, data[:-16])
     raise Exception("Invalid ciphertext received.")

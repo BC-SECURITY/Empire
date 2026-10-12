@@ -57,11 +57,14 @@ class Stage:
 
     def execute(self):
         client_pub = DiffieHellman()
-        agent_cert = signature_unsafe(b"SIGNATURE", self.agent_private_cert_key, self.agent_public_cert_key)
         public_key = client_pub.publicKey
 
-        nbytes = (public_key.bit_length() + 7) // 8
-        pub_bytes = public_key.to_bytes(nbytes, 'big')
+        # Fixed-width (768B) so the server reads exactly the bytes we sign.
+        pub_bytes = public_key.to_bytes(768, 'big')
+        # Sign the transcript (label || our DH public key), not a constant, so
+        # the signature cannot be replayed with a substituted DH key.
+        agent_transcript = b"empire-stage1-agent" + pub_bytes
+        agent_cert = signature_unsafe(agent_transcript, self.agent_private_cert_key, self.agent_public_cert_key)
         message = pub_bytes+agent_cert
         hmac_data = aes_encrypt_then_hmac(self.staging_key, message)
 
@@ -79,10 +82,18 @@ class Stage:
         data = aes_decrypt_and_verify(self.staging_key, encdata)
         data = data.encode('latin-1')
         nonce = data[:16]
-        server_pub = int.from_bytes(data[16:784], byteorder='big', signed=False)
+        server_pub_bytes = data[16:784]
+        server_pub = int.from_bytes(server_pub_bytes, byteorder='big', signed=False)
         server_cert = data[784:848]
 
-        if not checkvalid(server_cert, b"SIGNATURE", self.server_public_cert_key):
+        # Verify the server signed this exchange: label || session id || nonce || pub.
+        server_transcript = (
+            b"empire-stage1-server"
+            + self.session_id.encode("UTF-8")
+            + nonce
+            + server_pub_bytes
+        )
+        if not checkvalid(server_cert, server_transcript, self.server_public_cert_key):
             print("Server certificate not valid")
             return
 

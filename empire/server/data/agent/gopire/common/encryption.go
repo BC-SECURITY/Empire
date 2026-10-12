@@ -9,15 +9,29 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+
+	"golang.org/x/crypto/hkdf"
 )
 
+// deriveSubkeys splits a shared key into independent (cipher, MAC) subkeys.
+// Must stay byte-for-byte identical to the server's
+// HKDF(SHA256, length=32, salt=None, info=label).
+func deriveSubkeys(key []byte) ([]byte, []byte) {
+	kEnc := make([]byte, 32)
+	kMac := make([]byte, 32)
+	io.ReadFull(hkdf.New(sha256.New, key, nil, []byte("empire-enc")), kEnc)
+	io.ReadFull(hkdf.New(sha256.New, key, nil, []byte("empire-mac")), kMac)
+	return kEnc, kMac
+}
+
 func AesEncryptThenHMAC(key, data []byte) []byte {
+	kEnc, kMac := deriveSubkeys(key)
 	iv := make([]byte, aes.BlockSize)
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		panic(err)
 	}
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(kEnc)
 	if err != nil {
 		panic(err)
 	}
@@ -32,7 +46,7 @@ func AesEncryptThenHMAC(key, data []byte) []byte {
 
 	ciphertext = append(iv, ciphertext...)
 
-	h := hmac.New(sha256.New, key)
+	h := hmac.New(sha256.New, kMac)
 	h.Write(ciphertext)
 	hmacValue := h.Sum(nil)[:16]
 
@@ -45,10 +59,11 @@ func verifyHMAC(key, data []byte) bool {
 		return false
 	}
 
+	_, kMac := deriveSubkeys(key)
 	mac := data[len(data)-16:]
 	data = data[:len(data)-16]
 
-	expectedMAC := hmac.New(sha256.New, key)
+	expectedMAC := hmac.New(sha256.New, kMac)
 	expectedMAC.Write(data)
 	expectedMACDigest := expectedMAC.Sum(nil)[:16]
 
@@ -64,10 +79,11 @@ func AesDecryptAndVerify(key, data []byte) ([]byte, error) {
 		return nil, fmt.Errorf("invalid ciphertext received")
 	}
 
+	kEnc, _ := deriveSubkeys(key)
 	iv := data[:aes.BlockSize]
 	ciphertext := data[aes.BlockSize : len(data)-16]
 
-	block, err := aes.NewCipher(key)
+	block, err := aes.NewCipher(kEnc)
 	if err != nil {
 		return nil, err
 	}

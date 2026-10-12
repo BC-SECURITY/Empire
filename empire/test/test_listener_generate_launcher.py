@@ -491,28 +491,10 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
     malleable pipeline is exclusive to http_malleable's SharpireMalleable
     yaml, which pulls the extension library in as a second
     ReferenceSourceLibrary."""
-    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
-
-    packets = Mock()
-    packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
-
-    secrets_mock = MagicMock()
-    secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
-
-    http_listener = build_test_listener("http", main_menu_mock)
-    http_listener.options["Host"]["Value"] = "http://localhost"
-    http_listener.options["Port"]["Value"] = "80"
-    http_listener.host_address = "http://localhost/"
+    http_listener = _build_http_csharp_listener(monkeypatch, main_menu_mock)
 
     compile_mock = MagicMock(return_value="/tmp/plain-sharpire.exe")
     main_menu_mock.dotnet_compiler.compile_stager = compile_mock
-
-    main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {"options": http_listener.options}
-    }
-    http_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     result = http_listener.generate_launcher(
         listener_name="fake_listener", language="csharp", encode=False
@@ -528,6 +510,64 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
     # System.Web.Extensions lives only on SharpireMalleable so plain builds
     # shouldn't pull it in as a reference assembly.
     assert "System.Web.Extensions" not in stager_yaml
+
+
+_UNRENDERED_PLACEHOLDER = re.compile(r"\{\{\s*\w+\s*\}\}")
+
+
+def _csharp_byte_array(raw: bytes) -> str:
+    return ",".join(f"0x{b:02x}" for b in raw)
+
+
+def _build_http_csharp_listener(monkeypatch, main_menu_mock):
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    packets = Mock()
+    packets.build_routing_packet.return_value = b"routing packet"
+    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
+
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
+
+    http_listener = build_test_listener("http", main_menu_mock)
+    http_listener.options["Host"]["Value"] = "http://localhost"
+    http_listener.options["Port"]["Value"] = "80"
+    http_listener.host_address = "http://localhost/"
+    main_menu_mock.listeners.activeListeners = {
+        "fake_listener": {"options": http_listener.options}
+    }
+    http_listener.threads = {"fake_listener": {"fake_thread": {}}}
+    return http_listener
+
+
+@pytest.mark.parametrize("listener_type", ["http", "http_malleable"])
+def test_csharp_stager_carries_server_public_key(
+    monkeypatch, main_menu_mock, listener_type
+):
+    """Sharpire fails closed without the server's Ed25519 public key, so the
+    rendered stager must carry the listener's real key — and no placeholder
+    may survive rendering (REPLACE_DEFAULTRESPONSE once silently did)."""
+    if listener_type == "http":
+        listener = _build_http_csharp_listener(monkeypatch, main_menu_mock)
+    else:
+        main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+        listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    compile_mock = MagicMock(return_value="/tmp/sharpire.exe")
+    main_menu_mock.dotnet_compiler.compile_stager = compile_mock
+
+    listener.generate_launcher(
+        listener_name="fake_listener", language="csharp", encode=False
+    )
+
+    stager_yaml = compile_mock.call_args[0][0]
+    server_pk = _csharp_byte_array(
+        listener.server_private_cert_key_object.public_key().public_bytes_raw()
+    )
+    assert f"byte[] serverpk = new byte[] {{ {server_pk} }};" in stager_yaml
+    assert "sessionInfo.SetServerPublicKeyBytes(serverpk);" in stager_yaml
+    assert _UNRENDERED_PLACEHOLDER.search(stager_yaml) is None
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):

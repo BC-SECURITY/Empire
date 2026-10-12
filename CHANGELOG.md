@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Rejected an `OutFolder` or `OutFile` that resolves onto the shared output directory itself, which one operator could turn into a regular file and wedge every other operator's writes.
 -   Confined the `ExtFile`, `File` and `Shellcode` module path options to the downloads directory, closing an arbitrary file read available to any enabled operator.
 -   Anchored the upload directory to the downloads root in `_secure_upload_location`, so a traversing `user.username` or `subdirectory` cannot place a file outside it.
+-   **BREAKING:** STAGE1 Ed25519 signatures now cover the handshake transcript instead of the constant `"SIGNATURE"`, so a captured certificate cannot be replayed with a substituted DH key. Re-stage all pre-7.1 agents.
+-   **BREAKING:** The AES-CBC payload layer derives separate AES and HMAC keys from the shared key with HKDF-SHA256 (`empire-enc` / `empire-mac`) instead of reusing one key.
+-   C# (Sharpire) agents now authenticate the server: the `csharp` staging branch sends a transcript-bound server certificate, which the agent verifies before deriving the session key.
 
 ### Changed
 
@@ -40,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
 -   **BREAKING:** The `ExtFile`, `File` and `Shellcode` module options must now name a path inside the server's downloads directory; saved workflows pointing elsewhere are rejected until the file is uploaded through the API.
 -   A listener's `Host` may now carry the public port while `Port` stays the bind port, for deployments behind a reverse proxy. A `Host` without a port still advertises the bind port. The listener-generated HTTP-family and malleable launchers and stagers use the advertised address; the `windows/c_launcher` stager and PIC shellcode still pair the hostname with the bind `Port`. The malleable listener still decides whether it serves TLS, and whether its agent comms trust a self-signed certificate, from the scheme in `Host`. The `Port cannot be provided in a host name` validation error is gone. (https://github.com/BC-SECURITY/Empire/issues/808)
+-   C# (Sharpire) stagers now embed the listener's server Ed25519 public key so the agent authenticates the server during staging; requires Empire-Compiler v2.0.3, which this release pins.
 
 ### Fixed
 
@@ -60,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `NameError: name 'job_message_buffer' is not defined` when a background Python job (e.g. `python/collection/linux/xkeylogger`) streams output via `job_message_buffer(...)`, by exposing it in the exec scope used by `python_job_func`.
 -   Fixed the PowerBreach `eventlog` and `resolver` modules reporting a successful `OutFile` write as "PowerBreach deaduser backdoor written to".
 -   Fixed an unwritable PowerBreach `OutFile` surfacing as an opaque 500 instead of a 400 naming the output directory.
+-   Fixed the Go staging branch intermittently rejecting valid STAGE1 bodies (~0.3%) by sizing the body with `len(message)` instead of the length of its `repr`.
+-   Fixed staging desyncing (~1 in 256) when the server's DH public key had a leading zero byte; the server and every agent now use a fixed 768-byte width.
+-   Sharpire stagers now receive the listener's default response; a template typo left the `REPLACE_DEFAULTRESPONSE` placeholder unsubstituted.
 
 ## [7.0.2] - 2026-09-08
 

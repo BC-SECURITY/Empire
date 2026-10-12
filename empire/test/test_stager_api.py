@@ -930,6 +930,28 @@ def test_csharp_stager_creation(client, admin_auth_header, created_stagers):
     assert len(response.content) > 0
 
 
+@pytest.mark.slow
+def test_csharp_malleable_stager_creation(
+    client, admin_auth_header, created_stagers, listener_malleable
+):
+    """SharpireMalleable pulls in a second source library; compile it with
+    the real pinned compiler, not just plain Sharpire."""
+    stager = get_base_csharp_exe_stager()
+    stager["options"]["Listener"] = listener_malleable["name"]
+
+    response = client.post(
+        "/api/v2/stagers/?save=true", headers=admin_auth_header, json=stager
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED, response.text
+    created_stagers.append(response.json()["id"])
+    download = client.get(
+        response.json()["downloads"][0]["link"], headers=admin_auth_header
+    )
+    assert download.status_code == status.HTTP_200_OK
+    assert len(download.content) > 0
+
+
 @pytest.mark.mingw
 @requires_mingw
 def test_windows_c_stager_creation(client, admin_auth_header, created_stagers):

