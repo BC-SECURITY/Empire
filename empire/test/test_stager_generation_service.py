@@ -841,6 +841,7 @@ def test_build_template_vars(stager_generation_service):
         "DELAY",
         "JITTER",
         "LOST_LIMIT",
+        "SESSION_COOKIE",
         "STAGING_KEY",
         "DEFAULT_RESPONSE",
         "AGENT_PRIVATE_CERT_KEY",
@@ -1481,3 +1482,28 @@ class TestShellcodeArtifactCleanup:
 
         assert err is None
         assert shellcode == b"\x90\x90shellcode"
+
+
+@pytest.mark.parametrize(
+    ("cookie_value", "expected"),
+    [("PHPSESSID", "PHPSESSID"), ("", "session")],
+    ids=["custom", "empty-falls-back"],
+)
+def test_build_template_vars_session_cookie(
+    stager_generation_service, monkeypatch, cookie_value, expected
+):
+    """gopire carries the routing packet in the listener's session cookie on
+    tasking GETs; an empty Cookie option (allowed on malleable listeners) must
+    still render a usable name."""
+    active_listener = (
+        stager_generation_service.listener_service.get_active_listener_by_name(
+            "new-listener-1"
+        )
+    )
+    monkeypatch.setitem(active_listener.options["Cookie"], "Value", cookie_value)
+    assert (
+        stager_generation_service._build_template_vars(active_listener)[
+            "SESSION_COOKIE"
+        ]
+        == expected
+    )

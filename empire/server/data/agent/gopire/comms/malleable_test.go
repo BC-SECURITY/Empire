@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -586,7 +587,7 @@ func TestResolveStagerURIs_SingleURI(t *testing.T) {
 func TestNewMalleableHttpMessageSender_EmptyProfile_LegacyOnly(t *testing.T) {
 	// Empty MALLEABLE_PROFILE must leave the sender in legacy mode so the
 	// plain HTTP listener keeps working even in the malleable-tagged build.
-	sender, err := NewMalleableHttpMessageSender("example.com", nil, "/news.php,/admin/get.php|Mozilla|", "")
+	sender, err := NewMalleableHttpMessageSender("example.com", nil, "/news.php,/admin/get.php|Mozilla|", "", "session", nil)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -628,7 +629,7 @@ func TestNewMalleableHttpMessageSender_WithProfile(t *testing.T) {
 		},
 	}
 	b64 := helperEncodeB64(t, payload)
-	sender, err := NewMalleableHttpMessageSender("http://host", nil, "", b64)
+	sender, err := NewMalleableHttpMessageSender("http://host", nil, "", b64, "session", nil)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -642,10 +643,10 @@ func TestNewMalleableHttpMessageSender_WithProfile(t *testing.T) {
 }
 
 func TestNewHttpMessageSender_PlainDoesNotParseMalleable(t *testing.T) {
-	// The base 3-arg constructor must never touch a malleable blob — it's
+	// The base constructor must never touch a malleable blob — it's
 	// the legacy constructor used by plain-http builds and by malleable
 	// builds as the underlying allocator.
-	sender := NewHttpMessageSender("example.com", nil, "/a.php|UA|")
+	sender := NewHttpMessageSender("example.com", nil, "/a.php|UA|", "session", nil)
 	if sender.malleable != nil {
 		t.Error("base NewHttpMessageSender must leave malleable nil")
 	}
@@ -733,12 +734,12 @@ func TestExtractTerminator_URIAppend_NoRegisteredURIMatches(t *testing.T) {
 	}
 }
 
-// TestSendMessage_NilMetadata_FallsBackToLegacy pins Fix 1 (critical):
+// TestSend_NilMetadata_FallsBackToLegacy pins Fix 1 (critical):
 // when the chosen section's metadata container is nil, sendMalleable must
 // fall back to sendLegacy rather than silently dropping the routing
 // packet. We verify by firing at a test server and checking the request
 // took the legacy shape (session= cookie, no transform-stored header).
-func TestSendMessage_NilMetadata_FallsBackToLegacy(t *testing.T) {
+func TestSend_NilMetadata_FallsBackToLegacy(t *testing.T) {
 	var gotCookie string
 	var gotMethod string
 	var gotPath string
@@ -747,6 +748,7 @@ func TestSendMessage_NilMetadata_FallsBackToLegacy(t *testing.T) {
 		gotPath = r.URL.Path
 		gotCookie = r.Header.Get("Cookie")
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok")) // an empty legacy 200 is ErrEmptyResponse
 	}))
 	defer srv.Close()
 
@@ -767,10 +769,10 @@ func TestSendMessage_NilMetadata_FallsBackToLegacy(t *testing.T) {
 		TaskURIs:  []string{"/legacy.php"},
 		Server:    srv.URL,
 	}
-	if _, err := sender.SendMessage([]byte("SMALL")); err != nil {
-		t.Fatalf("SendMessage: %v", err)
+	if _, err := sender.Send(RequestTasking, []byte("SMALL")); err != nil {
+		t.Fatalf("Send: %v", err)
 	}
-	// Legacy small-packet path: GET with session= cookie on the legacy URI.
+	// Legacy tasking path: GET with session= cookie on the legacy URI.
 	if gotMethod != "GET" {
 		t.Errorf("legacy method: want GET got %s", gotMethod)
 	}
@@ -782,12 +784,12 @@ func TestSendMessage_NilMetadata_FallsBackToLegacy(t *testing.T) {
 	}
 }
 
-// TestSendMessage_POST_UsesOutputContainer pins the Empire convention:
+// TestSend_POST_UsesOutputContainer pins the Empire convention:
 // for POST, the routing packet rides on client.output (transforms +
 // terminator), not on client.metadata/id. The PS/Python reference agents
 // behave this way, and the Empire malleable listener's two-part extract
 // concatenates id+output so only one slot needs to carry data.
-func TestSendMessage_POST_UsesOutputContainer(t *testing.T) {
+func TestSend_POST_UsesOutputContainer(t *testing.T) {
 	var gotBody []byte
 	var gotSnParam string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -825,10 +827,9 @@ func TestSendMessage_POST_UsesOutputContainer(t *testing.T) {
 		malleable: mp,
 		Server:    srv.URL,
 	}
-	// Routing packet > 20 bytes → forces POST section.
 	packet := []byte("THIS_IS_A_ROUTING_PACKET_PAYLOAD")
-	if _, err := sender.SendMessage(packet); err != nil {
-		t.Fatalf("SendMessage: %v", err)
+	if _, err := sender.Send(RequestData, packet); err != nil {
+		t.Fatalf("Send: %v", err)
 	}
 	// Body must contain the base64-encoded routing packet (output terminator
 	// is PRINT, transforms = [base64]).
@@ -844,17 +845,18 @@ func TestSendMessage_POST_UsesOutputContainer(t *testing.T) {
 	}
 }
 
-// TestSendMessage_POST_NilOutput_FallsBackToLegacy pins the same fallback
+// TestSend_POST_NilOutput_FallsBackToLegacy pins the same fallback
 // semantics we have for GET: if the POST section's output container is
 // missing, drop to the legacy pipe-split path rather than silently dropping
 // the routing packet.
-func TestSendMessage_POST_NilOutput_FallsBackToLegacy(t *testing.T) {
+func TestSend_POST_NilOutput_FallsBackToLegacy(t *testing.T) {
 	var gotMethod string
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod = r.Method
 		gotPath = r.URL.Path
 		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("ok")) // an empty legacy 200 is ErrEmptyResponse
 	}))
 	defer srv.Close()
 
@@ -873,17 +875,17 @@ func TestSendMessage_POST_NilOutput_FallsBackToLegacy(t *testing.T) {
 		TaskURIs:  []string{"/legacy.php"},
 		Server:    srv.URL,
 	}
-	if _, err := sender.SendMessage([]byte("BIG_ENOUGH_ROUTING_PACKET_OVER_20_BYTES")); err != nil {
-		t.Fatalf("SendMessage: %v", err)
+	if _, err := sender.Send(RequestData, []byte("RESULTS")); err != nil {
+		t.Fatalf("Send: %v", err)
 	}
 	if gotMethod != "POST" || gotPath != "/legacy.php" {
 		t.Errorf("legacy path: want POST /legacy.php got %s %s", gotMethod, gotPath)
 	}
 }
 
-// TestSendMessage_ProfileHeadersOverrideSenderHeaders pins Fix 2 — the
+// TestSend_ProfileHeadersOverrideSenderHeaders pins Fix 2 — the
 // profile's declared User-Agent must win over the sender's default.
-func TestSendMessage_ProfileHeadersOverrideSenderHeaders(t *testing.T) {
+func TestSend_ProfileHeadersOverrideSenderHeaders(t *testing.T) {
 	var gotUA string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUA = r.Header.Get("User-Agent")
@@ -914,10 +916,130 @@ func TestSendMessage_ProfileHeadersOverrideSenderHeaders(t *testing.T) {
 		TaskURIs:  []string{"/legacy.php"},
 		Server:    srv.URL,
 	}
-	if _, err := sender.SendMessage([]byte("SMALL")); err != nil {
-		t.Fatalf("SendMessage: %v", err)
+	if _, err := sender.Send(RequestTasking, []byte("SMALL")); err != nil {
+		t.Fatalf("Send: %v", err)
 	}
 	if gotUA != "ProfileUA" {
 		t.Errorf("UA override: want ProfileUA got %q", gotUA)
+	}
+}
+
+func idleGetProfile(serverOutput *Container) *MalleableProfile {
+	return &MalleableProfile{
+		V: 1,
+		Sections: map[string]Section{
+			"get": {
+				Client: ClientBlock{
+					Verb: "GET", URIs: []string{"/news.php"},
+					Metadata: &Container{Transforms: []Transform{}, Terminator: Terminator{Type: "parameter", Arg: "sn"}},
+				},
+				Server: ServerBlock{Output: serverOutput},
+			},
+		},
+	}
+}
+
+func wrapPrePost() *Container {
+	return &Container{
+		Transforms: []Transform{
+			{Op: "prepend", Value: base64.StdEncoding.EncodeToString([]byte("<!--PRE-->"))},
+			{Op: "append", Value: base64.StdEncoding.EncodeToString([]byte("<!--POST-->"))},
+		},
+		Terminator: Terminator{Type: "print"},
+	}
+}
+
+func printOutput() *Container { return &Container{Terminator: Terminator{Type: "print"}} }
+
+// TestSend_GetSectionIdleAndTasking pins the malleable listener's idle answer:
+// construct_server with no output yields empty bytes once the profile's
+// transforms are reversed, whatever terminator carried them. That is "no
+// tasking", not an error; anything non-empty is tasking.
+func TestSend_GetSectionIdleAndTasking(t *testing.T) {
+	cases := []struct {
+		name   string
+		body   []byte
+		output *Container
+		want   []byte // nil = idle
+	}{
+		{"print terminator, zero-byte 200", nil, printOutput(), nil},
+		{"prepend/append reversing to empty", []byte("<!--PRE--><!--POST-->"), wrapPrePost(), nil},
+		{"prepend/append around tasking", []byte("<!--PRE-->TASKING<!--POST-->"), wrapPrePost(), []byte("TASKING")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, _ := newRecorder(t, 200, tc.body)
+			sender := &HttpMessageSender{malleable: idleGetProfile(tc.output), Server: srv.URL}
+			data, err := sender.Send(RequestTasking, []byte("POLL"))
+			if err != nil || !bytes.Equal(data, tc.want) || (tc.want == nil && data != nil) {
+				t.Fatalf("want (%q, nil) got (%q, %v)", tc.want, data, err)
+			}
+		})
+	}
+}
+
+// TestSend_GetSection401IsSessionUnknown: no os.Exit in comms any more.
+func TestSend_GetSection401IsSessionUnknown(t *testing.T) {
+	srv, _ := newRecorder(t, 401, nil)
+	sender := &HttpMessageSender{malleable: idleGetProfile(printOutput()), Server: srv.URL}
+	if _, err := sender.Send(RequestTasking, []byte("POLL")); !errors.Is(err, ErrSessionUnknown) {
+		t.Fatalf("want ErrSessionUnknown got %v", err)
+	}
+}
+
+// TestNewMalleableHttpMessageSender_LegacyCarriesCookieAndDefaultPage pins
+// the malleable build's legacy fallback end to end: the cookie name and the
+// default page given to NewMalleableHttpMessageSender must reach sendLegacy.
+func TestNewMalleableHttpMessageSender_LegacyCarriesCookieAndDefaultPage(t *testing.T) {
+	page := []byte("<html>default</html>")
+	srv, seen := newRecorder(t, 200, page)
+	sender, err := NewMalleableHttpMessageSender(srv.URL, nil, "/news.php|UA|", "", "PHPSESSID", page)
+	if err != nil {
+		t.Fatalf("constructor: %v", err)
+	}
+	data, err := sender.Send(RequestTasking, []byte("POLL"))
+	if err != nil || data != nil {
+		t.Fatalf("default page must be idle, got (%q, %v)", data, err)
+	}
+	if got := (*seen)[0].cookie; !strings.HasPrefix(got, "PHPSESSID=") {
+		t.Fatalf("cookie name not carried through: %q", got)
+	}
+}
+
+// Non-200s other than 401 on the malleable path are errors (misses), never
+// parsed as output.
+func TestSend_GetSectionNon200IsAnError(t *testing.T) {
+	for _, status := range []int{500, 404} {
+		srv, _ := newRecorder(t, status, nil)
+		sender := &HttpMessageSender{malleable: idleGetProfile(printOutput()), Server: srv.URL}
+		_, err := sender.Send(RequestTasking, []byte("POLL"))
+		if err == nil || errors.Is(err, ErrSessionUnknown) {
+			t.Fatalf("status %d: want a plain error, got %v", status, err)
+		}
+	}
+}
+
+// Output that cannot be reversed (here: not base64) is an error, not idle.
+func TestSend_GetSectionUnreversibleOutputIsAnError(t *testing.T) {
+	srv, _ := newRecorder(t, 200, []byte("not*base64!"))
+	out := &Container{Transforms: []Transform{{Op: "base64"}}, Terminator: Terminator{Type: "print"}}
+	sender := &HttpMessageSender{malleable: idleGetProfile(out), Server: srv.URL}
+	if data, err := sender.Send(RequestTasking, []byte("POLL")); err == nil {
+		t.Fatalf("want an error, got (%q, nil)", data)
+	}
+}
+
+// A 401 on a results POST through the post section is ErrSessionUnknown too.
+func TestSend_PostSection401IsSessionUnknown(t *testing.T) {
+	srv, _ := newRecorder(t, 401, nil)
+	mp := &MalleableProfile{V: 1, Sections: map[string]Section{
+		"post": {
+			Client: ClientBlock{Verb: "POST", URIs: []string{"/submit.php"}, Output: &Container{Terminator: Terminator{Type: "print"}}},
+			Server: ServerBlock{Output: &Container{Terminator: Terminator{Type: "print"}}},
+		},
+	}}
+	sender := &HttpMessageSender{malleable: mp, Server: srv.URL}
+	if _, err := sender.Send(RequestData, []byte("RESULT")); !errors.Is(err, ErrSessionUnknown) {
+		t.Fatalf("want ErrSessionUnknown got %v", err)
 	}
 }

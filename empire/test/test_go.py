@@ -384,3 +384,19 @@ def test_generate_stager_does_not_swallow_other_exceptions():
 
     with pytest.raises(AttributeError, match="stager template bug"):
         service.generate_stager(template)
+
+
+@pytest.mark.parametrize("malleable", [False, True], ids=["http", "malleable"])
+def test_generate_main_go_wires_session_cookie_and_default_page(tmp_path, malleable):
+    """The sender gets the listener's cookie name and decoded default page from
+    the template. No Go tool sees the Jinja wiring, so pin it on both branches."""
+    compiler = GoCompiler(install_path=Path(__file__).resolve().parents[1] / "server")
+    out = tmp_path / "main.go"
+    compiler.generate_main_go(
+        "main.template",
+        str(out),
+        {"SESSION_COOKIE": "PHPSESSID", "MALLEABLE": malleable},
+    )
+    rendered = out.read_text()
+    assert 'sessionCookie := "PHPSESSID"' in rendered
+    assert ", sessionCookie, defaultPage)" in rendered
