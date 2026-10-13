@@ -15,7 +15,7 @@ BYTE_MAX = 255
 
 # Attacker-controlled strings reach the instance log before anything has
 # validated them. Cap them so an unauthenticated peer cannot write an
-# arbitrarily long record (the instance log has no rotation) and strip the
+# arbitrarily long record (rotation, if on, would push older history out) and strip the
 # control characters that would otherwise forge additional log lines.
 LOG_VALUE_MAX_LENGTH = 64
 
@@ -74,8 +74,8 @@ def register_default_response_error_handler(app, listener, status_code):
     input.
 
     The repr plus the innermost frame, not a full traceback: an
-    unauthenticated peer picks how often this fires and the instance log has
-    no rotation, but a bare repr would leave a bug in view code with no file
+    unauthenticated peer picks how often this fires and each record grows the
+    instance log or rotates history out, but a bare repr would leave a bug in view code with no file
     and no line anywhere in the logs -- this handler suppresses the only
     traceback Flask would otherwise have produced.
 

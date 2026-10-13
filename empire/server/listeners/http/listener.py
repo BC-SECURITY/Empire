@@ -851,8 +851,8 @@ class Listener:
 
                 # Both values are still unvalidated here and reach the log
                 # ahead of the allowlist, so they are escaped and capped:
-                # query strings arrive percent-decoded, and the instance log
-                # has no rotation.
+                # query strings arrive percent-decoded, and every byte grows the
+                # instance log or rotates older history out.
                 message = (
                     f"{listenerName}: "
                     f"{listener_util.sanitize_log_value(stager)} stager request "

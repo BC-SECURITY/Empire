@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** The AES-CBC payload layer derives separate AES and HMAC keys from the shared key with HKDF-SHA256 (`empire-enc` / `empire-mac`) instead of reusing one key.
 -   C# (Sharpire) agents now authenticate the server: the `csharp` staging branch sends a transcript-bound server certificate, which the agent verifies before deriving the session key.
 
+### Added
+
+-   Added `logging.file_logging` (env `EMPIRE_LOGGING__FILE_LOGGING`) for console-only container logging, plus `logging.max_bytes` and `logging.backup_count` rotation limits.
+
 ### Changed
 
 -   `persistence/osx/LaunchAgent` and `persistence/osx/CreateHijacker` now refuse to generate while the shipped Mach-O templates link Apple's removed Python 2.7 framework, instead of planting a binary that cannot load on macOS 12.3 or later; the module descriptions say so, pending a template rebuild.
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** OpenAPI operation ids are now `{tag}_{route name}` (e.g. `agents_read_agent`) instead of FastAPI's path-and-method default, which also renames the three generated `Body_*` request schemas — a generated client needs no post-processing of the spec, but every method name it produces changes.
 -   **BREAKING:** The agent-task and plugin-task routes are tagged with only their primary resource, dropping the `tasks` tag group.
 -   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
+-   **BREAKING:** `empire_server.log` and `listener_<name>.log` now rotate at 10 MB with 5 backups, deleting older data; set `logging.max_bytes: 0` for unbounded logs.
 -   **BREAKING:** The `ExtFile`, `File` and `Shellcode` module options must now name a path inside the server's downloads directory; saved workflows pointing elsewhere are rejected until the file is uploaded through the API.
 -   A listener's `Host` may now carry the public port while `Port` stays the bind port, for deployments behind a reverse proxy. A `Host` without a port still advertises the bind port. The listener-generated HTTP-family and malleable launchers and stagers use the advertised address; the `windows/c_launcher` stager and PIC shellcode still pair the hostname with the bind `Port`. The malleable listener still decides whether it serves TLS, and whether its agent comms trust a self-signed certificate, from the scheme in `Host`. The `Port cannot be provided in a host name` validation error is gone. (https://github.com/BC-SECURITY/Empire/issues/808)
 -   C# (Sharpire) stagers now embed the listener's server Ed25519 public key so the agent authenticates the server during staging; requires Empire-Compiler v2.0.3, which this release pins.
