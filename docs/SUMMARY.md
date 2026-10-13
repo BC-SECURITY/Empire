@@ -81,6 +81,9 @@
     * [Packet Handler Class](agents/go/packethandlerclass.md)
     * [Main.go Template](agents/go/template.md)
   * [C](agents/c/README.md)
+    * [Agent Loop](agents/c/agent-loop.md)
+    * [Comms & Routing](agents/c/comms.md)
+    * [Template & Compiler](agents/c/template.md)
   * [Staging](agents/staging.md)
 * [RESTful API](restful-api/README.md)
   * ```yaml
