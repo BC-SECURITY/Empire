@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.0] - 2026-10-14
+
 ### Security
 
 -   Fixed the `persistence/osx/LaunchAgent` module staging its plist through a predictable `/tmp` path and running `chown`/`mv` via `subprocess` with `shell=True`; the plist is now written directly to the LaunchAgents directory with no shell ([BC-SECURITY/Empire#828](https://github.com/BC-SECURITY/Empire/issues/828)).
@@ -47,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   **BREAKING:** The `/api/v2/obfuscation` routes moved from the `keywords` tag to `obfuscation`.
 -   **BREAKING:** `empire_server.log` and `listener_<name>.log` now rotate at 10 MB with 5 backups, deleting older data; set `logging.max_bytes: 0` for unbounded logs.
 -   **BREAKING:** The `ExtFile`, `File` and `Shellcode` module options must now name a path inside the server's downloads directory; saved workflows pointing elsewhere are rejected until the file is uploaded through the API.
--   A listener's `Host` may now carry the public port while `Port` stays the bind port, for deployments behind a reverse proxy. A `Host` without a port still advertises the bind port. The listener-generated HTTP-family and malleable launchers and stagers use the advertised address; the `windows/c_launcher` stager and PIC shellcode still pair the hostname with the bind `Port`. The malleable listener still decides whether it serves TLS, and whether its agent comms trust a self-signed certificate, from the scheme in `Host`. The `Port cannot be provided in a host name` validation error is gone. (https://github.com/BC-SECURITY/Empire/issues/808)
+-   A listener's `Host` may now carry the public port while `Port` stays the bind port, for deployments behind a reverse proxy. A `Host` without a port still advertises the bind port. The listener-generated HTTP-family and malleable launchers and stagers use the advertised address; the `windows/c_launcher` stager and PIC shellcode still pair the hostname with the bind `Port`. The malleable listener still decides whether it serves TLS, and whether its agent comms trust a self-signed certificate, from the scheme in `Host`. The `Port cannot be provided in a host name` validation error is gone. (<https://github.com/BC-SECURITY/Empire/issues/808>)
 -   C# (Sharpire) stagers now embed the listener's server Ed25519 public key so the agent authenticates the server during staging; requires Empire-Compiler v2.0.3, which this release pins.
 
 ### Fixed
@@ -62,8 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Fixed `persistence/osx/LaunchAgent`, `persistence/osx/LaunchAgentUserLandPersistence`, `persistence/osx/CreateHijacker` and `privesc/multi/bashdoor` emitting Python 2 code (octal literals, `except E, e`, text-mode binary I/O) that failed to compile or run on the Python 3 agent. `LaunchAgentUserLandPersistence` now launches with an absolute Python 3 path resolved on the agent (its own interpreter, falling back to `python3` on `PATH`) instead of the removed `python`, and `CreateHijacker` raises on failure so a failed hijack no longer reports as a completed task.
 -   Fixed a `BinaryFile` with an extension (`agent.bin`) failing the `linux/pyinstaller` stager with an opaque 500, and a `BinaryFile` of `empire.py` returning the plaintext launcher source in place of the compiled binary.
 -   Fixed a failed `pyinstaller`, a missing or unrunnable `msfvenom`, and an unusable `BinaryFile`, `MSF_Format` or `Arch` value surfacing as a 500 instead of a stager-generation error naming the cause.
--   Fixed the malleable PowerShell stager splitting custom headers on commas, which broke any profile header value containing a comma, such as a Chrome User-Agent. Header entries are now separated with a dedicated marker. (https://github.com/BC-SECURITY/Empire/issues/829)
--   Fixed the `http`, `http_hop`, and `port_forward_pivot` PowerShell stagers and comms dropping the custom headers from `DefaultProfile`. They are now rendered into a `$Script:Headers` hashtable that the stager and the agent send on every request. (https://github.com/BC-SECURITY/Empire/issues/831)
+-   Fixed the malleable PowerShell stager splitting custom headers on commas, which broke any profile header value containing a comma, such as a Chrome User-Agent. Header entries are now separated with a dedicated marker. (<https://github.com/BC-SECURITY/Empire/issues/829>)
+-   Fixed the `http`, `http_hop`, and `port_forward_pivot` PowerShell stagers and comms dropping the custom headers from `DefaultProfile`. They are now rendered into a `$Script:Headers` hashtable that the stager and the agent send on every request. (<https://github.com/BC-SECURITY/Empire/issues/831>)
 -   Fixed the malleable `/init/` default stager URI being added alongside the URIs a profile's `http-stager` block declares, so launchers could pick a URI the profile never defined. Launchers generated before this change that call `/init/` against such a profile must be regenerated.
 -   Fixed the malleable PowerShell launcher dropping the `?` before a stager block's `parameter` query string (`Crimeware/quantloader`, `Crimeware/jasperloader`).
 -   Fixed listener autorun failures during agent staging rolling back Stage 2 registration: a failing autorun entry is now logged and skipped, remaining autorun entries still execute, and `AFTER_AGENT_CHECKIN_HOOK` fires for every agent that completes staging.
@@ -1727,7 +1729,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -   Updated shellcoderdi to newest version (@Cx01N)
 -   Added a Nim launcher (@Hubbl3)
 
-[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.2...HEAD
+[Unreleased]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.1.0...HEAD
+
+[7.1.0]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.2...v7.1.0
 
 [7.0.2]: https://github.com/BC-SECURITY/Empire-Sponsors/compare/v7.0.1...v7.0.2
 
