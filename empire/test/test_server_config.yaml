@@ -50,7 +50,7 @@ database:
       - etw
 empire_compiler:
   repo: BC-SECURITY/Empire-Compiler
-  ref: v2.0.2
+  ref: v2.0.3
   confuser_proj: empire/server/data/confuser.crproj
 starkiller:
   # Disabled in tests: no test serves the Starkiller SPA, so cloning/building it

@@ -1,7 +1,10 @@
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
+from empire.server.core.config import config_manager
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModuleOption
 from empire.server.core.option_types import (
     _TYPE_STR_TO_PY,
@@ -13,6 +16,7 @@ from empire.server.core.option_types import (
 )
 from empire.server.utils.option_util import (
     coerce_legacy_value,
+    confine_to_downloads,
     evaluate_dependencies,
     is_option_required,
     safe_cast,
@@ -999,3 +1003,60 @@ def test_empire_module_option_accepts_known_type_tags():
         # Capitalized form also accepted (validator lowercases for the check).
         opt = EmpireModuleOption(name="Debug", value="x", type=tag.upper())
         assert opt.type == tag.upper()
+
+
+class TestConfineToDownloads:
+    """The shared guard behind ``ExtFile``, ``File`` and ``Shellcode``."""
+
+    @pytest.fixture
+    def downloads(self, tmp_path, monkeypatch):
+        root = tmp_path / "downloads"
+        root.mkdir()
+        monkeypatch.setattr(config_manager.empire_config.directories, "downloads", root)
+        return root
+
+    def test_contained_path_is_returned_resolved(self, downloads):
+        # Resolved, not echoed back: containment was decided about the resolved
+        # form, so a caller that reads the raw value could read a different file
+        # than the one that was checked.
+        assert confine_to_downloads(
+            str(downloads / "a" / ".." / "b.ps1"), "ExtFile"
+        ) == (downloads / "b.ps1")
+
+    @pytest.mark.parametrize(
+        "value",
+        ["/etc/shadow", "../outside.ps1", "a\x00b"],
+        ids=["absolute", "traversal", "nul"],
+    )
+    def test_escaping_value_is_rejected(self, downloads, value):
+        with pytest.raises(ModuleValidationException) as exc:
+            confine_to_downloads(value, "ExtFile")
+        assert "ExtFile" in str(exc.value)
+
+    def test_the_root_is_read_per_call_not_captured_at_import(
+        self, downloads, tmp_path
+    ):
+        """``run_update`` rebinds the process-global config; the guard must follow.
+
+        ``data_manager.run_update`` does ``config_manager.empire_config =
+        EmpireConfig()`` after rewriting the base config. A module that did
+        ``from ...config_manager import empire_config`` at import time keeps the
+        pre-update object, so after an update that moves ``directories.downloads``
+        the guard rejects paths under the *new* root and keeps accepting paths
+        under the *old* one -- the precise inversion this pins.
+
+        The rebind is simulated by replacing the whole ``empire_config`` object,
+        not by mutating ``directories.downloads`` on it: mutating in place is
+        satisfied by an import-time capture too, so it would pass either way.
+        """
+        moved = tmp_path / "moved-downloads"
+        moved.mkdir()
+        rebound = SimpleNamespace(directories=SimpleNamespace(downloads=moved))
+
+        stale = downloads / "old.ps1"
+        with patch.object(config_manager, "empire_config", rebound):
+            assert confine_to_downloads(str(moved / "new.ps1"), "ExtFile") == (
+                moved / "new.ps1"
+            )
+            with pytest.raises(ModuleValidationException):
+                confine_to_downloads(str(stale), "ExtFile")

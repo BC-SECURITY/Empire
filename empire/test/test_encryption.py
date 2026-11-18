@@ -336,6 +336,56 @@ class TestHMACInterop:
         assert len(agent_ct) - len(agent_ct_only) == 16  # noqa: PLR2004
 
 
+class TestKeySeparation:
+    """Anchor the HKDF subkey derivation the four agent languages reimplement.
+
+    Every agent (PowerShell, pure-Python, Go, C#) carries a "must stay
+    byte-for-byte identical to the server" HKDF copy. A known-answer test on the
+    server's derive_subkeys freezes the reference so any drift is caught here.
+    """
+
+    # Vector pinned from encryption.derive_subkeys for this exact staging key.
+    STAGING_KEY = b"A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
+    K_ENC = bytes.fromhex(
+        "ada8f0de28d9f85fdbe4fe6ccfe6ca672b099c33337fc57963d77902fba662f2"
+    )
+    K_MAC = bytes.fromhex(
+        "f5b2eb12697950678051a9eb797cbc960e56a675f200e5741370dbdda00aa4fc"
+    )
+
+    def test_known_answer(self):
+        k_enc, k_mac = encryption.derive_subkeys(self.STAGING_KEY)
+        assert k_enc == self.K_ENC
+        assert k_mac == self.K_MAC
+
+    def test_subkeys_are_distinct_and_not_the_input(self):
+        k_enc, k_mac = encryption.derive_subkeys(self.STAGING_KEY)
+        assert len(k_enc) == 32  # noqa: PLR2004
+        assert len(k_mac) == 32  # noqa: PLR2004
+        assert k_enc != k_mac
+        assert k_enc != self.STAGING_KEY
+        assert k_mac != self.STAGING_KEY
+
+    def test_str_and_bytes_keys_agree(self):
+        # The server passes a str staging key and bytes session keys through the
+        # same helper; both must derive the same subkeys.
+        from_bytes = encryption.derive_subkeys(self.STAGING_KEY)
+        from_str = encryption.derive_subkeys(self.STAGING_KEY.decode("UTF-8"))
+        assert from_bytes == from_str
+
+    def test_agent_python_hkdf_matches_server(self):
+        # The pure-Python agent (aes.py.j2) must derive identical subkeys.
+        ns = {}
+        stager_common = pathlib.Path("empire/server/listeners/common")
+        exec(
+            compile((stager_common / "aes.py.j2").read_text(), "aes.py.j2", "exec"),
+            ns,
+        )
+        agent_enc, agent_mac = ns["derive_subkeys"](self.STAGING_KEY)
+        assert agent_enc == self.K_ENC
+        assert agent_mac == self.K_MAC
+
+
 class TestDiffieHellman:
     def test_two_party_key_exchange(self):
         alice = encryption.DiffieHellman()

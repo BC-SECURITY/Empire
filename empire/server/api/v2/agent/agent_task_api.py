@@ -73,7 +73,7 @@ DownloadServiceDep = Annotated[DownloadService, Depends(get_download_service)]
 
 router = APIRouter(
     prefix="/api/v2/agents",
-    tags=["agents", "tasks"],
+    tags=["agents"],
     responses={
         404: {"description": "Not found", "model": NotFoundResponse},
         400: {"description": "Bad request", "model": BadRequestResponse},
@@ -117,7 +117,9 @@ def get_task(
 TaskDep = Annotated[models.AgentTask, Depends(get_task)]
 
 
-tag_api.add_endpoints_to_taggable(router, "/{agent_id}/tasks/{uid}/tags", get_task)
+tag_api.add_endpoints_to_taggable(
+    router, "/{agent_id}/tasks/{uid}/tags", get_task, "task"
+)
 
 
 @router.get("/tasks", response_model=AgentTasks)

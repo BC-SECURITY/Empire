@@ -57,14 +57,14 @@ database:
     ip_deny_list: []
 empire_compiler:
   repo: BC-SECURITY/Empire-Compiler
-  ref: v2.0.2
+  ref: v2.0.3
   # Path to the confuser xml project file you want to use
   confuser_proj: empire/server/data/confuser.crproj
 starkiller:
   enabled: true
   repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: v4.0.3
+  ref: v4.1.0
 plugin_marketplace:
   registries:
     - name: BC-SECURITY
@@ -81,6 +81,11 @@ directories:
 logging:
   level: INFO
   simple_console: true
+  # Set to false for console-only logging (containers); see docs/settings/logging.md
+  file_logging: true
+  # Log files roll over at max_bytes and keep backup_count rotated copies
+  max_bytes: 10485760
+  backup_count: 5
 debug:
   last_task:
     enabled: false

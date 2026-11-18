@@ -76,7 +76,7 @@ Staging is the agent's initial phase, where it communicates with the server and 
 
 In this process, multiple encryption schemes are at play:
 - AES-256-GCM: AEAD encryption for routing packets (staging key).
-- AES-CBC + HMAC-SHA256: Encrypt-then-MAC for payload data (session key, 16-byte truncated HMAC per FIPS SP 800-107).
+- AES-CBC + HMAC-SHA256: Encrypt-then-MAC for payload data. Independent cipher and MAC keys are derived from the session key via HKDF-SHA256 (`empire-enc` / `empire-mac`); the HMAC is truncated to 16 bytes per FIPS SP 800-107.
 - Diffie-Hellman + HKDF-SHA256: Securely negotiates an AES-256 session key via DH key exchange with HKDF key derivation (FIPS SP 800-56C).
 
 ## Components

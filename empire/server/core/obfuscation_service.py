@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 import tempfile
 import typing
@@ -17,6 +18,16 @@ if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
 
 log = logging.getLogger(__name__)
+
+# Invoke-Obfuscation splits -Command on "," and every token on an obfuscation
+# path in data/Invoke-Obfuscation/Invoke-Obfuscation.ps1 is alphanumeric plus
+# "+" (STDIN++, VAR+, ...); the interactive-only menu words that are not
+# (show options, clear-host, quit) are never part of a -Command sequence.
+# _convert_obfuscation_command has already removed all whitespace and rewritten
+# "\\" as ",", so this alphabet is lossless for every real command and leaves no
+# character that is live inside the PowerShell double-quoted string the value is
+# interpolated into.
+_OBFUSCATION_COMMAND_RE = re.compile(r"[A-Za-z0-9+,]+")
 
 
 class ObfuscationService:
@@ -112,6 +123,15 @@ class ObfuscationService:
         # run keyword obfuscation before obfuscation
         ps_script = self.obfuscate_keywords(ps_script)
 
+        converted_command = self._convert_obfuscation_command(obfuscation_command)
+        if not _OBFUSCATION_COMMAND_RE.fullmatch(converted_command):
+            log.error(
+                "Obfuscation command %r is not a valid Invoke-Obfuscation command "
+                "sequence; skipping obfuscation.",
+                obfuscation_command,
+            )
+            return ps_script
+
         # When obfuscating large scripts, command line length is too long. Need to save to temp file
         with (
             tempfile.NamedTemporaryFile("r+") as toObfuscateFile,
@@ -122,26 +142,18 @@ class ObfuscationService:
             # Obfuscate using Invoke-Obfuscation w/ PowerShell
             install_path = self.main_menu.install_path
             toObfuscateFile.seek(0)
-            try:
-                # shell=True with an interpolated command line (S602): the only
-                # non-static input is obfuscation_command, which comes from the
-                # authenticated operator's ObfuscationConfig (server-side, trusted),
-                # not from agents or the network. If that ever becomes settable by a
-                # lower-trust principal this turns into command injection.
-                result = subprocess.run(
-                    f'{data_util.get_powershell_name()} -C \'$ErrorActionPreference = "SilentlyContinue";Import-Module {install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1;Invoke-Obfuscation -ScriptPath {toObfuscateFile.name} -Command "{self._convert_obfuscation_command(obfuscation_command)}" -Quiet | Out-File -Encoding ASCII {obfuscatedFile.name}\'',
-                    shell=True,
-                    timeout=timeout,
-                    check=False,
-                    start_new_session=True,
-                    capture_output=True,
-                )
-            except subprocess.TimeoutExpired:
-                log.exception(
-                    "Obfuscation subprocess timed out after %ds. "
-                    "Consider pre-obfuscating modules or increasing the timeout.",
-                    timeout,
-                )
+            # Paths are single-quoted (literal in PowerShell) so an install path
+            # or TMPDIR containing a space does not split into two arguments and
+            # turn obfuscation into yet another silent no-op.
+            ps_command = (
+                '$ErrorActionPreference = "SilentlyContinue";'
+                f"Import-Module '{install_path}/data/Invoke-Obfuscation/Invoke-Obfuscation.psd1';"
+                f"Invoke-Obfuscation -ScriptPath '{toObfuscateFile.name}' "
+                f'-Command "{converted_command}" -Quiet '
+                f"| Out-File -Encoding ASCII '{obfuscatedFile.name}'"
+            )
+            result = self._run_invoke_obfuscation(ps_command, timeout)
+            if result is None:
                 return ps_script
 
             if result.returncode != 0:
@@ -165,6 +177,36 @@ class ObfuscationService:
                 return ps_script
 
             return obfuscated
+
+    def _run_invoke_obfuscation(self, ps_command, timeout):
+        """Run Invoke-Obfuscation, returning None on a soft failure.
+
+        Both failures here are environmental rather than caller errors, so they
+        degrade to an unobfuscated script rather than propagating.
+        """
+        try:
+            return subprocess.run(
+                [data_util.get_powershell_name(), "-C", ps_command],
+                timeout=timeout,
+                check=False,
+                start_new_session=True,
+                capture_output=True,
+            )
+        except subprocess.TimeoutExpired:
+            log.exception(
+                "Obfuscation subprocess timed out after %ds. "
+                "Consider pre-obfuscating modules or increasing the timeout.",
+                timeout,
+            )
+        except OSError:
+            # Without a shell to absorb it, an unlaunchable PowerShell binary
+            # raises here instead of exiting 127 the way the old shell=True call
+            # did, so a broken toolchain would 500 every task that obfuscates.
+            log.exception(
+                "Could not launch PowerShell for obfuscation; "
+                "returning the unobfuscated script."
+            )
+        return None
 
     def obfuscate_keywords(self, data):
         if data:

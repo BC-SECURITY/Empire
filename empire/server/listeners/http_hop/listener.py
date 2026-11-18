@@ -8,10 +8,23 @@ from cryptography.hazmat.primitives import serialization
 
 from empire.server.common import helpers, packets, templating
 from empire.server.common.empire import MainMenu
+from empire.server.core.config import config_manager
+from empire.server.core.exceptions import ListenerValidationException
 from empire.server.utils import data_util, listener_util
+from empire.server.utils.file_util import resolve_under_root
 
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
+
+
+def _out_folder_root() -> Path:
+    """The server-owned directory ``OutFolder`` is interpreted under.
+
+    Resolved per call: ``config/data_manager.py`` rebinds
+    ``config_manager.empire_config``, and this module is cached in
+    ``sys.modules``, so a name bound at import time would freeze a stale config.
+    """
+    return config_manager.empire_config.directories.downloads / "http_hop"
 
 
 class Listener:
@@ -35,7 +48,17 @@ class Listener:
         """
         Validate all options for this listener.
         """
-        pass
+        root = _out_folder_root()
+        if resolve_under_root(root, self.options["OutFolder"]["Value"]) is None:
+            # Rejecting here, before persistence, is what keeps a poisoned
+            # OutFolder out of models.Listener.options -- the boot loop re-runs
+            # every enabled listener, so a stored escape would be replayed at
+            # every startup. It is also the only place the operator gets the
+            # real reason: start() can only answer False.
+            raise ListenerValidationException(
+                f"OutFolder must name a directory under {root}: give a path "
+                f"relative to it, or an absolute path already inside it."
+            )
 
     def generate_launcher(
         self,
@@ -266,7 +289,6 @@ class Listener:
         staging_key = listener.options["StagingKey"]["Value"]
         workingHours = listener.options["WorkingHours"]["Value"]
         killDate = listener.options["KillDate"]["Value"]
-        customHeaders = profile.split("|")[2:]
         session_cookie = listener.options["Cookie"]["Value"]
 
         # select some random URIs for staging from the main profile
@@ -280,6 +302,7 @@ class Listener:
 
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template("http/http.ps1.j2")
+            custom_headers = listener_util.parse_custom_headers(profile)
 
             raw_key_bytes = listener.agent_private_cert_key_object.private_bytes(
                 encoding=serialization.Encoding.Raw,
@@ -318,21 +341,9 @@ class Listener:
                 "agent_private_cert_key": private_key_array,
                 "server_public_cert_key": server_public_key_array,
                 "agent_public_cert_key": public_key_array,
+                "custom_headers": custom_headers,
             }
             stager = template.render(template_options)
-
-            # Patch in custom Headers
-            remove = []
-            if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if "cookie" in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ",".join(remove)
-                stager = stager.replace(
-                    '$customHeaders = "";', f'$customHeaders = "{headers}";'
-                )
 
             if obfuscate:
                 stager = self.mainMenu.obfuscationv2.obfuscate(
@@ -422,6 +433,9 @@ class Listener:
                 "host": self.host_address,
                 "agent_private_cert_key": powershell_array,
                 "agent_public_cert_key": self.agent_public_cert_key,
+                "custom_headers": listener_util.parse_custom_headers(
+                    self.options["DefaultProfile"]["Value"]
+                ),
             }
 
             return template.render(template_options)
@@ -455,9 +469,25 @@ class Listener:
         redirectListenerOptions = data_util.get_listener_options(redirectListenerName)
         redirectHost = data_util.get_host_address(redirectListenerName)
 
+        # start() must never raise: two of the three routes here do not wrap it,
+        # and one of those is the boot loop that re-runs every enabled listener,
+        # so an exception is a startup abort an operator can plant and walk away
+        # from. Every rejection below is log + return False, matching the
+        # RedirectListener miss above.
         if not redirectListenerOptions:
             log.error(
                 f"Redirect listener name {redirectListenerName} not a valid listener!"
+            )
+            return False
+
+        if not redirectHost:
+            # models.Listener.host_address is nullable, and get_host_address()
+            # swallows every DB failure into None -- so a transient error at boot
+            # is enough. str.replace(x, None) is a TypeError, which would take out
+            # the whole start_existing_listeners loop, not just this listener.
+            log.error(
+                f"listeners/http_hop start(): redirect listener {redirectListenerName} "
+                "has no host address; refusing to write hop redirectors."
             )
             return False
 
@@ -470,18 +500,62 @@ class Listener:
 
         uris = list(self.options["DefaultProfile"]["Value"].split("|")[0].split(","))
 
-        hopCode = (self.mainMenu.install_path / "data/misc/hop.php").read_text(
-            encoding="utf-8"
-        )
+        try:
+            hopCode = (self.mainMenu.install_path / "data/misc/hop.php").read_text(
+                encoding="utf-8"
+            )
+        except OSError:
+            log.exception(
+                "listeners/http_hop start(): could not read data/misc/hop.php"
+            )
+            return False
 
         hopCode = hopCode.replace("REPLACE_SERVER", redirectHost)
         hopCode = hopCode.replace("REPLACE_HOP_NAME", self.options["Name"]["Value"])
 
-        saveFolder = self.options["OutFolder"]["Value"]
+        root = _out_folder_root()
+        save_folder = resolve_under_root(root, self.options["OutFolder"]["Value"])
+        if save_folder is None:
+            log.error(
+                f"listeners/http_hop start(): OutFolder must name a directory "
+                f"under {root}; refusing to write hop redirectors."
+            )
+            return False
+
+        # Resolve every URI before writing any of them. A DefaultProfile whose
+        # second URI escapes would otherwise leave the first redirector on disk
+        # under a listener that then reports failure -- a stale .php carrying the
+        # old REPLACE_SERVER that the operator may still go and deploy.
+        save_paths = []
         for uri in uris:
-            save_path = Path(saveFolder) / uri.lstrip("/")
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-            save_path.write_text(hopCode)
+            # Confine the composed path, not just OutFolder: the URIs come from
+            # the redirect listener's stored DefaultProfile, which is another
+            # row, mutable after this listener was validated, and lstrip("/")
+            # stops an absolute URI but not "..".
+            save_path = resolve_under_root(save_folder, uri.lstrip("/"))
+            if save_path is None:
+                log.error(
+                    f"listeners/http_hop start(): redirect listener URI {uri!r} "
+                    f"does not name a file under {save_folder}; refusing to "
+                    "write hop redirectors."
+                )
+                return False
+
+            save_paths.append(save_path)
+
+        for save_path in save_paths:
+            try:
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                save_path.write_text(hopCode)
+            except OSError:
+                # Confined but unwritable: a component already taken by a
+                # regular file, EACCES, ENOSPC. Without this the boot path takes
+                # the exception.
+                log.exception(
+                    f"listeners/http_hop start(): could not write {save_path}"
+                )
+                return False
+
             log.info(
                 f"Hop redirector written to {save_path} . Place this file on the redirect server."
             )

@@ -1,3 +1,5 @@
+import contextlib
+import logging
 import os
 import string
 import struct
@@ -11,9 +13,15 @@ from sqlalchemy.orm import sessionmaker
 from empire.server.common import encryption, packets
 from empire.server.common.empire import MainMenu
 from empire.server.common.encryption import AESCipher, DiffieHellman
+from empire.server.core import hooks as hooks_module
+from empire.server.core import protocol_constants as proto
 from empire.server.core.agent_communication_service import AgentCommunicationService
 from empire.server.core.db.base import engine as original_engine
 from empire.server.core.db.models import AgentTaskStatus
+from empire.server.core.exceptions import (
+    ModuleExecutionException,
+    ModuleValidationException,
+)
 
 
 @pytest.fixture(scope="module")
@@ -379,9 +387,20 @@ def _ed25519_keypair():
     return private_raw, encryption.publickey_unsafe(private_raw)
 
 
-def _stage1_body(staging_key: str, agent_cert: bytes) -> bytes:
+def _client_pub() -> bytes:
+    """A fresh client DH public key, fixed-width big-endian."""
+    return DiffieHellman().publicKey.to_bytes(proto.DH_PUBLIC_KEY_BYTES, "big")
+
+
+def _bound_cert(private_raw: bytes, public_raw: bytes, client_pub: bytes) -> bytes:
+    """An agent certificate signing the STAGE1 transcript for `client_pub`."""
+    return encryption.signature_unsafe(
+        encryption.stage1_agent_transcript(client_pub), private_raw, public_raw
+    )
+
+
+def _stage1_body(staging_key: str, client_pub: bytes, agent_cert: bytes) -> bytes:
     """Build a STAGE1 payload: 768-byte DH public key || 64-byte agent cert."""
-    client_pub = DiffieHellman().publicKey.to_bytes(768, "big")
     return AESCipher.encrypt_then_hmac(
         staging_key.encode("UTF-8"), client_pub + agent_cert
     )
@@ -401,8 +420,49 @@ def _listener_options(name="test-listener"):
 
 STAGING_KEY = "A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6"
 
+# The session-scoped fixture listener; the agent row used by the autorun tests
+# is registered under this name.
+FIXTURE_LISTENER = "new-listener-1"
 
-def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub):
+
+def _valid_autorun_entry(module_id="powershell_code_execution_invoke_ironpython"):
+    """A minimal, valid autorun module-request dict."""
+    option_key = (
+        "BooSource"
+        if module_id == "powershell_code_execution_invoke_boolang"
+        else "ipyscript"
+    )
+    return {
+        "module_id": module_id,
+        "ignore_language_version_check": False,
+        "ignore_admin_check": False,
+        "options": {option_key: "Hello World"},
+        "modified_input": "",
+    }
+
+
+@contextlib.contextmanager
+def _autorun_configured(db, main, agent_service, agent, entries):
+    """Point the fixture listener's autorun_tasks at `entries` for the block.
+
+    Also points the agent row at the fixture listener. Yields the listener
+    row; resets autorun_tasks on exit.
+    """
+    db_listener = main.listenersv2.get_by_name(db, FIXTURE_LISTENER)
+    db_listener.autorun_tasks = entries
+
+    db_agent = agent_service.get_by_name(db, agent)
+    db_agent.listener = FIXTURE_LISTENER
+
+    try:
+        yield db_listener
+    finally:
+        db_listener.autorun_tasks = None
+
+
+def _stage(
+    service, db, session_id, language, staging_key, client_pub, agent_cert, agent_pub
+):
     server_priv, server_pub = _ed25519_keypair()
     return service._handle_agent_staging(
         db,
@@ -410,7 +470,7 @@ def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub
         language,
         "STAGE1",
         0,
-        _stage1_body(staging_key, agent_cert),
+        _stage1_body(staging_key, client_pub, agent_cert),
         staging_key,
         agent_pub,
         server_priv,
@@ -418,6 +478,126 @@ def _stage(service, db, session_id, language, staging_key, agent_cert, agent_pub
         _listener_options(),
         "1.2.3.4",
     )
+
+
+def _stage_full(service, db, session_id, language, agent_priv, agent_pub):
+    """Run a complete STAGE1 → STAGE2 negotiation against the real handler.
+
+    Returns (db_agent, stage2_response). The STAGE2 body is encrypted with
+    the session key derived client-side from the server's returned public key.
+    """
+    client = DiffieHellman()
+
+    # The agent row is registered under this listener name; autorun_tasks()
+    # resolves it via agent.listener (set at STAGE1 from the listener options),
+    # so it must be a listener that exists in the test DB — the session-scoped
+    # fixture listener.
+    listener_options = _listener_options(name=FIXTURE_LISTENER)
+
+    client_pub = client.publicKey.to_bytes(proto.DH_PUBLIC_KEY_BYTES, "big")
+    agent_cert = _bound_cert(agent_priv, agent_pub, client_pub)
+
+    server_priv, server_pub = _ed25519_keypair()
+    stage1_resp = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE1",
+        0,
+        _stage1_body(STAGING_KEY, client_pub, agent_cert),
+        STAGING_KEY,
+        agent_pub,
+        server_priv,
+        server_pub,
+        listener_options,
+        "1.2.3.4",
+    )
+    assert isinstance(stage1_resp, bytes)
+
+    # Unwrap the routing packet to get (nonce, server DH pub).
+    parsed = packets.parse_routing_packet(STAGING_KEY, stage1_resp)
+    ((_, (_, _, _, enc_data)),) = parsed.items()
+    payload = AESCipher.decrypt_and_verify(STAGING_KEY.encode("UTF-8"), enc_data)
+    nonce = payload[:16].decode("UTF-8")
+    # payload = nonce(16) || server DH pub (768 bytes, big-endian) || server_cert (64-byte Ed25519 signature)
+    server_pub_bytes = payload[16:-64]
+
+    # Derive the same session key the server stored (HKDF-SHA256 over the
+    # 768-byte normalized shared secret — see DiffieHellman.gen_key).
+    client.gen_key(int.from_bytes(server_pub_bytes, "big"))
+    session_key = client.getKey()
+
+    # STAGE2 body: nonce+1|listener|domain|user|host|internal_ip|os|high_integrity|process_name|pid|language|lang_version|arch
+    # The listener field here is unused by the handler (the agent's listener
+    # comes from STAGE1), but keep it consistent with the fixture listener.
+    sysinfo = "|".join(
+        [
+            str(int(nonce) + 1),
+            FIXTURE_LISTENER,
+            "",
+            "testuser",
+            "testhost",
+            "10.0.0.5",
+            "Windows 10 x64",
+            "true",
+            "explorer",
+            "4242",
+            language,
+            "3.0",
+            "x64",
+        ]
+    ).encode("UTF-8")
+
+    stage2_resp = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE2",
+        0,
+        AESCipher.encrypt_then_hmac(session_key, sysinfo),
+        STAGING_KEY,
+        agent_pub,
+        server_priv,
+        server_pub,
+        listener_options,
+        "1.2.3.4",
+    )
+    db_agent = service.agent_service.get_by_id(db, session_id)
+    return db_agent, stage2_resp
+
+
+# A 768-byte peer key that is a quadratic non-residue mod the group-17 prime, so
+# check_public_key() rejects it.
+DH_PUBLIC_KEY_REJECTED = b"A" * 768
+
+
+def _sid(prefix, language):
+    """A stable 8-char [A-Z0-9] session id, unique per (prefix, language)."""
+    base = "".join(c for c in (prefix + language).upper() if c.isalnum())
+    return (base + "00000000")[:8]
+
+
+def _stage_capturing_server_key(
+    service, db, session_id, language, staging_key, client_pub, agent_cert, agent_pub
+):
+    """Like _stage, but also returns the server's public cert key so the test
+    can verify the server certificate the server produced."""
+    server_priv, server_pub = _ed25519_keypair()
+    result = service._handle_agent_staging(
+        db,
+        session_id,
+        language,
+        "STAGE1",
+        0,
+        _stage1_body(staging_key, client_pub, agent_cert),
+        staging_key,
+        agent_pub,
+        server_priv,
+        server_pub,
+        _listener_options(),
+        "1.2.3.4",
+    )
+    return result, server_pub
 
 
 @pytest.mark.parametrize("language", ["powershell", "csharp"])
@@ -439,6 +619,7 @@ def test__handle_agent_staging_rejects_zeroed_agent_cert(
             "ZERO" + language[:4].upper(),
             language,
             staging_key,
+            _client_pub(),
             b"\x00" * 64,
             agent_pub,
         )
@@ -455,7 +636,8 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
     staging_key = STAGING_KEY
     attacker_priv, attacker_pub = _ed25519_keypair()
     _expected_priv, expected_pub = _ed25519_keypair()
-    forged = encryption.signature_unsafe(b"SIGNATURE", attacker_priv, attacker_pub)
+    client_pub = _client_pub()
+    forged = _bound_cert(attacker_priv, attacker_pub, client_pub)
 
     with session_local.begin() as db:
         result = _stage(
@@ -464,6 +646,7 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
             "WRNG" + language[:4].upper(),
             language,
             staging_key,
+            client_pub,
             forged,
             expected_pub,
         )
@@ -472,22 +655,31 @@ def test__handle_agent_staging_rejects_wrong_signing_key(
     assert "Invalid agent certificate" in result
 
 
-@pytest.mark.parametrize("language", ["powershell", "csharp"])
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
 def test__handle_agent_staging_accepts_valid_agent_cert(
     agent_communication_service, session_local, language
 ):
-    """The happy path still completes and returns a routing packet."""
-    staging_key = STAGING_KEY
+    """The happy path completes for every language, registers the agent, and
+    returns a server certificate that is bound to the STAGE1 transcript.
+
+    This is the server->agent half of the handshake: an agent verifies exactly
+    this signature, so a regression that signed the wrong bytes, reverted to the
+    constant b"SIGNATURE", emitted a short/variable-width pubkey, or dropped the
+    C# server cert must fail here rather than silently returning bytes.
+    """
+    sid = _sid("GOOD", language)
     agent_priv, agent_pub = _ed25519_keypair()
-    cert = encryption.signature_unsafe(b"SIGNATURE", agent_priv, agent_pub)
+    client_pub = _client_pub()
+    cert = _bound_cert(agent_priv, agent_pub, client_pub)
 
     with session_local.begin() as db:
-        result = _stage(
+        result, server_pub = _stage_capturing_server_key(
             agent_communication_service,
             db,
-            "GOOD" + language[:4].upper(),
+            sid,
             language,
-            staging_key,
+            STAGING_KEY,
+            client_pub,
             cert,
             agent_pub,
         )
@@ -495,6 +687,64 @@ def test__handle_agent_staging_accepts_valid_agent_cert(
     # A successful stage returns the raw routing packet, not an error string.
     assert isinstance(result, bytes)
     assert len(result) > 0
+    # ...and the agent is actually registered under our session id.
+    assert sid in agent_communication_service.agents
+
+    # Decrypt the server reply the way an agent does: staging-key AES/HMAC over
+    # nonce(16) || server_pub(768, big-endian) || server_cert(64).
+    parsed = packets.parse_routing_packet(STAGING_KEY, result)
+    assert sid in parsed
+    data = AESCipher.decrypt_and_verify(STAGING_KEY.encode("UTF-8"), parsed[sid][3])
+    nonce, server_dh_pub, server_cert = data[:16], data[16:784], data[784:848]
+    assert len(server_dh_pub) == proto.DH_PUBLIC_KEY_BYTES  # fixed width, not variable
+    assert len(server_cert) == proto.AGENT_CERT_SIZE
+
+    # The server certificate must verify against the transcript it signed, and
+    # must NOT verify once any transcript field is perturbed.
+    transcript = encryption.stage1_server_transcript(sid, nonce, server_dh_pub)
+    assert encryption.checkvalid(server_cert, transcript, server_pub)
+    tampered_pub = server_dh_pub[:-1] + bytes([server_dh_pub[-1] ^ 0x01])
+    assert not encryption.checkvalid(
+        server_cert,
+        encryption.stage1_server_transcript(sid, nonce, tampered_pub),
+        server_pub,
+    )
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
+def test__handle_agent_staging_rejects_invalid_dh_public_key(
+    agent_communication_service, session_local, language, caplog
+):
+    """A peer DH public key that fails validation is an error string, not a raise.
+
+    gen_key() raises a bare Exception out of gen_secret() for any key that is not
+    a quadratic residue. Unguarded, that escaped _handle_agent_staging entirely
+    and became a Werkzeug 500 on the listener.
+    """
+    staging_key = STAGING_KEY
+    agent_priv, agent_pub = _ed25519_keypair()
+    cert = _bound_cert(agent_priv, agent_pub, DH_PUBLIC_KEY_REJECTED)
+
+    with (
+        caplog.at_level(
+            logging.ERROR, logger="empire.server.core.agent_communication_service"
+        ),
+        session_local.begin() as db,
+    ):
+        result = _stage(
+            agent_communication_service,
+            db,
+            f"BADK{language[:4].upper().ljust(4, 'X')}",
+            language,
+            staging_key,
+            DH_PUBLIC_KEY_REJECTED,
+            cert,
+            agent_pub,
+        )
+
+    assert isinstance(result, str)
+    assert "DH public key" in result
+    assert "DH public key from BADK" in caplog.text
 
 
 def test_handle_agent_data():
@@ -629,47 +879,157 @@ def test__process_agent_packet():
     pass
 
 
-def _test_autorun_task(
+def test_autorun_tasks_happy_path(
     agent_task_service,
     agent_communication_service,
     agent,
     session_local,
-    db,
-    listener,
     agent_service,
     main: MainMenu,
 ):
     mock_autorun_task = [
-        {
-            "module_id": "powershell_code_execution_invoke_boolang",
-            "ignore_language_version_check": False,
-            "ignore_admin_check": False,
-            "options": {"BooSource": "Hello World"},
-            "modified_input": "",
-        },
-        {
-            "module_id": "powershell_code_execution_invoke_ironpython",
-            "ignore_language_version_check": False,
-            "ignore_admin_check": False,
-            "options": {"ipyscript": "Hello World"},
-            "modified_input": "",
-        },
+        _valid_autorun_entry("powershell_code_execution_invoke_boolang"),
+        _valid_autorun_entry("powershell_code_execution_invoke_ironpython"),
     ]
 
-    db_listener = main.listenersv2.get_by_name(db, "new-listener-1")
-    db_listener.autorun_tasks = mock_autorun_task
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, mock_autorun_task),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)
 
-    db_agent = agent_service.get_by_name(db, agent)
-    db_agent.listener = "new-listener-1"
+        tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
-    agent_communication_service.autorun_tasks(db, agent)
+        assert len(tasks) == 2  # noqa: PLR2004
+        assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"
+        assert tasks[0].module_name == mock_autorun_task[1]["module_id"]
+        assert tasks[0].status == "queued"
 
-    tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
 
-    assert len(tasks) == 2  # noqa: PLR2004
-    assert tasks[0].task_name == "TASK_POWERSHELL_CMD_JOB"
-    assert tasks[0].module_name == mock_autorun_task[1]["module_id"]
-    assert tasks[0].status == "queued"
+def test_autorun_tasks_survives_malformed_entry(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    session_local,
+    agent_service,
+    main: MainMenu,
+):
+    """A malformed autorun entry (not a valid module request) is skipped;
+    the valid entry after it still queues a task."""
+    mock_autorun_task = [
+        "this-is-not-a-module-request",  # ValidationError from parse_obj
+        _valid_autorun_entry(),
+    ]
+
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, mock_autorun_task),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)  # must not raise
+
+        tasks, _total = agent_task_service.get_tasks(db, agents=[agent])
+        assert len(tasks) == 1
+        assert tasks[0].module_name == "powershell_code_execution_invoke_ironpython"
+        assert tasks[0].status == "queued"
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [ModuleValidationException, ModuleExecutionException],
+)
+def test_autorun_tasks_survives_module_failure(
+    agent_task_service,
+    agent_communication_service,
+    agent,
+    session_local,
+    agent_service,
+    main: MainMenu,
+    monkeypatch,
+    exc,
+):
+    """An autorun entry whose module raises at the validation or compile
+    boundary is skipped without propagating. This is the #837 failure class."""
+
+    def raise_exc(*args, **kwargs):
+        raise exc("autorun module failure")
+
+    monkeypatch.setattr(
+        agent_communication_service.agent_task_service,
+        "create_task_module",
+        raise_exc,
+    )
+
+    # create_task_module is monkeypatched to always raise, so there is no
+    # "valid second entry" — the assertion is only that no exception escapes.
+    with (
+        session_local.begin() as db,
+        _autorun_configured(db, main, agent_service, agent, [_valid_autorun_entry()]),
+    ):
+        agent_communication_service.autorun_tasks(db, agent)  # must not raise
+
+
+def test_stage_full_harness_smoke(
+    agent_communication_service,
+    session_local,
+):
+    """The STAGE1→STAGE2 harness completes a real negotiation."""
+    agent_priv, agent_pub = _ed25519_keypair()
+    with session_local.begin() as db:
+        db_agent, resp = _stage_full(
+            agent_communication_service,
+            db,
+            "HARNES01",
+            "powershell",
+            agent_priv,
+            agent_pub,
+        )
+
+        assert resp.startswith("STAGE2: ")
+        assert db_agent.hostname == "testhost"
+        assert db_agent.username == "testuser"
+
+
+def test_handle_agent_staging_fires_checkin_hook_despite_failing_autorun(
+    agent_communication_service,
+    session_local,
+    monkeypatch,
+):
+    """STAGE2 with a failing autorun: hook still fires, agent still exists,
+    staging still returns STAGE2. This is the end-to-end #837 contract."""
+    calls = []
+
+    def spy_hook(db, agent_obj):
+        calls.append(agent_obj.session_id)
+
+    hooks_module.hooks.register_hook(
+        hooks_module.hooks.AFTER_AGENT_CHECKIN_HOOK, "test-spy", spy_hook
+    )
+
+    def failing_autorun(db, session_id):
+        raise RuntimeError("autorun exploded")
+
+    monkeypatch.setattr(agent_communication_service, "autorun_tasks", failing_autorun)
+
+    agent_priv, agent_pub = _ed25519_keypair()
+    try:
+        with session_local.begin() as db:
+            db_agent, resp = _stage_full(
+                agent_communication_service,
+                db,
+                "E2EAUTOR",
+                "powershell",
+                agent_priv,
+                agent_pub,
+            )
+
+            assert resp.startswith("STAGE2: ")
+            assert db_agent is not None
+            assert db_agent.hostname == "testhost"
+            assert calls == ["E2EAUTOR"]
+    finally:
+        hooks_module.hooks.unregister_hook(
+            "test-spy", hooks_module.hooks.AFTER_AGENT_CHECKIN_HOOK
+        )
 
 
 class _PoppingDict(dict):
@@ -709,3 +1069,52 @@ def test_generate_sessionid_shape(agent_communication_service):
         sid = agent_communication_service.generate_sessionid()
         assert len(sid) == 8  # noqa: PLR2004
         assert set(sid) <= valid
+
+
+@pytest.mark.parametrize("language", ["powershell", "csharp", "python", "go"])
+def test__handle_agent_staging_rejects_replayed_cert_with_substituted_key(
+    agent_communication_service, session_local, language
+):
+    """A captured certificate must not validate against a different DH key.
+
+    This is the MitM the transcript binding exists to stop: previously the
+    signature covered the constant b"SIGNATURE", so a certificate observed in
+    any handshake stayed valid forever and an attacker could swap in their own
+    DH public key while replaying it verbatim.
+    """
+    agent_priv, agent_pub = _ed25519_keypair()
+
+    # A legitimate certificate, captured from an earlier exchange over pub_a.
+    pub_a = _client_pub()
+    captured_cert = _bound_cert(agent_priv, agent_pub, pub_a)
+
+    # Positive control: that same cert IS accepted in its own exchange (pub_a),
+    # so the rejection below is specifically the substitution, not a dud cert.
+    with session_local.begin() as db:
+        ok = _stage(
+            agent_communication_service,
+            db,
+            _sid("RPOK", language),
+            language,
+            STAGING_KEY,
+            pub_a,
+            captured_cert,
+            agent_pub,
+        )
+    assert isinstance(ok, bytes)
+
+    # Replayed against a DH public key the attacker controls (pub_b != pub_a).
+    with session_local.begin() as db:
+        result = _stage(
+            agent_communication_service,
+            db,
+            _sid("RPLY", language),
+            language,
+            STAGING_KEY,
+            _client_pub(),
+            captured_cert,
+            agent_pub,
+        )
+
+    assert isinstance(result, str)
+    assert "Invalid agent certificate" in result

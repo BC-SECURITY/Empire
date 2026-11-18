@@ -38,7 +38,9 @@ options:
     required: true
     value: ''
   - name: Shellcode
-    description: local path to bin file containing x64 shellcode
+    description: local path to bin file containing x64 shellcode. Must be a path
+      inside the server's downloads directory - upload it via the Downloads API and
+      use the returned location.
     required: true
     value: ''
 advanced:

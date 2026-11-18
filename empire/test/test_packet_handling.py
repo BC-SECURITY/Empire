@@ -1,7 +1,9 @@
 import base64
+import logging
+import os
 import struct
 
-from empire.server.common import packets
+from empire.server.common import encryption, packets
 
 
 class TestBuildTaskPacket:
@@ -79,6 +81,23 @@ class TestParseResultPackets:
         assert results[1][0] == "TASK_EXIT"
 
 
+def _seal_routing_packet(staging_key: str, session_bytes: bytes) -> bytes:
+    """Build a routing packet with raw session bytes.
+
+    Mirrors build_routing_packet(), which UTF-8 encodes a str session id and so
+    cannot express a session field that is not valid UTF-8.
+    """
+    data = session_bytes + struct.pack(
+        "=BBHL",
+        packets.LANGUAGE["POWERSHELL"],
+        packets.META["STAGE0"],
+        0,  # ADDITIONAL: NONE
+        0,  # length: no trailing encrypted data
+    )
+    iv = os.urandom(12)
+    return iv + encryption.AES256GCM(staging_key.encode("UTF-8")).seal(iv, data, b"")
+
+
 class TestBuildAndParseRoutingPacket:
     def test_roundtrip(self):
         staging_key = "A" * 32
@@ -136,6 +155,30 @@ class TestBuildAndParseRoutingPacket:
         tampered[20] ^= 0xFF  # Flip a byte in the AEAD blob
         result = packets.parse_routing_packet("A" * 32, bytes(tampered))
         assert result is None
+
+    def test_non_utf8_session_id_returns_none(self):
+        """A packet that authenticates but carries undecodable session bytes is
+        discarded, not raised out of the parser."""
+        staging_key = "A" * 32
+        packet = _seal_routing_packet(staging_key, b"\xff\xfe\x00\x01ABCD")
+        assert packets.parse_routing_packet(staging_key, packet) is None
+
+    def test_non_utf8_session_id_logs_warning(self, caplog):
+        staging_key = "A" * 32
+        packet = _seal_routing_packet(staging_key, b"\xff\xfe\x00\x01ABCD")
+        with caplog.at_level(logging.WARNING, logger="empire.server.common.packets"):
+            packets.parse_routing_packet(staging_key, packet)
+        assert "session ID is not valid UTF-8" in caplog.text
+
+    def test_multibyte_utf8_session_id_still_parses(self):
+        """Only undecodable bytes are rejected — non-ASCII UTF-8 still parses."""
+        staging_key = "A" * 32
+        session_bytes = "éABCDEF".encode()  # 8 bytes: é is two of them
+        result = packets.parse_routing_packet(
+            staging_key, _seal_routing_packet(staging_key, session_bytes)
+        )
+        assert result is not None
+        assert "éABCDEF" in result
 
 
 class TestResolveId:

@@ -1,7 +1,10 @@
+import logging
 import subprocess
 
 import pytest
+import requests
 
+from empire.server.core.config.data_manager import CompilerSyncError
 from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.exceptions import ModuleExecutionException
 
@@ -125,3 +128,53 @@ def test_compile_stager_includes_diagnostics_when_empire_compiler_fails(
         assert substring in message, (
             f"expected {substring!r} in error message, got: {message!r}"
         )
+
+
+# ---------- startup resilience (#1319) ----------
+
+
+def test_init_survives_sync_failure(tmp_path, monkeypatch, caplog):
+    """A cold cache on an offline or throttled host must degrade C# compilation,
+    not abort MainMenu and with it the whole server."""
+
+    def failing_sync(*_a, **_k):
+        raise CompilerSyncError(
+            "network error fetching the release (Remote end closed connection)"
+        ) from requests.ConnectionError("Remote end closed connection")
+
+    monkeypatch.setattr("empire.server.core.dotnet.sync_empire_compiler", failing_sync)
+
+    with caplog.at_level(logging.ERROR, logger="empire.server.core.dotnet"):
+        compiler = DotnetCompiler(install_path=tmp_path)
+
+    assert compiler.compiler_dir is None
+    assert "not available" in caplog.text
+    assert "Remote end closed connection" in caplog.text
+
+
+def test_init_propagates_non_sync_errors(tmp_path, monkeypatch):
+    """Only sync failures degrade; anything else must still abort startup."""
+
+    def broken(*_a, **_k):
+        raise RuntimeError("config attribute typo")
+
+    monkeypatch.setattr("empire.server.core.dotnet.sync_empire_compiler", broken)
+
+    with pytest.raises(RuntimeError, match="typo"):
+        DotnetCompiler(install_path=tmp_path)
+
+
+def test_require_available_is_a_no_op_when_compiler_present(compiler):
+    compiler.require_available()
+
+
+def test_require_available_raises_clear_error_when_unavailable(unavailable_compiler):
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        unavailable_compiler.require_available()
+
+
+def test_embedded_resources_dir_raises_clear_error_when_unavailable(
+    unavailable_compiler,
+):
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        unavailable_compiler.embedded_resources_dir()

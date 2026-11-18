@@ -79,9 +79,7 @@ docker pull bcsecurity/empire:latest
 # Run the server with the rest api port open
 docker run -it -p 1337:1337 bcsecurity/empire:latest
 
-# To run the client against the already running server container
-docker container ls
-docker exec -it {container-id} ./ps-empire client
+# Starkiller and the API are served by the running container: browse to http://localhost:1337/
 
 # with persistent storage
 docker pull bcsecurity/empire:latest

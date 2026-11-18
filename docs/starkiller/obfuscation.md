@@ -49,8 +49,12 @@ Running a PowerShell script through Invoke-Obfuscation is slow enough that doing
 This is the most important thing to know about global obfuscation. Every one of the following returns the unobfuscated script and only writes a line to the server log; no error surfaces to the operator, and no task fails:
 
 * PowerShell is not installed on the server host.
+* PowerShell is installed but cannot be launched (for example a broken symlink on `PATH`).
+* The configured command is not a valid Invoke-Obfuscation command sequence, including an empty or whitespace-only command.
 * The obfuscation subprocess exceeds `obfuscation.timeout`, 300 seconds by default.
 * The subprocess exits non-zero.
 * The subprocess produces empty output.
+
+The command-validity check is the one an operator is most likely to trigger by hand. The command is normalized first — all whitespace is stripped, a `,` becomes `,home,` (return to the top menu), and `\` becomes `,` — and what is left is accepted only if every remaining character is a letter, a digit, `+` or `,`. So `Token\All\1`, `Launcher\STDIN++\12467` and `Token\All\1, Ast\All\1` are all fine, while `cd ..`, `Token/All/1` or anything carrying a quote or a shell metacharacter is rejected and logged, and every module obfuscated under that config comes back in plaintext. If you change the global command and obfuscation appears to stop working, check the server log for `is not a valid Invoke-Obfuscation command sequence` before looking anywhere else.
 
 The operational consequence: an operator who enables PowerShell obfuscation on a host without `pwsh` gets working tasks back (the agent still executes them fine) but none of them are actually obfuscated, and nothing in Starkiller says so. The task looks the same either way. The install script does install PowerShell by default on Debian, Kali, and Parrot, so this mostly bites manual installs and non-Debian-family systems where PowerShell was never set up in the first place.

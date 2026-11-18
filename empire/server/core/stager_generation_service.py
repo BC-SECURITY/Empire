@@ -25,6 +25,7 @@ from empire.server.core.exceptions import (
 )
 from empire.server.utils import data_util
 from empire.server.utils.donut_util import donut_create
+from empire.server.utils.file_util import remove_stager_artifact
 
 if typing.TYPE_CHECKING:
     from empire.server.common.empire import MainMenu
@@ -105,7 +106,7 @@ class StagerGenerationService:
         as ``launcher.txt`` ensures the compiled manifest resource name matches
         the hardcoded ``GetManifestResourceStream("launcher.txt")`` in the C#.
         """
-        common_dir = self.dotnet_compiler.compiler_dir / "Data/EmbeddedResources/common"
+        common_dir = self.dotnet_compiler.embedded_resources_dir()
         common_dir.mkdir(parents=True, exist_ok=True)
         unique_dir = Path(tempfile.mkdtemp(dir=common_dir))
         try:
@@ -636,7 +637,15 @@ class StagerGenerationService:
             return None, err
 
         directory = self.generate_python_exe(posh_code, dot_net_version)
-        shellcode = donut_create(file=str(directory), arch=arch_type)
+        # donut reads the EXE and we keep only the shellcode, so the compiled
+        # file is pure temp. In a finally because the None branch below returns
+        # early: this path is reachable unauthenticated through the STAGE0
+        # shellcode branch, and a few megabytes per request never reclaimed is
+        # the durable half of the same DoS the listeners' cleanup closes.
+        try:
+            shellcode = donut_create(file=str(directory), arch=arch_type)
+        finally:
+            remove_stager_artifact(directory)
         if shellcode is None:
             return (
                 None,
@@ -681,8 +690,12 @@ class StagerGenerationService:
         if not exe_path:
             return None, "Failed to generate C# EXE for shellcode"
 
-        # Create shellcode from the EXE
-        shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        # Create shellcode from the EXE, then drop it -- see the note in
+        # generate_python_shellcode; same sink, same unauthenticated reach.
+        try:
+            shellcode = donut_create(file=str(exe_path), arch=arch_type)
+        finally:
+            remove_stager_artifact(exe_path)
         if shellcode is None:
             return (
                 None,
@@ -787,21 +800,21 @@ class StagerGenerationService:
         log.error("Unable to patch MachO binary")
         return None
 
-    def generate_dylib(self, launcher_code, arch, hijacker):  # noqa: PLR0912
+    @staticmethod
+    def dylib_template_name(arch, hijacker):
+        """Template under data/misc that generate_dylib patches for this arch."""
+        suffix = "" if arch == "x86" else "64"
+        if hijacker:
+            return f"hijackers/template{suffix}.dylib"
+        return f"templateLauncher{suffix}.dylib"
+
+    def generate_dylib(self, launcher_code, arch, hijacker):
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """
         MH_DYLIB = 6
         misc_dir = self.main_menu.install_path / "data/misc"
-        if hijacker:
-            if arch == "x86":
-                dylib_path = misc_dir / "hijackers/template.dylib"
-            else:
-                dylib_path = misc_dir / "hijackers/template64.dylib"
-        elif arch == "x86":
-            dylib_path = misc_dir / "templateLauncher.dylib"
-        else:
-            dylib_path = misc_dir / "templateLauncher64.dylib"
+        dylib_path = misc_dir / self.dylib_template_name(arch, hijacker)
 
         with dylib_path.open("rb") as f:
             macho = macholib.MachO.MachO(f.name)
@@ -1113,13 +1126,27 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             listener_name
         )
 
-        if language.lower() in ["python", "ironpython"]:
-            return self.generate_python_stageless(active_listener, language)
+        if language in ["python", "ironpython"]:
+            full_agent = self.generate_python_stageless(active_listener, language)
+            # The staged python launcher also leads with `import sys`; bypasses
+            # may call sys.exit().
+            prefix = "import sys\n"
+        elif language == "powershell":
+            full_agent = self.generate_powershell_stageless(active_listener, language)
+            # As in the staged powershell launcher, this applies to everything
+            # after it, including the agent, not just the bypasses.
+            prefix = '$ErrorActionPreference = "SilentlyContinue";\n'
+        else:
+            return None
 
-        if language.lower() == "powershell":
-            return self.generate_powershell_stageless(active_listener, language)
-
-        return None
+        bypasses = options.get("Bypasses", {}).get("Value", "")
+        bypass_codes = self._load_bypass_codes(bypasses, language)
+        if not bypass_codes:
+            return full_agent
+        # Bypasses share the agent's script block, so AMSI/logging bypasses only
+        # cover code the agent later runs. Newline-join: API-created bypasses
+        # need not end in a newline.
+        return prefix + "\n".join(bypass_codes) + "\n" + full_agent
 
     def _build_template_vars(self, active_listener):
         session_id = "00000000"
@@ -1154,6 +1181,8 @@ $filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
             "DELAY": delay,
             "JITTER": jitter,
             "LOST_LIMIT": lost_limit,
+            "SESSION_COOKIE": active_listener.options.get("Cookie", {}).get("Value")
+            or "session",
             "STAGING_KEY": base64.b64encode(staging_key.encode("UTF-8")).decode(
                 "UTF-8"
             ),

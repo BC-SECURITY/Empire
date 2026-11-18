@@ -7,31 +7,53 @@ from pathlib import Path
 
 from empire.server.common.helpers import random_string
 from empire.server.core.config.config_manager import empire_config
-from empire.server.core.config.data_manager import sync_empire_compiler
+from empire.server.core.config.data_manager import (
+    CompilerSyncError,
+    sync_empire_compiler,
+)
 from empire.server.core.exceptions import ModuleExecutionException
 
 log = logging.getLogger(__name__)
 
 _COMPILER_UNAVAILABLE_MSG = (
-    "Empire Compiler is not available. It could not be downloaded at startup "
-    "(see logs — most often a GitHub API rate-limit). Set GITHUB_TOKEN in the "
-    "environment or configure empire_compiler.directory to a local build."
+    "Empire Compiler is not available. It could not be downloaded or extracted "
+    "at startup (see the server log for the cause). Set GITHUB_TOKEN in the "
+    "environment, configure empire_compiler.directory to a local build, or "
+    "re-run './ps-empire setup' once GitHub is reachable, then restart."
 )
 
 
 class DotnetCompiler:
     def __init__(self, install_path):
         self.install_path = install_path
-        compiler_root = sync_empire_compiler(empire_config.empire_compiler)
+        # Don't hard-crash startup: C# compilation is opt-in, so a cold cache
+        # on an offline or throttled host degrades to a clear error at the
+        # first compile request instead of taking down the whole server.
+        self.compiler_dir: Path | None = None
+        try:
+            compiler_root = sync_empire_compiler(empire_config.empire_compiler)
+        except CompilerSyncError:
+            log.exception(_COMPILER_UNAVAILABLE_MSG)
+            return
         if compiler_root is None:
-            # Don't hard-crash startup (a bare ``None / "EmpireCompiler"`` used
-            # to raise TypeError and take down the whole server / test suite).
-            # C# compilation is opt-in, so degrade gracefully and only fail when
-            # a caller actually asks to compile.
             log.error(_COMPILER_UNAVAILABLE_MSG)
-            self.compiler_dir = None
-        else:
-            self.compiler_dir = compiler_root / "EmpireCompiler"
+            return
+        self.compiler_dir = compiler_root / "EmpireCompiler"
+
+    def require_available(self) -> None:
+        """Raise the operator-facing error if startup left no compiler behind.
+
+        Deliberately no re-sync here (issue 1319 floated one): a compile
+        request should not do network I/O, and the operator is told to run
+        setup and restart instead.
+        """
+        if self.compiler_dir is None:
+            raise ModuleExecutionException(_COMPILER_UNAVAILABLE_MSG)
+
+    def embedded_resources_dir(self) -> Path:
+        """Where stager launchers are written for the compiler to embed."""
+        self.require_available()
+        return self.compiler_dir / "Data" / "EmbeddedResources" / "common"
 
     def compile_task(
         self,
@@ -41,8 +63,7 @@ class DotnetCompiler:
         confuse=False,
         merge_references=False,
     ) -> Path:
-        if self.compiler_dir is None:
-            raise ModuleExecutionException(_COMPILER_UNAVAILABLE_MSG)
+        self.require_available()
 
         random_task_name = f"{task_name}_{random_string(6)}.exe"
 
@@ -112,8 +133,7 @@ class DotnetCompiler:
     def compile_stager(
         self, compiler_yaml, task_name, dot_net_version="net40", confuse=False
     ) -> Path:
-        if self.compiler_dir is None:
-            raise ModuleExecutionException(_COMPILER_UNAVAILABLE_MSG)
+        self.require_available()
 
         random_task_name = f"{task_name}_{random_string(4)}.exe"
 

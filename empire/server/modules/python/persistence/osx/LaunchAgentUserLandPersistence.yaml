@@ -23,7 +23,7 @@ output_extension:
 needs_admin: false
 opsec_safe: false
 language: python
-min_language_version: '2.6'
+min_language_version: '3'
 comments: []
 options:
   - name: Agent
@@ -40,8 +40,8 @@ options:
     required: false
     value: default
   - name: PLISTName
-    description: Name of the PLIST to install. Name will also be used for the plist
-      file.
+    description: Name of the LaunchAgent plist to install; `.plist` is appended if
+      omitted and the Label is the name without it.
     required: true
     value: com.proxy.initialize.plist
 advanced:

@@ -1,13 +1,15 @@
 Logging
 ----
 
-The logging for the server is logged to the file `<data-dir>/logs/empire_server.log` (`~/.local/share/empire/logs/empire_server.log` by default; see [data & config locations](../quickstart/server.md#data--config-locations)) and to the console.
+The logging for the server is logged to the file `<data-dir>/logs/empire_server.log` (`~/.local/share/empire/logs/empire_server.log` by default; see [data & config locations](../quickstart/server.md#data--config-locations)) and to the console (file output is skipped when `logging.file_logging` is `false`).
 By default, the logging level is set to `INFO`.
 
 
 ## Listener Logging
-Listeners have their own logging configuration. All logs `debug` and above are written to
+Listeners have their own logging configuration. Unless `logging.file_logging` is `false`, all logs `debug` and above are written to
 the file `<data-dir>/logs/listener_<listener_name>.log` (Linux default `~/.local/share/empire/logs/listener_<listener_name>.log`), and all logs `warning` and above will go to the console.
+If `logging.file_logging` is `false`, only the `warning` and above console output remains; see
+[Docker / console-only logging](#docker--console-only-logging).
 
 If there is a log message that you also want sent to the server log and console,
 also log it to the module logger with `log.info()`.
@@ -26,12 +28,14 @@ The expanded format is used in the server log file and can be enabled for the co
 ```yaml
 logging:
   level: INFO
-  directory: empire/server/downloads/logs/
   simple_console: true
+  file_logging: true
+  max_bytes: 10485760
+  backup_count: 5
 debug:
   last_task:
     enabled: false
-    file: empire/server/data/last_task.txt
+    file: debug/last_task.txt
 ```
 
 Log level for the root server log defaults to `INFO`.
@@ -39,12 +43,48 @@ It can be changed by passing the `--log-level` flag to the server,
 which expects a string of one of the following values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
 If no command line flag is passed, the config file is used.
 
-The log directory can be changed by setting the `logging.directory` property in the config file.
+Log files live under `<data-dir>/logs`.
 
 `simple_console` changes the console logging format to just the log level and message,
 instead of the extended format.
 
+`file_logging` controls whether Empire writes log files at all. It defaults to `true`.
+See [Docker / console-only logging](#docker--console-only-logging) below.
+
+`max_bytes` and `backup_count` control rotation of `empire_server.log` and every
+`listener_<name>.log`. When a file reaches `max_bytes` it is renamed to `.1`, `.1` becomes
+`.2`, and so on up to `backup_count`; the oldest rotated file is deleted. With the defaults
+(10 MB, 5 backups) each log is capped at about 60 MB on disk. Rotated-out data is gone,
+so on a busy engagement where you need the full listener record, raise the limits or set
+`max_bytes: 0` (or `backup_count: 0`) to disable rotation and keep a single unbounded file,
+which was the behavior before these options existed.
+
 `debug.last_task` will cause Empire to save the input of the last task that was run to a file.
+
+### Docker / console-only logging
+Empire's console output goes to stderr, which container runtimes capture along with stdout
+(`docker logs`, Kubernetes, Cloud Run). To log only to the console, set:
+
+```yaml
+logging:
+  file_logging: false
+```
+
+or, without touching the config file:
+
+```bash
+EMPIRE_LOGGING__FILE_LOGGING=false
+```
+
+With file logging off, no `logs/` directory is created and the server and listener log files
+are not written. Per-agent `agent.log` files under the downloads directory are unaffected.
+Listener loggers still send `warning` and above to the console, but their `info` and `debug`
+records are dropped. Those include a line per agent check-in with the raw session cookie,
+which would otherwise flood the console and land in the container's log collector.
+
+The runtime, not Empire, then decides how much of that output is kept. Docker's default
+`json-file` log driver does not rotate on its own; cap it with
+`--log-opt max-size=10m --log-opt max-file=5` (or the `logging:` block in Compose).
 
 ## Command Line Flags
 `--log-level <level>`

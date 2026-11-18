@@ -1,16 +1,49 @@
 import logging
 import typing
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from empire.server.core.config import config_manager
 from empire.server.core.db import models
+from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModuleOption
 from empire.server.core.option_types import py_type_for_tag
+from empire.server.utils.file_util import is_path_within
 
 log = logging.getLogger(__name__)
 
 LISTENER_OPTION_NAMES = {"listener", "listenername", "listener_name"}
+
+
+def confine_to_downloads(value: str, option_name: str) -> Path:
+    """Return ``value`` as a Path, rejecting anything outside the downloads root.
+
+    Module options that name a *server-side* file are operator-supplied and end
+    up in a read sink whose bytes come back in the task's ``input``, so an
+    unconfined one is an arbitrary file read for any enabled operator. The
+    downloads directory is the boundary because it is the one place operators
+    can write through the API: upload the payload, then pass back the
+    ``location`` the Download DTO hands out.
+
+    Read through ``config_manager`` rather than a module-level
+    ``from ... import empire_config``: ``run_update`` rebinds that global
+    (``data_manager.py``), and a captured reference would leave the guard
+    comparing against the pre-update downloads root.
+
+    Returns the *resolved* path, for the same reason ``resolve_under_root``
+    does: containment was decided about the resolved form, so handing the
+    caller the raw value back would let the path that was checked and the path
+    that is read diverge.
+    """
+    downloads = config_manager.empire_config.directories.downloads
+    if not is_path_within(Path(value), downloads):
+        log.warning(
+            "Blocked %s outside the downloads directory: %r", option_name, value
+        )
+        raise ModuleValidationException(f"{option_name} must be inside {downloads}")
+    return Path(value).resolve()
 
 
 def get_listener_defaults(db: Session) -> tuple[str | None, list[str] | None]:

@@ -189,7 +189,19 @@ class DownloadService:
         Content-Disposition value straight into ``UploadFile.filename``. Require
         a bare basename and confirm the result stays inside base_dir so ``..``
         sequences can't escape the downloads directory.
+
+        base_dir is untrusted too: callers compose it from ``user.username``,
+        which any enabled operator can set through ``PUT /api/v2/users/{uid}``,
+        and from the ``subdirectory`` argument. Anchor it to the downloads root
+        before touching the filename, so a traversing directory component can't
+        slip past a perfectly safe basename.
         """
+        if not is_path_within(base_dir, empire_config.directories.downloads):
+            log.warning(
+                "Blocked upload to a directory outside downloads: %r", str(base_dir)
+            )
+            raise HTTPException(status_code=400, detail="Invalid upload location.")
+
         safe_name = safe_filename(filename)
         location = base_dir / safe_name if safe_name else None
         if location is None or not is_path_within(location, base_dir):

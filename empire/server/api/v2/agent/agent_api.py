@@ -62,7 +62,7 @@ def get_agent(
 AgentDep = Annotated[models.Agent, Depends(get_agent)]
 
 
-tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_agent)
+tag_api.add_endpoints_to_taggable(router, "/{uid}/tags", get_agent, "agent")
 
 
 @router.get("/checkins", response_model=AgentCheckIns)

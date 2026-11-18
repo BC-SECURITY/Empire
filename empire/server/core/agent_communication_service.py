@@ -7,7 +7,6 @@ import string
 import typing
 from pathlib import Path
 
-from pydantic import ValidationError
 from sqlalchemy import and_, delete, select
 from sqlalchemy.orm import Session
 from zlib_wrapper import decompress
@@ -542,15 +541,18 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # The agent certificate is mandatory. It used to be skipped when
-                # the field was all zeros, which let a caller opt out of
-                # verification simply by sending 64 zero bytes.
+                # The agent certificate is mandatory -- it used to be skipped
+                # when the field was all zeros -- and must sign the STAGE1
+                # transcript rather than a fixed string, so that a captured
+                # signature cannot be replayed with a substituted DH public key.
                 if len(agent_cert) != proto.AGENT_CERT_SIZE:
                     log.error(f"Missing agent certificate from {session_id}")
                     return f"Error: Invalid agent certificate from {session_id}"
                 try:
                     if not encryption.checkvalid(
-                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                        agent_cert,
+                        encryption.stage1_agent_transcript(client_pub_be),
+                        agent_cert_public_key,
                     ):
                         log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
@@ -560,7 +562,13 @@ class AgentCommunicationService:
 
                 # Continue DH as usual
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)
@@ -590,14 +598,18 @@ class AgentCommunicationService:
                 )
                 self.add_agent_to_cache(agent)
 
-                server_cert = encryption.signature_unsafe(
-                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
-                )
-
                 # server returns its public key and server_cert, so agent can make a shared secret
                 # with the server's public key, and agent can verify the server's authenticity.
-                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
-                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                # Fixed width: agents slice this at a constant offset, so a
+                # short-by-one key (leading zero byte) must not shift the layout.
+                pub_bytes = serverPub.publicKey.to_bytes(
+                    proto.DH_PUBLIC_KEY_BYTES, "big"
+                )
+                server_cert = encryption.signature_unsafe(
+                    encryption.stage1_server_transcript(session_id, nonce, pub_bytes),
+                    server_cert_private_key,
+                    server_cert_public_key,
+                )
                 data = nonce.encode("UTF-8") + pub_bytes + server_cert
                 encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
@@ -623,15 +635,18 @@ class AgentCommunicationService:
                     log.exception(f"Bad {lang_name} DH public")
                     return f"ERROR: Invalid {lang_name} DH public key"
 
-                # The agent certificate is mandatory. It used to be skipped when
-                # the field was all zeros, which let a caller opt out of
-                # verification simply by sending 64 zero bytes.
+                # The agent certificate is mandatory -- it used to be skipped
+                # when the field was all zeros -- and must sign the STAGE1
+                # transcript rather than a fixed string, so that a captured
+                # signature cannot be replayed with a substituted DH public key.
                 if len(agent_cert) != proto.AGENT_CERT_SIZE:
                     log.error(f"Missing agent certificate from {session_id}")
                     return f"Error: Invalid agent certificate from {session_id}"
                 try:
                     if not encryption.checkvalid(
-                        agent_cert, b"SIGNATURE", agent_cert_public_key
+                        agent_cert,
+                        encryption.stage1_agent_transcript(client_pub_be),
+                        agent_cert_public_key,
                     ):
                         log.error(f"Invalid agent certificate from {session_id}")
                         return f"Error: Invalid agent certificate from {session_id}"
@@ -639,7 +654,13 @@ class AgentCommunicationService:
                     log.exception("Agent cert parse/verify error")
                     return f"Error: Invalid agent certificate from {session_id}"
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
 
                 nonce = helpers.random_string(16, charset=string.digits)
@@ -672,8 +693,19 @@ class AgentCommunicationService:
                 )
                 self.add_agent_to_cache(agent)
 
-                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs))
-                data = nonce.encode("UTF-8") + str(serverPub.publicKey).encode("UTF-8")
+                # step 4 of negotiation -> server returns HMAC(AESn(nonce+PUBs+cert))
+                # C# previously received no server certificate at all, and got the
+                # public key as a decimal string rather than fixed-width bytes.
+                # It now matches every other language.
+                pub_bytes = serverPub.publicKey.to_bytes(
+                    proto.DH_PUBLIC_KEY_BYTES, "big"
+                )
+                server_cert = encryption.signature_unsafe(
+                    encryption.stage1_server_transcript(session_id, nonce, pub_bytes),
+                    server_cert_private_key,
+                    server_cert_public_key,
+                )
+                data = nonce.encode("UTF-8") + pub_bytes + server_cert
                 encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
                     staging_key, session_id, language, encData=encdata
@@ -703,7 +735,9 @@ class AgentCommunicationService:
 
                 # check verification of agent_cert using its public key so we can verify
                 if not encryption.checkvalid(
-                    agent_cert, b"SIGNATURE", agent_cert_public_key
+                    agent_cert,
+                    encryption.stage1_agent_transcript(message[:768]),
+                    agent_cert_public_key,
                 ):
                     message = f"Invalid agent certificate from {session_id}"
                     log.error(message)
@@ -713,7 +747,13 @@ class AgentCommunicationService:
 
                 # client posts PUBc key
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)
@@ -744,14 +784,18 @@ class AgentCommunicationService:
                 self.add_agent_to_cache(agent)
 
                 # sign with server's private key so agent can verify
-                server_cert = encryption.signature_unsafe(
-                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
-                )
-
                 # server returns its public key and server_cert, so agent can make a shared secret
                 # with the server's public key, and agent can verify the server's authenticity.
-                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
-                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                # Fixed width: agents slice this at a constant offset, so a
+                # short-by-one key (leading zero byte) must not shift the layout.
+                pub_bytes = serverPub.publicKey.to_bytes(
+                    proto.DH_PUBLIC_KEY_BYTES, "big"
+                )
+                server_cert = encryption.signature_unsafe(
+                    encryption.stage1_server_transcript(session_id, nonce, pub_bytes),
+                    server_cert_private_key,
+                    server_cert_public_key,
+                )
                 data = nonce.encode("UTF-8") + pub_bytes + server_cert
                 encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
@@ -759,9 +803,13 @@ class AgentCommunicationService:
                 )
 
             if language.lower() == "go":
-                # check that message has a valid block size
-                if (len(str(message)) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
-                    len(str(message)) > proto.STAGE0_PYTHON_GO_MAX_BYTES
+                # check that message has a valid block size. Use len(message),
+                # not len(str(message)): the latter measures the bytes' repr
+                # (e.g. b"\x00..."), which for the fixed 832-byte STAGE1 body
+                # exceeds the 2500 ceiling ~0.3% of the time and rejected valid
+                # Go stages. The python branch above already uses len(message).
+                if (len(message) < proto.STAGE0_PYTHON_GO_MIN_BYTES) or (
+                    len(message) > proto.STAGE0_PYTHON_GO_MAX_BYTES
                 ):
                     message = f"Invalid {lang_name} key post format from {session_id}"
                     log.error(message)
@@ -785,7 +833,9 @@ class AgentCommunicationService:
 
                 # check verification of agent_cert using its public key so we can verify
                 if not encryption.checkvalid(
-                    agent_cert, b"SIGNATURE", agent_cert_public_key
+                    agent_cert,
+                    encryption.stage1_agent_transcript(message[:768]),
+                    agent_cert_public_key,
                 ):
                     message = f"Invalid agent certificate from {session_id}"
                     log.error(message)
@@ -795,7 +845,13 @@ class AgentCommunicationService:
 
                 # client posts PUBc key
                 serverPub = encryption.DiffieHellman()
-                serverPub.gen_key(clientPub)
+                try:
+                    serverPub.gen_key(clientPub)
+                except Exception:
+                    log.exception(
+                        f"Invalid {lang_name} DH public key from {session_id}"
+                    )
+                    return f"ERROR: Invalid {lang_name} DH public key"
                 # serverPub.key == the negotiated session key
                 message = f"Agent {session_id} from {client_ip} posted valid {lang_name} PUB key"
                 log.info(message)
@@ -826,14 +882,18 @@ class AgentCommunicationService:
                 self.add_agent_to_cache(agent)
 
                 # sign with server's private key so agent can verify
-                server_cert = encryption.signature_unsafe(
-                    b"SIGNATURE", server_cert_private_key, server_cert_public_key
-                )
-
                 # server returns its public key and server_cert, so agent can make a shared secret
                 # with the server's public key, and agent can verify the server's authenticity.
-                nbytes = (serverPub.publicKey.bit_length() + 7) // 8
-                pub_bytes = serverPub.publicKey.to_bytes(nbytes, "big")
+                # Fixed width: agents slice this at a constant offset, so a
+                # short-by-one key (leading zero byte) must not shift the layout.
+                pub_bytes = serverPub.publicKey.to_bytes(
+                    proto.DH_PUBLIC_KEY_BYTES, "big"
+                )
+                server_cert = encryption.signature_unsafe(
+                    encryption.stage1_server_transcript(session_id, nonce, pub_bytes),
+                    server_cert_private_key,
+                    server_cert_public_key,
+                )
                 data = nonce.encode("UTF-8") + pub_bytes + server_cert
                 encdata = AESCipher.encrypt_then_hmac(staging_key.encode("UTF-8"), data)
                 return packets.build_routing_packet(
@@ -912,7 +972,10 @@ class AgentCommunicationService:
                 dotnet_version=dotnet_version,
             )
 
-            self.autorun_tasks(db, session_id)
+            try:
+                self.autorun_tasks(db, session_id)
+            except Exception:
+                log.exception("Error in autorun_tasks() during agent staging")
 
             # signal everyone that this agent is now active
             message = f"Initial agent {session_id} from {client_ip} now active"
@@ -1574,8 +1637,8 @@ class AgentCommunicationService:
                     self.agent_task_service.create_task_module(
                         db, agent, module_request
                     )
-                except ValidationError:
-                    log.exception("Error parsing module request")
+                except Exception:
+                    log.exception("Error executing autorun module request")
 
     def generate_sessionid(self):
         return "".join(

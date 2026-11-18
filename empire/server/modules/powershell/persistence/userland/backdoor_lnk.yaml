@@ -63,7 +63,9 @@ options:
     required: true
     value: HKCU:\Software\Microsoft\Windows\debug
   - name: ExtFile
-    description: Use an external file for the payload instead of a stager.
+    description: Use an external file for the payload instead of a stager. Must be
+      a path inside the server's downloads directory - upload it via the Downloads
+      API and use the returned location.
     required: false
     value: ''
   - name: Cleanup

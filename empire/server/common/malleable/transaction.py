@@ -197,6 +197,16 @@ class MalleableRequest(MalleableObject):
         url = urllib.parse.urlunsplit(self._url) + extra
         return url
 
+    @property
+    def request_target(self):
+        """Path plus query with no scheme or host, e.g. "/stage?id=1".
+
+        `query` is the raw "name=value&..." string that `parameter`
+        directives populate, so the "?" is inserted here. `extra`
+        (uri-append metadata) is not included; `url` carries the full form.
+        """
+        return f"{self.path}?{self.query}" if self.query else self.path
+
     @url.setter
     def url(self, url):
         """Setter for the full url.
@@ -464,9 +474,7 @@ class MalleableRequest(MalleableObject):
                 data = urllib.parse.unquote_to_bytes(data).decode("Latin-1")
         elif terminator.type == Terminator.URIAPPEND:
             if self.extra:
-                data = urllib.parse.unquote_to_bytes(self.extra).decode(
-                    "Latin-1"
-                )
+                data = urllib.parse.unquote_to_bytes(self.extra).decode("Latin-1")
             elif original.parameters:
                 for p in sorted(original.parameters, key=len, reverse=True):
                     known = original.parameters[p]
@@ -478,9 +486,7 @@ class MalleableRequest(MalleableObject):
                     ):
                         data = known.split(known)[-1]
                         if data:
-                            data = urllib.parse.unquote_to_bytes(data).decode(
-                                "Latin-1"
-                            )
+                            data = urllib.parse.unquote_to_bytes(data).decode("Latin-1")
                         break
             else:
                 for known in sorted(original.uris, key=len, reverse=True):
@@ -488,9 +494,7 @@ class MalleableRequest(MalleableObject):
                     if known.lower() in shown.lower() and len(shown) > len(known):
                         data = shown.split(known)[-1]
                         if data:
-                            data = urllib.parse.unquote_to_bytes(data).decode(
-                                "Latin-1"
-                            )
+                            data = urllib.parse.unquote_to_bytes(data).decode("Latin-1")
                         break
         elif terminator.type == Terminator.PRINT:
             data = self.body

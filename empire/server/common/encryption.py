@@ -37,6 +37,55 @@ def _get_byte(c):
     return c
 
 
+# Domain-separation labels for the STAGE1 handshake transcript. The Ed25519
+# certificates sign these transcripts rather than a fixed string, so a captured
+# signature cannot be replayed into a different exchange.
+STAGE1_AGENT_LABEL = b"empire-stage1-agent"
+STAGE1_SERVER_LABEL = b"empire-stage1-server"
+
+# Labels for splitting a single shared key into independent cipher/MAC subkeys.
+ENC_SUBKEY_LABEL = b"empire-enc"
+MAC_SUBKEY_LABEL = b"empire-mac"
+
+
+def _subkey(key, label):
+    """Derive a 32-byte subkey from `key` for a single purpose."""
+    if isinstance(key, str):
+        key = key.encode("UTF-8")
+    return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=label).derive(
+        bytes(key)
+    )
+
+
+def derive_subkeys(key):
+    """Split a shared key into independent (cipher, MAC) subkeys.
+
+    Using one key for both AES and HMAC is not known to be breakable, but key
+    separation is standard practice and costs nothing here.
+    """
+    return _subkey(key, ENC_SUBKEY_LABEL), _subkey(key, MAC_SUBKEY_LABEL)
+
+
+def stage1_agent_transcript(client_pub_be):
+    """Bytes the agent signs in STAGE1: label || its DH public key.
+
+    The session id is deliberately excluded: the agent sends the placeholder
+    "00000000" and the server assigns the real id only afterwards, so the agent
+    cannot know it at signing time. Binding the DH public key is what defeats
+    the substitution attack; the server-assigned id carries no agent entropy.
+    """
+    return STAGE1_AGENT_LABEL + bytes(client_pub_be)
+
+
+def stage1_server_transcript(session_id, nonce, server_pub_be):
+    """Bytes the server signs in STAGE1: label || session id || nonce || its DH public key."""
+    if isinstance(session_id, str):
+        session_id = session_id.encode("UTF-8")
+    if isinstance(nonce, str):
+        nonce = nonce.encode("UTF-8")
+    return STAGE1_SERVER_LABEL + session_id + nonce + bytes(server_pub_be)
+
+
 class AESCipher:
     """
     Cohesive namespace for AES/HMAC utilities.
@@ -70,10 +119,14 @@ class AESCipher:
 
     @staticmethod
     def encrypt_then_hmac(key, data):
-        """Encrypt the data then calculate HMAC over the ciphertext."""
+        """Encrypt the data then calculate HMAC over the ciphertext.
 
-        data = AESCipher.encrypt(key, data)
-        mac = hmac.new(key, data, digestmod=hashlib.sha256).digest()
+        The cipher and MAC keys are derived independently from `key`.
+        """
+
+        k_enc, k_mac = derive_subkeys(key)
+        data = AESCipher.encrypt(k_enc, data)
+        mac = hmac.new(k_mac, data, digestmod=hashlib.sha256).digest()
         return data + mac[0:16]
 
     @staticmethod
@@ -95,21 +148,27 @@ class AESCipher:
         if len(data) > 32:  # noqa: PLR2004
             mac = data[-16:]
             data_ = data[:-16]
-            expected = hmac.new(key, data_, digestmod=hashlib.sha256).digest()[0:16]
+            _k_enc, k_mac = derive_subkeys(key)
+            expected = hmac.new(k_mac, data_, digestmod=hashlib.sha256).digest()[0:16]
             # Double-HMAC blinding: compare HMACs of both values rather than the
             # raw tags, so the equality check leaks nothing through timing even if
             # the underlying compare isn't perfectly constant-time.
             return ct_compare_digest(
-                hmac.new(key, expected, digestmod=hashlib.sha256).digest(),
-                hmac.new(key, mac, digestmod=hashlib.sha256).digest(),
+                hmac.new(k_mac, expected, digestmod=hashlib.sha256).digest(),
+                hmac.new(k_mac, mac, digestmod=hashlib.sha256).digest(),
             )
         return False
 
     @staticmethod
     def decrypt_and_verify(key, data):
-        """Decrypt the data, but only if it has a valid MAC."""
+        """Decrypt the data, but only if it has a valid MAC.
+
+        Mirrors encrypt_then_hmac: the MAC is checked with the MAC subkey and
+        the body is decrypted with the cipher subkey.
+        """
         if len(data) >= 48 and AESCipher.verify_hmac(key, data):  # noqa: PLR2004
-            return AESCipher.decrypt(key, data[:-16])
+            k_enc, _k_mac = derive_subkeys(key)
+            return AESCipher.decrypt(k_enc, data[:-16])
         raise Exception("Invalid ciphertext received.")
 
     @staticmethod

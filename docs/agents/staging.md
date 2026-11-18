@@ -8,8 +8,10 @@ Key points in the staging process:
 
 1. All agents use Diffie-Hellman (DH) key exchange.
 2. A pre-shared key (PSK) is used to encrypt the routing packet with AES-256-GCM (FIPS-compliant AEAD cipher).
-3. Stage 1 involves session key negotiation and establishing an encrypted channel.
-4. Stage 2 delivers the full agent to start beaconing.
+3. Both sides authenticate each other with Ed25519 certificates that are **bound to the exchange transcript** (the agent signs its own DH public key; the server signs the session ID, a nonce, and its DH public key). Binding the signature to the exchange prevents a captured certificate from being replayed against a substituted DH key.
+4. The DH shared secret is turned into a 256-bit session key via HKDF-SHA256, and the AES-CBC payload layer then derives **independent** AES and HMAC subkeys from it (HKDF `info` `empire-enc` / `empire-mac`) rather than reusing one key for both.
+5. Stage 1 involves session key negotiation and establishing an encrypted channel.
+6. Stage 2 delivers the full agent to start beaconing.
 
 ## Stage 0 Request (Launcher Execution)
 
@@ -21,7 +23,9 @@ The server returns a stager script (e.g., stager.ps1 for PowerShell). This stage
 
 ## Stage 1: Session Key Exchange
 
-The agent performs a Diffie-Hellman key exchange. The encrypted public key is sent to the server. The server returns the session ID and an AES session key, encrypted for the agent.
+The agent performs a Diffie-Hellman key exchange. It sends its DH public key together with an Ed25519 certificate over the transcript `empire-stage1-agent || client_pub`, encrypted to the server with the staging key.
+
+The server verifies that certificate, then replies with a nonce, its own DH public key, and an Ed25519 certificate over `empire-stage1-server || session_id || nonce || server_pub`. The agent verifies the server certificate — authenticating the server — before combining the two public keys into the DH shared secret and deriving the session key. An agent that cannot verify the server certificate aborts staging.
 
 ## Stage 2: Agent Delivery
 
@@ -32,11 +36,11 @@ sequenceDiagram
     participant ControlServer as Control Server
     participant Client as Client (Agent)
 
-    ControlServer->>Client: 1. GET /<stage0>
-    Client-->>ControlServer: 2. Return encrypted stager (PSK + AES-256-GCM)
-    ControlServer->>Client: 3. Generate DH Key Pair. Encrypt and Send Public Key
-    Client-->>ControlServer: 4. Server returns ENCpub(session key). Session ID
-    ControlServer->>Client: 5. Decrypt session key. Send sysinfo encrypted with AES session key
-    Client-->>ControlServer: 6. Server returns full agent. Patched with key, delay, and config
+    Client->>ControlServer: 1. GET /<stage0>
+    ControlServer-->>Client: 2. Return encrypted stager (PSK + AES-256-GCM)
+    Client->>ControlServer: 3. Generate DH key pair. Send DH public key + agent certificate (signs transcript)
+    ControlServer-->>Client: 4. Verify agent cert. Return nonce + DH public key + server certificate + Session ID
+    Client->>ControlServer: 5. Verify server cert. Derive session key. Send sysinfo (AES session key)
+    ControlServer-->>Client: 6. Return full agent, patched with key, delay, and config
     Client->>ControlServer: Agent starts beaconing (Polling tasks)
 ```

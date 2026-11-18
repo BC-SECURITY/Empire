@@ -11,6 +11,10 @@ description: |
   formatted plist file with the specified daemon name and installs it in the
   user's LaunchAgents directory. Provides a reliable persistence mechanism
   that survives user logouts and system restarts.
+
+  The module verifies that the shipped Mach-O template does not link
+  Apple's Python 2.7 framework, which macOS 12.3 removed, and refuses to
+  generate if it does, rather than plant a binary that cannot load.
 software: ''
 tactics: [TA0003, TA0004]
 techniques: [T1543, T1543.001]
@@ -19,7 +23,7 @@ output_extension:
 needs_admin: false
 opsec_safe: false
 language: python
-min_language_version: '2.6'
+min_language_version: '3'
 comments: []
 options:
   - name: Agent

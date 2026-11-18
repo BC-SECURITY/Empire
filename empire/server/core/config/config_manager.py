@@ -182,6 +182,10 @@ class DirectoriesConfig(EmpireBaseModel):
 class LoggingConfig(EmpireBaseModel):
     level: str = "INFO"
     simple_console: bool = True
+    # See docs/settings/logging.md for file_logging and the rotation limits.
+    file_logging: bool = True
+    max_bytes: int = Field(default=10 * 1024 * 1024, ge=0)
+    backup_count: int = Field(default=5, ge=0)
 
 
 class LastTaskConfig(EmpireBaseModel):

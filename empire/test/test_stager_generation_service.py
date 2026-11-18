@@ -8,10 +8,13 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from sqlalchemy import delete
 
 from empire.server.common import packets
 from empire.server.common.empire import MainMenu
+from empire.server.core.db import models
 from empire.server.core.db.base import SessionLocal
+from empire.server.core.dotnet import DotnetCompiler
 from empire.server.core.exceptions import (
     ModuleExecutionException,
     ModuleValidationException,
@@ -67,6 +70,22 @@ def compiled_dotnet_exe(stager_generation_service):
         return cache[key]
 
     return _get
+
+
+def test_write_unique_launcher_reports_unavailable_compiler_clearly(
+    tmp_path, monkeypatch
+):
+    """With the compiler missing (cold cache + offline at boot), a C# stager
+    request must fail with the "not available" message that stager_service
+    turns into a 400 -- not a TypeError from `None / "Data/..."`."""
+    monkeypatch.setattr(
+        "empire.server.core.dotnet.sync_empire_compiler", lambda *_a, **_k: None
+    )
+    service = StagerGenerationService.__new__(StagerGenerationService)
+    service.dotnet_compiler = DotnetCompiler(install_path=tmp_path)
+
+    with pytest.raises(ModuleExecutionException, match="not available"):
+        service._write_unique_launcher("code")
 
 
 def test_compiler(main, empire_config):
@@ -822,6 +841,7 @@ def test_build_template_vars(stager_generation_service):
         "DELAY",
         "JITTER",
         "LOST_LIMIT",
+        "SESSION_COOKIE",
         "STAGING_KEY",
         "DEFAULT_RESPONSE",
         "AGENT_PRIVATE_CERT_KEY",
@@ -1180,6 +1200,80 @@ def test_multi_generate_agent_stageless_python(main):
     assert "class Stage" in result
 
 
+def _generate_stageless_agent(main, language, bypasses):
+    stager = Stager(main)
+    stager.options["Language"]["Value"] = language
+    stager.options["Listener"]["Value"] = "new-listener-1"
+    stager.options["Staged"]["Value"] = False
+    stager.options["Bypasses"]["Value"] = bypasses
+    return stager.generate()
+
+
+def test_multi_generate_agent_stageless_powershell_embeds_bypass(main):
+    """Empire#778: stageless generation must honor the Bypasses option, run
+    under SilentlyContinue like the staged launcher, and run before the agent."""
+    marker_a = "Expect100Continue=0"
+    marker_b = "PSVersionTable.PSVersion.Major -lt 3"
+
+    baseline = _generate_stageless_agent(main, "powershell", "")
+    assert marker_a not in baseline
+    assert marker_b not in baseline
+
+    result = _generate_stageless_agent(main, "powershell", "SafeChecksPS")
+    assert result.startswith('$ErrorActionPreference = "SilentlyContinue";')
+    assert marker_a in result
+    assert marker_b in result
+    assert result.index(marker_b) < result.index("function Invoke-Empire {")
+
+
+def test_multi_generate_agent_stageless_python_embeds_bypass(main):
+    marker = "Little Snitch"
+
+    baseline = _generate_stageless_agent(main, "python", "")
+    assert marker not in baseline
+
+    result = _generate_stageless_agent(main, "python", "SafeChecksPython")
+    # SafeChecksPython calls sys.exit() without importing sys.
+    assert result.startswith("import sys\n")
+    assert marker in result
+    assert result.index(marker) < result.index("def run(")
+    compile(result, "<stageless-agent>", "exec")
+
+
+def test_multi_generate_agent_stageless_joins_bypasses_without_trailing_newline(
+    main,
+):
+    """API-created bypasses need not end in a newline; two in a row must not
+    run into each other or into the agent's first line."""
+    names = ["StagelessProbeA", "StagelessProbeB"]
+    with SessionLocal.begin() as db:
+        for i, name in enumerate(names):
+            db.add(
+                models.Bypass(
+                    name=name, code=f"probe_{i} = {i}", language="python", authors=[]
+                )
+            )
+    try:
+        result = _generate_stageless_agent(main, "python", " ".join(names))
+        assert "probe_0 = 0\nprobe_1 = 1\n" in result
+        compile(result, "<stageless-agent>", "exec")
+    finally:
+        with SessionLocal.begin() as db:
+            db.execute(delete(models.Bypass).where(models.Bypass.name.in_(names)))
+
+
+def test_multi_generate_agent_stageless_ironpython_drops_python_bypass(main, caplog):
+    with caplog.at_level(logging.WARNING):
+        result = _generate_stageless_agent(main, "ironpython", "SafeChecksPython")
+
+    assert not result.startswith("import sys\n")
+    assert "Little Snitch" not in result
+    assert any(
+        "Dropping bypass" in r.message and r.levelname == "WARNING"
+        for r in caplog.records
+    ), "Expected WARNING-level language-mismatch log was not emitted"
+
+
 @pytest.mark.skipif(is_arm, reason="Skipping test on ARM architecture")
 @pytest.mark.parametrize(
     ("arch", "dot_net_version"),
@@ -1291,3 +1385,125 @@ def test_launcher_bat_go_embeds_ps_bypass(main):
     decoded = _decode_ps_enc(bat)
     assert "Expect100Continue=0" in decoded
     assert "DownloadFile(" in decoded
+
+
+class TestShellcodeArtifactCleanup:
+    """The two donut sinks compile an EXE, keep only the shellcode, and used to
+    leave the EXE behind.
+
+    Both are reachable from the STAGE0 ``additional == "shellcode"`` branch,
+    which needs only the staging key, so an unreclaimed multi-megabyte artifact
+    per request is the durable half of the same DoS the listeners' cleanup
+    closes. The compile and donut are both stubbed: this pins the cleanup, not
+    EmpireCompiler or donut, so it runs on ARM and on a box with neither.
+    """
+
+    @pytest.fixture
+    def artifact(self, tmp_path):
+        exe = tmp_path / "stager_abc123.exe"
+        exe.write_bytes(b"MZ" + b"\x00" * 64)
+        return exe
+
+    @pytest.mark.parametrize(
+        ("donut_result", "case"),
+        [(b"\x90\x90shellcode", "success"), (None, "donut-failed")],
+        ids=["success", "donut-failed"],
+    )
+    def test_python_shellcode_removes_the_compiled_exe(
+        self, stager_generation_service, artifact, monkeypatch, donut_result, case
+    ):
+        """Both arms: the ``donut_result is None`` branch returns early, so a
+        cleanup placed after it would leak on exactly the failure an attacker
+        can provoke repeatedly."""
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        monkeypatch.setattr(
+            stager_generation_service, "generate_python_exe", lambda *a, **kw: artifact
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: donut_result,
+        )
+
+        stager_generation_service.generate_python_shellcode("posh", "x64", "net40")
+
+        assert not artifact.exists()
+
+    def test_csharp_shellcode_removes_the_compiled_exe(
+        self, stager_generation_service, artifact, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        active = MagicMock()
+        active.generate_launcher.return_value = str(artifact)
+        monkeypatch.setattr(
+            stager_generation_service.listener_service,
+            "get_active_listener",
+            lambda _id: active,
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: b"\x90\x90shellcode",
+        )
+
+        _shellcode, err = stager_generation_service.generate_csharp_shellcode(
+            listener_name="new-listener-1", arch="x64"
+        )
+
+        assert err is None, err
+        assert not artifact.exists()
+
+    def test_an_unremovable_artifact_does_not_lose_the_shellcode(
+        self, stager_generation_service, artifact, monkeypatch
+    ):
+        """Cleanup is best-effort: a compile that just succeeded must not be
+        thrown away because the temp file could not be unlinked."""
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut", object()
+        )
+        monkeypatch.setattr(
+            stager_generation_service, "generate_python_exe", lambda *a, **kw: artifact
+        )
+        monkeypatch.setattr(
+            "empire.server.core.stager_generation_service.donut_create",
+            lambda **kw: b"\x90\x90shellcode",
+        )
+
+        def _refuse(self, **kwargs):
+            raise PermissionError("read-only tempdir")
+
+        monkeypatch.setattr("pathlib.Path.unlink", _refuse)
+
+        shellcode, err = stager_generation_service.generate_python_shellcode(
+            "posh", "x64", "net40"
+        )
+
+        assert err is None
+        assert shellcode == b"\x90\x90shellcode"
+
+
+@pytest.mark.parametrize(
+    ("cookie_value", "expected"),
+    [("PHPSESSID", "PHPSESSID"), ("", "session")],
+    ids=["custom", "empty-falls-back"],
+)
+def test_build_template_vars_session_cookie(
+    stager_generation_service, monkeypatch, cookie_value, expected
+):
+    """gopire carries the routing packet in the listener's session cookie on
+    tasking GETs; an empty Cookie option (allowed on malleable listeners) must
+    still render a usable name."""
+    active_listener = (
+        stager_generation_service.listener_service.get_active_listener_by_name(
+            "new-listener-1"
+        )
+    )
+    monkeypatch.setitem(active_listener.options["Cookie"], "Value", cookie_value)
+    assert (
+        stager_generation_service._build_template_vars(active_listener)[
+            "SESSION_COOKIE"
+        ]
+        == expected
+    )

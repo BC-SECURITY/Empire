@@ -3,8 +3,8 @@
 ``ensure_user_ownership`` (root-only recursive chown) and ``run_as_user``
 (sudo-preserving subprocess wrapper) were largely uncovered. These exercise
 their branches with monkeypatched os/pwd/subprocess so no privileges are
-needed. ``safe_filename`` and ``is_path_within`` are the path-traversal guards
-for untrusted upload filenames.
+needed. ``safe_filename``, ``is_path_within`` and ``resolve_under_root`` are the
+path-traversal guards for operator- and client-supplied paths.
 """
 
 import os
@@ -14,7 +14,11 @@ from types import SimpleNamespace
 import pytest
 
 from empire.server.utils import file_util
-from empire.server.utils.file_util import is_path_within, safe_filename
+from empire.server.utils.file_util import (
+    is_path_within,
+    resolve_under_root,
+    safe_filename,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -306,3 +310,102 @@ class TestIsPathWithin:
         base = tmp_path / "downloads"
         base.mkdir()
         assert is_path_within(tmp_path / "downloads-evil" / "x", base) is False
+
+
+class TestResolveUnderRoot:
+    def test_relative_value_resolves_under_root(self, tmp_path):
+        assert resolve_under_root(tmp_path, "out.ps1") == (tmp_path / "out.ps1")
+
+    def test_nested_relative_value_is_preserved(self, tmp_path):
+        assert resolve_under_root(tmp_path, "a/b/c.ps1") == (tmp_path / "a/b/c.ps1")
+
+    @pytest.mark.parametrize(
+        "operator_path",
+        ["../escape", "a/../../escape", "../../../../etc/cron.d/x"],
+    )
+    def test_traversal_returns_none(self, tmp_path, operator_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        assert resolve_under_root(root, operator_path) is None
+
+    def test_absolute_path_outside_root_returns_none(self, tmp_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        assert resolve_under_root(root, "/etc/cron.d/x") is None
+        assert resolve_under_root(root, str(tmp_path / "sibling" / "x")) is None
+
+    def test_absolute_path_inside_root_is_accepted(self, tmp_path):
+        root = tmp_path / "root"
+        root.mkdir()
+        inside = root / "a" / "b.ps1"
+        assert resolve_under_root(root, str(inside)) == inside.resolve()
+
+    def test_sibling_prefix_of_root_returns_none(self, tmp_path):
+        root = tmp_path / "http_hop"
+        root.mkdir()
+        assert resolve_under_root(root, str(tmp_path / "http_hop-evil" / "x")) is None
+
+    def test_null_byte_returns_none_and_does_not_raise(self, tmp_path):
+        # Path("a\x00b") constructs fine but .resolve() raises ValueError, which
+        # no caller on the four fixed paths catches -- so the byte is rejected
+        # before any Path is built. Assert the return value, not the absence of
+        # an exception: pytest.raises(ValueError) would pass without the guard.
+        assert resolve_under_root(tmp_path, "a\x00b") is None
+
+    @pytest.mark.parametrize("operator_path", ["", ".", "./", "a/.."])
+    def test_value_collapsing_onto_the_root_returns_none(self, tmp_path, operator_path):
+        """Strictly under: contained is not enough when the value IS the root.
+
+        Every spelling here passes ``is_path_within`` -- the root contains
+        itself -- so containment alone hands the caller the root back and its
+        ``write_text`` turns a directory every operator shares into a regular
+        file. The absolute spelling is asserted too, since it takes the branch
+        that skips the join.
+
+        Red for the right reason only: with the collapse clause removed, all
+        five assertions return the root instead of ``None``. Removing the
+        containment clause instead leaves this test green, which is why the
+        traversal cases above are separate.
+        """
+        assert resolve_under_root(tmp_path, operator_path) is None
+        assert resolve_under_root(tmp_path, str(tmp_path)) is None
+
+    def test_returned_path_is_resolved(self, tmp_path):
+        # Call sites mkdir/write whatever comes back, and containment was
+        # decided about the resolved form -- returning the raw candidate would
+        # let the checked path and the written path disagree.
+        real = tmp_path / "real"
+        real.mkdir()
+        link = tmp_path / "link"
+        link.symlink_to(real)
+        assert resolve_under_root(link, "a/../b.ps1") == (real / "b.ps1")
+
+    def test_symlinked_component_of_operator_value_returns_none(self, tmp_path):
+        """A symlink *inside* the root must not ferry the write back out.
+
+        The case above symlinks the ``root`` argument, which pins resolution of
+        the server-owned side only. This one pins the operator-supplied side:
+        ``link/x.ps1`` carries no ``..`` at all, so a fully lexical containment
+        check leaves it looking contained while the write lands in ``outside``.
+
+        Note where the defence actually lives. Swapping ``resolve()`` for
+        ``os.path.normpath`` inside ``resolve_under_root`` alone does NOT make
+        this test red -- ``is_path_within`` still resolves, and that weakening
+        is caught by ``test_returned_path_is_resolved`` instead. What this case
+        catches is containment going lexical end to end, with no ``resolve()``
+        on either side. Verified by running both weakenings.
+
+        Operator-reachable in the real deployment: the confinement root is a
+        shared tree under ``downloads/``, and anything that can drop a symlink
+        into it -- another module, an upload, an agent download -- turns every
+        later ``OutFile`` naming it into an arbitrary write.
+        """
+        root = tmp_path / "root"
+        root.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (root / "link").symlink_to(outside)
+
+        assert resolve_under_root(root, "link/x.ps1") is None
+        # Absolute spelling of the same escape, for the branch that skips the join.
+        assert resolve_under_root(root, str(root / "link" / "x.ps1")) is None

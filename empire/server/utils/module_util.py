@@ -1,4 +1,11 @@
+from pathlib import Path
+
 from empire.server.common import helpers
+from empire.server.core.config import config_manager
+from empire.server.core.exceptions import ModuleValidationException
+from empire.server.utils.file_util import resolve_under_root
+
+PY27_FRAMEWORK_MARKER = b"Python.framework/Versions/2.7"
 
 
 def handle_validate_message(
@@ -14,3 +21,63 @@ def handle_validate_message(
     if print_to_server:
         print(helpers.color(msg))
     return False, msg
+
+
+def ensure_python3_macho_template(binary: bytes, template_name: str) -> None:
+    """
+    Refuse a generated Mach-O binary whose template links Apple's Python 2.7 framework.
+
+    Called on the generated binary; the dyld load command is copied verbatim
+    from the template, so the marker survives patching.
+
+    macOS 12.3 removed that framework, so a binary built from such a template
+    fails in dyld on every supported macOS. The guard lifts itself the moment a
+    rebuilt template no longer contains the marker.
+    """
+    if not binary:
+        raise ModuleValidationException(
+            f"The Mach-O template '{template_name}' could not be patched; see the server log."
+        )
+    if PY27_FRAMEWORK_MARKER in binary:
+        raise ModuleValidationException(
+            f"The shipped Mach-O template '{template_name}' links Apple's Python 2.7 "
+            "framework, which macOS 12.3 removed, so the planted binary cannot load on "
+            "any supported macOS. Refusing to generate until the templates are rebuilt."
+        )
+
+
+def write_module_outfile(out_file: str, script: str) -> Path:
+    """Write ``script`` to an operator-named ``OutFile`` under a server-owned root.
+
+    ``OutFile`` is a delivery destination the operator goes and collects from, so an
+    escaping value is rejected outright rather than quietly rewritten -- an operator
+    who is silently redirected has no way to find what they asked for.
+
+    The containment check runs before the ``mkdir``, not just before the write --
+    creating the directory tree is itself a filesystem side effect on operator input.
+
+    Returns the resolved path so the caller can name it in its success notice; after
+    confinement that notice is the operator's only pointer to where the file landed.
+    """
+    # Resolve the singleton per call: config/data_manager.py rebinds
+    # config_manager.empire_config, and this module is cached in sys.modules, so a
+    # name bound at import time would freeze a stale config.
+    root = config_manager.empire_config.directories.downloads / "generated-modules"
+    out_path = resolve_under_root(root, out_file)
+    if out_path is None:
+        raise ModuleValidationException(
+            f"OutFile must name a file under {root}: give a path relative to it, "
+            f"or an absolute path already inside it."
+        )
+
+    try:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(script)
+    except OSError as e:
+        # Confined but unwritable (a component already taken by a regular file,
+        # EACCES, ENOSPC). ModuleValidationException is the only channel that
+        # reaches the operator as a 4xx; anything else is an opaque 500. Never echo
+        # the errno text -- it reaches the caller and is a filesystem-probe oracle.
+        raise ModuleValidationException(f"Could not write OutFile under {root}.") from e
+
+    return out_path

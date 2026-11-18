@@ -82,8 +82,9 @@ jobs:
           restore-keys: |
             empire-test-deps-v1-${{ runner.os }}-
       - name: Run test suite - mysql
-        # Authenticate the Empire Compiler download against the GitHub API so it
-        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        # Authenticate the Empire Compiler release lookup so it isn't throttled
+        # by GitHub's per-IP API limit on shared runners (the asset download is
+        # CDN traffic that auth doesn't affect; retries cover it).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # On release branches / the run-all-versions label, run the full suite
@@ -116,7 +117,7 @@ jobs:
           DATABASE_USE=sqlite poetry run pytest . -v --runslow --durations=10 -n auto --dist=loadfile --ignore=empire/test/test_performance -m "not mysql"
       - name: Pytest coverage comment
         if: ${{ matrix.python-version == '3.14' }}
-        uses: MishaKav/pytest-coverage-comment@v1.11.0
+        uses: MishaKav/pytest-coverage-comment@v1.12.2
         with:
           pytest-coverage-path: ./pytest-coverage.txt
           junitxml-path: ./pytest.xml
@@ -165,8 +166,9 @@ jobs:
           restore-keys: |
             empire-perf-deps-${{ runner.os }}-
       - name: Run performance test suite - mysql
-        # Authenticate the Empire Compiler download against the GitHub API so it
-        # isn't throttled by the unauthenticated 60 req/hr shared-runner limit.
+        # Authenticate the Empire Compiler release lookup so it isn't throttled
+        # by GitHub's per-IP API limit on shared runners (the asset download is
+        # CDN traffic that auth doesn't affect; retries cover it).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

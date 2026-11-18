@@ -69,21 +69,20 @@ HMACc = first 16 bytes of a SHA256 HMAC using the client's session key
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"crypto/aes"
-	"crypto/cipher"
 )
 
 type PacketHandler struct {
-	MissedCheckins int
-	Server         string
-	StagingKey     []byte
-	SessionID      string
-	Aeskey         []byte
+	Server     string
+	StagingKey []byte
+	SessionID  string
+	Aeskey     []byte
 }
 
 func (ph PacketHandler) BuildResponsePacket(taskingID int, packetData string, resultID int) []byte {

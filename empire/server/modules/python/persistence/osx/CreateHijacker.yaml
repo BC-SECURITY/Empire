@@ -17,6 +17,10 @@ description: |
   instead of the legitimate library. Useful for establishing
   persistence through application hijacking and maintaining
   access when vulnerable applications are launched.
+
+  The module verifies that the shipped Mach-O template does not link
+  Apple's Python 2.7 framework, which macOS 12.3 removed, and refuses to
+  generate if it does, rather than plant a binary that cannot load.
 software: ''
 tactics: [TA0002, TA0005]
 techniques: [T1574, T1574.004]
@@ -25,7 +29,7 @@ output_extension: ''
 needs_admin: true
 opsec_safe: false
 language: python
-min_language_version: '2.6'
+min_language_version: '3'
 comments:
   - comment
   - https://www.virusbulletin.com/virusbulletin/2015/03/dylib-hijacking-os-x

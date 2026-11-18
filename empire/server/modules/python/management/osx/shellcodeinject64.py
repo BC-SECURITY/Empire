@@ -1,9 +1,9 @@
 import base64
-from pathlib import Path
 
 from empire.server.common.empire import MainMenu
 from empire.server.core.exceptions import ModuleValidationException
 from empire.server.core.module_models import EmpireModule
+from empire.server.utils.option_util import confine_to_downloads
 
 
 class Module:
@@ -18,11 +18,11 @@ class Module:
         processID = params["PID"]
         shellcodeBinPath = params["Shellcode"]
 
-        shellcode_path = Path(shellcodeBinPath)
-        if not shellcode_path.exists():
+        shellcode_path = confine_to_downloads(shellcodeBinPath, "Shellcode")
+        if not shellcode_path.is_file():
             raise ModuleValidationException("Shellcode bin file not found.")
 
-        shellcode = base64.b64encode(shellcode_path.read_bytes())
+        shellcode = base64.b64encode(shellcode_path.read_bytes()).decode()
 
         script = """
 from ctypes import *
