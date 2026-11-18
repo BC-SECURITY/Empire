@@ -44,6 +44,7 @@ Every module should include proper MITRE ATT&CK metadata. The fields are:
 
 Refer to the [MITRE ATT&CK Enterprise Matrix](https://attack.mitre.org/matrices/enterprise/) for valid tactic, technique, and software IDs.
 
+
 ## Special Options
 
 Empire reserves certain option names that receive special handling during module execution. These are filtered out of the parameters passed to the module's script and instead control how the task is dispatched or processed.

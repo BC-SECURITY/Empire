@@ -68,7 +68,7 @@ starkiller:
 plugin_marketplace:
   registries:
     - name: BC-SECURITY
-      git_url: git@github.com:BC-SECURITY/Empire-Plugin-Registry-Sponsors.git
+      git_url: https://github.com/BC-SECURITY/Empire-Plugin-Registry.git
       ref: '7.x'
       file: registry.yaml
 directories:

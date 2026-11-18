@@ -4,6 +4,7 @@ The Server configuration is managed via [empire/server/config.yaml](https://gith
 
 Once launched, Empire checks for user write permissions on paths specified in `config.yaml`. If the current user does not have write permissions on these paths, `~/.empire` will be set as fallback parent directory and the configuration file will be updated as well. If `empire-priv.key` and `empire-chain.pem` are not found in the data directory (`~/.local/share/empire` by default; see [data & config locations](#data--config-locations)), self-signed certs will be generated.
 
+
 ## User Config Overrides
 
 To customize settings without modifying `config.yaml`, create a `config.user.yaml` file in the same directory as the base config (e.g. `~/.config/empire/config.user.yaml`). This file only needs to contain the settings you want to override — everything else falls through to the base config.
