@@ -62,9 +62,9 @@ empire_compiler:
   confuser_proj: empire/server/data/confuser.crproj
 starkiller:
   enabled: true
-  repo: git@github.com:BC-SECURITY/Starkiller-Sponsors.git
+  repo: https://github.com/BC-SECURITY/Starkiller.git
   # Can be a branch, tag, or commit hash
-  ref: sponsors-main
+  ref: v4.1.0
 plugin_marketplace:
   registries:
     - name: BC-SECURITY
